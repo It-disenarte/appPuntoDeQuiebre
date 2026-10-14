@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cn, PageHeader } from "@/components/ui";
-import { requireUser } from "@/lib/auth/dal";
+import { requireCreatorAccess } from "@/lib/auth/gates";
 
 export const metadata: Metadata = { title: "Grabar" };
 
@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Grabar" };
 const PARTS = ["Gancho", "Error 1", "Error 2 y 3", "Cierre"];
 
 export default async function GrabarPage() {
-  await requireUser();
+  await requireCreatorAccess();
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
       <PageHeader dark eyebrow="Guion 2 de 4 · Jueves" title="3 errores al empezar un huerto" />

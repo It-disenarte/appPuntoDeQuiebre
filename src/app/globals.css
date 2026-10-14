@@ -79,11 +79,12 @@ body {
   font-size: 0.6875rem;
 }
 
-/* Áreas seguras de iPhone (notch y barra de inicio) en modo instalado. */
-.pt-safe {
+/* Áreas seguras de iPhone (notch y barra de inicio) en modo instalado.
+   Como @utility viven en la capa de utilidades: las variantes (lg:pt-7) pueden sobrescribirlas. */
+@utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
-.pb-safe {
+@utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 

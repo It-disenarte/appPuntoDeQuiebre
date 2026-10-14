@@ -28,6 +28,14 @@ const schema = z.object({
   S3_ACCESS_KEY: optional(z.string()),
   S3_SECRET_KEY: optional(z.string()),
 
+  // Pagos (Stripe). Si faltan, la app funciona pero no permite suscribirse.
+  STRIPE_SECRET_KEY: optional(z.string().regex(/^(sk|rk)_(test|live)_/, "debe empezar con sk_test_ / sk_live_")),
+  STRIPE_WEBHOOK_SECRET: optional(z.string().startsWith("whsec_")),
+  STRIPE_PRICE_BASICO: optional(z.string().startsWith("price_")),
+  STRIPE_PRICE_PRO: optional(z.string().startsWith("price_")),
+  /** Días de gracia tras un cobro fallido antes de suspender la sesión. */
+  BILLING_GRACE_DAYS: optional(z.coerce.number().int().min(0).max(30)).default(7),
+
   // Web Push. Opcional en Fase 0.
   VAPID_PUBLIC_KEY: optional(z.string()),
   VAPID_PRIVATE_KEY: optional(z.string()),

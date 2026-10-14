@@ -35,4 +35,19 @@ describe("migraciones y restricciones", () => {
   it("rechaza IPs inválidas en columnas inet", async () => {
     await expect(db.insert(schema.loginAttempts).values({ email: "x@x.com", ip: "no-es-ip", succeeded: false })).rejects.toThrow();
   });
+
+  it("la BD impide superar los usos máximos de un código", async () => {
+    const [c] = await db.insert(schema.promoCodes).values({ code: "LIMITE", kind: "trial", trialDays: 30, maxUses: 1 }).returning();
+    await db.update(schema.promoCodes).set({ uses: 1 }).where(eq(schema.promoCodes.id, c!.id));
+    await expect(db.update(schema.promoCodes).set({ uses: 2 }).where(eq(schema.promoCodes.id, c!.id))).rejects.toThrow();
+  });
+
+  it("la BD exige días de prueba válidos y una suscripción por usuario", async () => {
+    await expect(db.insert(schema.promoCodes).values({ code: "MALO", kind: "trial", trialDays: 0 })).rejects.toThrow();
+    const [u] = await db.insert(schema.users).values({ email: "s@correo.com", name: "S", passwordHash: "x" }).returning();
+    await db.insert(schema.subscriptions).values({ userId: u!.id, providerSubscriptionId: "sub_a", plan: "basico", status: "active" });
+    await expect(
+      db.insert(schema.subscriptions).values({ userId: u!.id, providerSubscriptionId: "sub_b", plan: "pro", status: "active" }),
+    ).rejects.toThrow();
+  });
 });

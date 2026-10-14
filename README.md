@@ -6,8 +6,9 @@ El desarrollo va por fases. Cada fase deja un documento de contexto para auditor
 
 | Fase | Estado |
 | --- | --- |
-| 0 · Cimientos (proyecto, BD, inicio de sesión, diseño, PWA, shell, admin mínimo, Docker) | En revisión |
-| 1 · Base (registro, 18+, Stripe, compromiso, admin de clientes) | Pendiente |
+| 0 · Cimientos (proyecto, BD, inicio de sesión, diseño, PWA, shell, admin mínimo, Docker) | Aprobada |
+| 1 · Base (registro, 18+, Stripe, compromiso, MinIO, panel de clientes, códigos y facturas) | En revisión |
+| 2 · Brújula (formulario, voz, horario, manual PDF) | Pendiente |
 
 ## Desarrollo local (Windows, sin Docker)
 
@@ -55,6 +56,29 @@ Una sola imagen (`Dockerfile`) sirve para dos servicios:
    Para restablecer una contraseña mientras llega el panel: `node dist/cli.mjs reset-password correo@dominio.com`.
 
 MinIO (archivos) y las llaves VAPID (notificaciones) se agregan en las fases que los usan.
+
+### Stripe (pagos) — Fase 1
+
+Todo en **modo de prueba** hasta que la empresa esté constituida.
+
+1. Crea la cuenta en stripe.com y deja activado **Test mode**.
+2. **Product catalog** → crea dos productos con precio **recurrente mensual en MXN**: "Plan Básico" y "Plan Pro". Copia el ID de cada precio (`price_…`) a `STRIPE_PRICE_BASICO` y `STRIPE_PRICE_PRO`.
+3. **Developers → API keys** → copia la *Secret key* (`sk_test_…`) a `STRIPE_SECRET_KEY`.
+4. **Developers → Webhooks → Add endpoint**: URL `https://TU-DOMINIO/api/stripe/webhook` con los eventos:
+   `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`.
+   Copia el *Signing secret* (`whsec_…`) a `STRIPE_WEBHOOK_SECRET`.
+5. **Settings → Billing → Customer portal**: actívalo y permite actualizar el método de pago, ver facturas, cancelar (al final del periodo) y **cambiar entre Básico y Pro**.
+6. **Settings → Billing → Subscriptions and emails**: reintentos inteligentes durante ~1 semana; si fallan todos, *mark the subscription as unpaid*; activa los correos de pago fallido y de recibos (la app no envía correos).
+7. Las variables van en `pdq-app` **y** en `pdq-worker`.
+
+Tarjetas de prueba: `4242 4242 4242 4242` (pago ok), `4000 0000 0000 0341` (se registra pero el cobro falla, sirve para probar la gracia).
+
+### MinIO (archivos) — Fase 1
+
+1. En Easypanel: **Templates → MinIO**, servicio `pdq-minio`. **No** le pongas dominio público a la API (puerto 9000); la app la usa por la red interna.
+2. En la consola de MinIO crea un usuario (o *access key*) solo para la app.
+3. Variables en `pdq-app` y `pdq-worker`: `S3_ENDPOINT=http://NOMBRE-INTERNO-DEL-SERVICIO:9000`, `S3_BUCKET=pdq-media`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`. El bucket se crea solo la primera vez.
+4. El video de bienvenida se sube desde **Panel → Ajustes**.
 
 ### Reglas de operación
 

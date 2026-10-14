@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Card, Chip, cn, PageHeader, SampleBadge } from "@/components/ui";
-import { requireUser } from "@/lib/auth/dal";
+import { requireCreatorAccess } from "@/lib/auth/gates";
 
 export const metadata: Metadata = { title: "Progreso" };
 
@@ -19,7 +19,7 @@ const WEEKS = [
 ];
 
 export default async function ProgresoPage() {
-  await requireUser();
+  await requireCreatorAccess();
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="Últimos 30 días · Instagram" title="Tu progreso" action={<SampleBadge />} />

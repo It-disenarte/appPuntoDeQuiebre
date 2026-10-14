@@ -3,15 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { logoutAction } from "@/lib/auth/actions";
 import { requireAdmin } from "@/lib/auth/dal";
-
-const SECTIONS = [
-  { label: "Resumen", href: "/admin", phase: null },
-  { label: "Clientes", phase: 1 },
-  { label: "Suscripciones", phase: 1 },
-  { label: "Códigos", phase: 1 },
-  { label: "Métricas del negocio", phase: 7 },
-  { label: "Límites", phase: 4 },
-] as const;
+import { AdminNav } from "./AdminNav";
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await requireAdmin();
@@ -22,20 +14,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <Logo surface="negro" className="w-32 lg:w-40" />
           <p className="rotulo text-naranja lg:mt-4">Administrador</p>
         </div>
-        <nav aria-label="Secciones de administración" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:mt-8 lg:flex-col lg:px-0">
-          {SECTIONS.map((s) =>
-            "href" in s ? (
-              <Link key={s.label} href={s.href} aria-current="page" className="shrink-0 rounded-xl bg-azul px-3 py-2.5 text-sm font-semibold">
-                {s.label}
-              </Link>
-            ) : (
-              <span key={s.label} className="flex shrink-0 items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-500" aria-disabled>
-                {s.label}
-                <span className="text-[0.625rem] font-semibold uppercase">Fase {s.phase}</span>
-              </span>
-            ),
-          )}
-        </nav>
+        <AdminNav />
         <div className="flex items-center justify-between border-t border-ink-700 px-3 py-1 lg:absolute lg:inset-x-5 lg:bottom-7 lg:block lg:px-0 lg:pt-5">
           <Link href="/hoy" className="block rounded-xl px-3 py-2 text-sm text-ink-300 hover:bg-ink-800">
             Ver app de creador

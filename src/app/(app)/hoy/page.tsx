@@ -1,7 +1,7 @@
 import { Camera, Flame } from "lucide-react";
 import type { Metadata } from "next";
 import { ButtonLink, Card, Chip, cn, PageHeader, SampleBadge } from "@/components/ui";
-import { requireUser } from "@/lib/auth/dal";
+import { requireCreatorAccess } from "@/lib/auth/gates";
 
 export const metadata: Metadata = { title: "Hoy" };
 
@@ -17,7 +17,7 @@ const WEEK = [
 ] as const;
 
 export default async function HoyPage() {
-  const user = await requireUser();
+  const { user } = await requireCreatorAccess();
   const firstName = user.name.split(" ")[0];
 
   return (

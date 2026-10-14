@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Card, Chip, cn, PageHeader, SampleBadge } from "@/components/ui";
-import { requireUser } from "@/lib/auth/dal";
+import { requireCreatorAccess } from "@/lib/auth/gates";
 
 export const metadata: Metadata = { title: "Semana" };
 
@@ -30,7 +30,7 @@ const MIX = [
 ];
 
 export default async function SemanaPage() {
-  await requireUser();
+  await requireCreatorAccess();
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="Semana del 19 al 25 de octubre" title="Tu parrilla" action={<SampleBadge />} />

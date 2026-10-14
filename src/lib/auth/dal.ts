@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { env } from "@/lib/env";
 import { SESSION_COOKIE } from "./cookie";
 import { validateSessionToken, type SessionUser } from "./session";
 
@@ -34,6 +35,27 @@ export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "admin") notFound();
   return user;
+}
+
+/** Para Route Handlers: devuelve el usuario activo o null (sin redirigir). */
+export async function getApiUser(): Promise<SessionUser | null> {
+  const session = await getCurrentSession();
+  if (!session || session.user.status === "disabled" || session.user.mustChangePassword) return null;
+  return session.user;
+}
+
+/**
+ * Protección CSRF para Route Handlers que modifican datos (las Server Actions ya la traen):
+ * el encabezado Origin debe coincidir con APP_URL.
+ */
+export function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(env().APP_URL).origin;
+  } catch {
+    return false;
+  }
 }
 
 export function homeFor(user: Pick<SessionUser, "role">): string {

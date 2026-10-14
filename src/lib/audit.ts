@@ -7,7 +7,20 @@ export type AuditAction =
   | "auth.login_failed"
   | "auth.login_blocked"
   | "auth.logout"
-  | "auth.password_changed";
+  | "auth.password_changed"
+  | "auth.registered"
+  | "commitment.accepted"
+  | "billing.checkout_started"
+  | "billing.invoice_requested"
+  | "admin.password_reset"
+  | "admin.user_disabled"
+  | "admin.user_enabled"
+  | "admin.sessions_revoked"
+  | "admin.admin_created"
+  | "admin.promo_created"
+  | "admin.promo_toggled"
+  | "admin.invoice_request_updated"
+  | "admin.welcome_video_uploaded";
 
 export async function audit(entry: {
   action: AuditAction;

@@ -17,6 +17,20 @@ const ACTION_LABEL: Record<string, string> = {
   "cli.create_admin": "Alta de admin (consola)",
   "cli.reset_password": "Contraseña restablecida (consola)",
   "worker.cleanup": "Limpieza automática",
+  "auth.registered": "Registro",
+  "commitment.accepted": "Aceptó el compromiso",
+  "billing.checkout_started": "Inició un pago",
+  "billing.status_changed": "Cambio de suscripción",
+  "billing.invoice_requested": "Solicitó factura",
+  "admin.password_reset": "Contraseña restablecida",
+  "admin.user_disabled": "Cuenta desactivada",
+  "admin.user_enabled": "Cuenta reactivada",
+  "admin.sessions_revoked": "Sesiones cerradas",
+  "admin.admin_created": "Alta de admin",
+  "admin.promo_created": "Código creado",
+  "admin.promo_toggled": "Código pausado/activado",
+  "admin.invoice_request_updated": "Factura atendida",
+  "admin.welcome_video_uploaded": "Video de bienvenida",
 };
 
 const targetUser = alias(users, "target_user");

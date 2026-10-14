@@ -1,12 +1,20 @@
 import { clsx, type ClassValue } from "clsx";
+import { extendTailwindMerge } from "tailwind-merge";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-export const cn = (...v: ClassValue[]) => clsx(v);
+// tailwind-merge resuelve conflictos (p. ej. "text-ink-700" + "text-blanco" → gana la última).
+// Se registran los colores de marca para que los reconozca.
+const twMerge = extendTailwindMerge({
+  extend: {
+    theme: { color: ["azul", "azul-700", "azul-100", "azul-50", "negro", "naranja", "naranja-100", "blanco", "exito", "exito-100", "alerta", "alerta-100", { ink: ["900", "800", "700", "600", "500", "400", "300", "200", "100"] }] },
+  },
+});
+export const cn = (...v: ClassValue[]) => twMerge(clsx(v));
 
 /* ---------- Button ---------- */
 
-type ButtonVariant = "primary" | "dark" | "light" | "outline" | "ghost" | "accent";
+type ButtonVariant = "primary" | "dark" | "light" | "outline" | "ghost" | "accent" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const buttonBase =
@@ -19,6 +27,7 @@ const buttonVariants: Record<ButtonVariant, string> = {
   ghost: "bg-transparent text-ink-700 hover:bg-ink-200/60",
   // Naranja con texto negro (6.8:1). Úsalo para una sola acción por pantalla.
   accent: "bg-naranja text-negro hover:brightness-95",
+  danger: "bg-transparent text-alerta hover:bg-alerta-100",
 };
 const buttonSizes: Record<ButtonSize, string> = {
   sm: "h-9 px-4 text-sm",
@@ -125,6 +134,68 @@ export function Field({
       />
       {hint && <p className="text-xs text-ink-500">{hint}</p>}
     </div>
+  );
+}
+
+const controlClass =
+  "rounded-xl border border-ink-300 bg-blanco px-4 text-base text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-azul focus:ring-4 focus:ring-azul/15";
+
+export function SelectField({
+  label,
+  hint,
+  className,
+  id,
+  options,
+  placeholder,
+  ...select
+}: ComponentProps<"select"> & { label: string; hint?: string; options: Record<string, string>; placeholder?: string }) {
+  const selectId = id ?? select.name;
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={selectId} className="text-sm font-semibold text-ink-800">
+        {label}
+      </label>
+      <select id={selectId} className={cn(controlClass, "h-12")} {...select}>
+        {placeholder && <option value="">{placeholder}</option>}
+        {Object.entries(options).map(([value, text]) => (
+          <option key={value} value={value}>
+            {text}
+          </option>
+        ))}
+      </select>
+      {hint && <p className="text-xs text-ink-500">{hint}</p>}
+    </div>
+  );
+}
+
+export function TextAreaField({ label, className, id, ...area }: ComponentProps<"textarea"> & { label: string }) {
+  const areaId = id ?? area.name;
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={areaId} className="text-sm font-semibold text-ink-800">
+        {label}
+      </label>
+      <textarea id={areaId} className={cn(controlClass, "min-h-24 py-3")} {...area} />
+    </div>
+  );
+}
+
+export function CheckboxField({ label, className, id, ...input }: Omit<ComponentProps<"input">, "type"> & { label: ReactNode }) {
+  const inputId = id ?? input.name;
+  return (
+    <label htmlFor={inputId} className={cn("flex items-start gap-3 text-sm text-ink-700", className)}>
+      <input id={inputId} type="checkbox" className="mt-0.5 size-5 shrink-0 accent-azul" {...input} />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+export function FormSuccess({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="status" className="rounded-xl bg-exito-100 px-4 py-3 text-sm font-semibold text-exito">
+      {message}
+    </p>
   );
 }
 

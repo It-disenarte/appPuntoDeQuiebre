@@ -7,7 +7,7 @@ import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/cookie";
  * 2. Comprobación OPTIMISTA de sesión: solo mira si existe la cookie. La validación real
  *    (BD, rol, estado) ocurre en src/lib/auth/dal.ts dentro de cada página y acción.
  */
-const PUBLIC_PATHS = ["/login", "/offline", "/api/health"];
+const PUBLIC_PATHS = ["/login", "/registro", "/terminos", "/privacidad", "/offline", "/api/health", "/api/stripe/webhook"];
 
 export function buildCsp(nonce: string, isDev: boolean): string {
   return [
@@ -23,7 +23,8 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "manifest-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    // Tras enviar un formulario se puede redirigir a la página de pago o al portal de Stripe.
+    "form-action 'self' https://checkout.stripe.com https://billing.stripe.com",
     "object-src 'none'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
@@ -62,7 +63,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Todo excepto estáticos de Next, el service worker, el manifiesto y archivos con extensión.
-    "/((?!_next/static|_next/image|sw\\.js|manifest\\.webmanifest|.*\\.(?:png|svg|ico|jpg|jpeg|webp|woff2?|txt|xml)$).*)",
+    // Todo excepto estáticos de Next, el service worker, el manifiesto, archivos con extensión y la
+    // subida de video del admin (el proxy guardaría el cuerpo en memoria; esa ruta valida todo sola).
+    "/((?!_next/static|_next/image|api/admin/media/|sw\\.js|manifest\\.webmanifest|.*\\.(?:png|svg|ico|jpg|jpeg|webp|woff2?|txt|xml)$).*)",
   ],
 };

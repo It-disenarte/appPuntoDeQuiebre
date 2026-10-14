@@ -1,13 +1,16 @@
 import { ChevronRight, LogOut } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button, ButtonLink, buttonClass, Card, SampleBadge } from "@/components/ui";
+import { Button, ButtonLink, Card, SampleBadge } from "@/components/ui";
+import { portalAction } from "@/lib/account/actions";
 import { logoutAction } from "@/lib/auth/actions";
-import { requireUser } from "@/lib/auth/dal";
+import { requireCreatorAccess } from "@/lib/auth/gates";
+import { subscriptionSummary } from "@/lib/billing/labels";
+import { PLANS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Mi marca" };
 
-// Fase 0: datos de ejemplo. Brújula, voz y perfil llegan en las Fases 2 y 3.
+// Datos de ejemplo: brújula, voz y perfil llegan en las Fases 2 y 3. El plan ya es real (Fase 1).
 const ROWS = [
   { title: "Perfil de voz", sub: "Basado en tu muestra del 14 de oct" },
   { title: "Perfil optimizado", sub: "Biografías listas · Foto 8 de 10" },
@@ -26,7 +29,8 @@ function initials(name: string) {
 }
 
 export default async function MiMarcaPage() {
-  const user = await requireUser();
+  const { user, access } = await requireCreatorAccess();
+  const sub = access.subscription;
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-center gap-4">
@@ -37,22 +41,32 @@ export default async function MiMarcaPage() {
           <h1 className="font-display truncate text-3xl">{user.name}</h1>
           <p className="truncate text-sm text-ink-500">{user.email}</p>
         </div>
-        <SampleBadge />
       </header>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <section className="flex items-center justify-between gap-4 rounded-card bg-negro p-5 text-blanco">
-            <div>
-              <p className="font-extrabold">Plan Básico</p>
-              <p className="text-sm text-ink-300">Prueba gratis · quedan 18 días</p>
-            </div>
-            {/* Se activa en la Fase 1 (cambio de plan con Stripe). */}
-            <span className={buttonClass("accent", "sm", "shrink-0")}>Conocer Pro</span>
+          <section className="rounded-card bg-negro p-5 text-blanco">
+            <p className="font-extrabold">{sub ? `Plan ${PLANS[sub.plan].name}` : "Cuenta de administrador"}</p>
+            <p className="mt-1 text-sm text-ink-300">{sub ? subscriptionSummary(access.state, sub, access.graceEndsAt) : "Vista previa sin suscripción."}</p>
+            {sub && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <form action={portalAction}>
+                  <Button type="submit" variant="accent" size="sm">
+                    {sub.plan === "basico" ? "Cambiar a Pro o gestionar pago" : "Gestionar pago"}
+                  </Button>
+                </form>
+                <ButtonLink href="/mi-marca/factura" variant="ghost" size="sm" className="text-blanco hover:bg-ink-800">
+                  Solicitar factura
+                </ButtonLink>
+              </div>
+            )}
           </section>
 
           <Card>
-            <p className="text-xs text-ink-500">Manual de identidad</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-ink-500">Manual de identidad</p>
+              <SampleBadge />
+            </div>
             <div className="mt-3 flex gap-2">
               {PALETTE.map((c) => (
                 <span key={c} className="size-10 rounded-lg ring-1 ring-ink-200" style={{ background: c }} />

@@ -4,13 +4,14 @@
  *
  * Fase 0: solo mantenimiento (sesiones vencidas, intentos de inicio de sesión de más de 30 días
  * y bitácora de auditoría más vieja que AUDIT_RETENTION_DAYS).
+ * Fase 1: cada hora libera reservas de códigos abandonadas (si no llegó el webhook de expiración).
  * Fases siguientes: recordatorios Web Push, transcripción, analizador, guiones, métricas, racha.
  */
-import { lt } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
-import { auditLog, loginAttempts, sessions } from "@/lib/db/schema";
+import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -26,6 +27,7 @@ const db = drizzle(sqlClient, { casing: "snake_case" });
 
 export const QUEUES = {
   cleanup: "maintenance-cleanup",
+  releaseReservations: "billing-release-reservations",
 } as const;
 
 async function cleanup() {
@@ -39,9 +41,31 @@ async function cleanup() {
     .delete(auditLog)
     .where(lt(auditLog.createdAt, new Date(now.getTime() - auditRetentionDays * DAY_MS)))
     .returning({ id: auditLog.id });
-  const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length };
+  const rates = await db
+    .delete(rateEvents)
+    .where(lt(rateEvents.createdAt, new Date(now.getTime() - 2 * DAY_MS)))
+    .returning({ id: rateEvents.id });
+  const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length, rateEvents: rates.length };
   await db.insert(auditLog).values({ action: "worker.cleanup", meta });
   console.log("[worker] limpieza", meta);
+}
+
+/** Reservas de más de 2 h sin completarse: el checkout de Stripe expira a los 31 min. */
+async function releaseReservations() {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  let released = 0;
+  await db.transaction(async (tx) => {
+    const stale = await tx
+      .update(promoRedemptions)
+      .set({ status: "released" })
+      .where(and(eq(promoRedemptions.status, "reserved"), lt(promoRedemptions.createdAt, cutoff)))
+      .returning({ codeId: promoRedemptions.codeId });
+    for (const r of stale) {
+      await tx.update(promoCodes).set({ uses: sql`greatest(${promoCodes.uses} - 1, 0)` }).where(eq(promoCodes.id, r.codeId));
+    }
+    released = stale.length;
+  });
+  if (released > 0) console.log("[worker] reservas liberadas", released);
 }
 
 async function main() {
@@ -54,6 +78,12 @@ async function main() {
   await boss.schedule(QUEUES.cleanup, "0 4 * * *", null, { tz: "America/Mexico_City" });
   await boss.work(QUEUES.cleanup, async () => {
     await cleanup();
+  });
+
+  await boss.createQueue(QUEUES.releaseReservations);
+  await boss.schedule(QUEUES.releaseReservations, "17 * * * *", null, { tz: "America/Mexico_City" });
+  await boss.work(QUEUES.releaseReservations, async () => {
+    await releaseReservations();
   });
 
   console.log("[worker] listo");

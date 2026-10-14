@@ -17,7 +17,18 @@ const NAV = [
   { href: "/mi-marca", label: "Mi marca", icon: UserRound },
 ] as const;
 
-export function AppShell({ userName, isAdmin, children }: { userName: string; isAdmin: boolean; children: ReactNode }) {
+export function AppShell({
+  userName,
+  isAdmin,
+  notice,
+  children,
+}: {
+  userName: string;
+  isAdmin: boolean;
+  /** Aviso importante (p. ej. pago fallido en periodo de gracia). */
+  notice?: { text: string; href: string };
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   // El estudio de grabación va en oscuro para no afectar la luz de la toma.
   const dark = pathname.startsWith("/grabar");
@@ -65,7 +76,14 @@ export function AppShell({ userName, isAdmin, children }: { userName: string; is
       </aside>
 
       <div className="lg:pl-64">
-        <div className="pt-safe">{!dark && <InstallPrompt />}</div>
+        <div className="pt-safe">
+          {notice && (
+            <Link href={notice.href} role="alert" className="block bg-naranja px-4 py-3 text-center text-sm font-semibold text-negro">
+              {notice.text} <span className="underline underline-offset-4">Actualizar pago</span>
+            </Link>
+          )}
+          {!dark && <InstallPrompt />}
+        </div>
         <main className="mx-auto w-full max-w-xl px-4 pt-5 pb-32 lg:max-w-5xl lg:px-10 lg:pt-10 lg:pb-12">{children}</main>
       </div>
 
