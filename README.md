@@ -56,6 +56,14 @@ Una sola imagen (`Dockerfile`) sirve para dos servicios:
 
 MinIO (archivos) y las llaves VAPID (notificaciones) se agregan en las fases que los usan.
 
+### Reglas de operación
+
+- **Proxies delante de la app.** `TRUSTED_PROXY_HOPS` debe ser igual al número de proxies entre internet y la app: `1` con Easypanel/Traefik solo, `2` si se pone Cloudflare (u otro CDN) delante. Si no coincide, la IP del cliente se puede falsificar y el límite de intentos por IP pierde efecto. **Cualquier cambio de DNS/CDN obliga a revisar esta variable.**
+- **No expongas el puerto de Postgres** ni el 3000 de la app fuera de la red interna de Easypanel.
+- **`DATABASE_POOL_MAX`** no se define en producción (por defecto 10). Si aparece en 1, la app lo advierte en el log.
+- **Monitoreo:** `GET /api/health` sin token solo indica que el proceso vive. Para revisar también la base de datos, define `HEALTH_TOKEN` (24+ caracteres) y llama con `Authorization: Bearer <token>`.
+- **Bitácora:** se conserva `AUDIT_RETENTION_DAYS` días (365 por defecto); el worker la purga a diario.
+
 ## Estructura
 
 ```

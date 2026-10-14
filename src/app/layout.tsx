@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Archivo } from "next/font/google";
+import { connection } from "next/server";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
@@ -27,7 +28,10 @@ export const viewport: Viewport = {
   themeColor: "#191BDF",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Todas las páginas se renderizan por petición: es necesario para aplicar el nonce de la CSP
+  // (src/proxy.ts) a los scripts de Next. La app es autenticada y dinámica de todos modos.
+  await connection();
   return (
     <html lang="es-MX" className={`${anton.variable} ${archivo.variable} h-full antialiased`}>
       <body className="min-h-full">

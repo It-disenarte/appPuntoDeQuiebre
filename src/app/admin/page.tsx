@@ -1,4 +1,5 @@
 import { count, desc, eq, gt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Metadata } from "next";
 import { Card, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -13,7 +14,12 @@ const ACTION_LABEL: Record<string, string> = {
   "auth.login_blocked": "Bloqueado por intentos",
   "auth.logout": "Cierre de sesión",
   "auth.password_changed": "Cambio de contraseña",
+  "cli.create_admin": "Alta de admin (consola)",
+  "cli.reset_password": "Contraseña restablecida (consola)",
+  "worker.cleanup": "Limpieza automática",
 };
+
+const targetUser = alias(users, "target_user");
 
 const dateFmt = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" });
 
@@ -29,12 +35,13 @@ export default async function AdminHome() {
         id: auditLog.id,
         action: auditLog.action,
         createdAt: auditLog.createdAt,
-        // Para intentos fallidos no hay actor: se muestra el correo que se intentó usar.
-        email: sql<string | null>`coalesce(${users.email}, ${auditLog.meta}->>'email')`,
+        // Quién hizo la acción o, si no hay actor (p. ej. intento fallido), a quién afectó.
+        email: sql<string | null>`coalesce(${users.email}, ${targetUser.email})`,
         ip: auditLog.ip,
       })
       .from(auditLog)
       .leftJoin(users, eq(auditLog.actorUserId, users.id))
+      .leftJoin(targetUser, eq(auditLog.targetUserId, targetUser.id))
       .orderBy(desc(auditLog.createdAt))
       .limit(15),
   ]);

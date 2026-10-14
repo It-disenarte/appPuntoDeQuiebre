@@ -2,14 +2,15 @@
  * Worker de tareas en segundo plano (segundo servicio en Easypanel, misma imagen Docker).
  * Usa pg-boss: la cola vive en el esquema "pgboss" del mismo Postgres.
  *
- * Fase 0: solo mantenimiento (limpieza de sesiones vencidas e intentos de inicio de sesión viejos).
+ * Fase 0: solo mantenimiento (sesiones vencidas, intentos de inicio de sesión de más de 30 días
+ * y bitácora de auditoría más vieja que AUDIT_RETENTION_DAYS).
  * Fases siguientes: recordatorios Web Push, transcripción, analizador, guiones, métricas, racha.
  */
 import { lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
-import { loginAttempts, sessions } from "@/lib/db/schema";
+import { auditLog, loginAttempts, sessions } from "@/lib/db/schema";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -17,6 +18,8 @@ if (!url) {
   process.exit(1);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const auditRetentionDays = Math.max(30, Number(process.env.AUDIT_RETENTION_DAYS ?? 365) || 365);
 const poolMax = Number(process.env.DATABASE_POOL_MAX ?? 3) || 3;
 const sqlClient = postgres(url, { max: Math.min(poolMax, 3), onnotice: () => {} });
 const db = drizzle(sqlClient, { casing: "snake_case" });
@@ -27,10 +30,18 @@ export const QUEUES = {
 
 async function cleanup() {
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const expired = await db.delete(sessions).where(lt(sessions.expiresAt, now)).returning({ id: sessions.id });
-  const attempts = await db.delete(loginAttempts).where(lt(loginAttempts.createdAt, thirtyDaysAgo)).returning({ id: loginAttempts.id });
-  console.log(`[worker] limpieza: ${expired.length} sesiones vencidas, ${attempts.length} intentos viejos`);
+  const attempts = await db
+    .delete(loginAttempts)
+    .where(lt(loginAttempts.createdAt, new Date(now.getTime() - 30 * DAY_MS)))
+    .returning({ id: loginAttempts.id });
+  const audits = await db
+    .delete(auditLog)
+    .where(lt(auditLog.createdAt, new Date(now.getTime() - auditRetentionDays * DAY_MS)))
+    .returning({ id: auditLog.id });
+  const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length };
+  await db.insert(auditLog).values({ action: "worker.cleanup", meta });
+  console.log("[worker] limpieza", meta);
 }
 
 async function main() {

@@ -10,6 +10,10 @@ export type Database = PostgresJsDatabase<typeof schema>;
 const globalForDb = globalThis as unknown as { pdqSql?: postgres.Sql; pdqDb?: Database };
 
 function create(): Database {
+  if (env().NODE_ENV === "production" && env().DATABASE_POOL_MAX < 3) {
+    // DATABASE_POOL_MAX=1 es solo para PGlite en local; en producción estrangula la app.
+    console.warn(`[db] DATABASE_POOL_MAX=${env().DATABASE_POOL_MAX} en producción. ¿Copiaste .env.example? Bórrala para usar 10.`);
+  }
   const client =
     globalForDb.pdqSql ??
     postgres(env().DATABASE_URL, {

@@ -11,10 +11,11 @@ import { getClientIp, getUserAgent, safeRedirectPath } from "@/lib/request";
 import { SESSION_COOKIE, sessionCookieOptions } from "./cookie";
 import { getCurrentSession, homeFor } from "./dal";
 import { checkPasswordPolicy, hashPassword, PASSWORD_MAX, verifyAgainstDummy, verifyPassword } from "./password";
-import { isLoginBlocked, recordLoginAttempt } from "./rate-limit";
+import { markLoginAttemptSucceeded, reserveLoginAttempt } from "./rate-limit";
 import { createSession, invalidateSession, invalidateUserSessions } from "./session";
 
-export type FormState = { error?: string; ok?: boolean } | undefined;
+/** `email` se devuelve para volver a llenar el campo: React 19 limpia el formulario tras cada envío. */
+export type FormState = { error?: string; ok?: boolean; email?: string } | undefined;
 
 const GENERIC_LOGIN_ERROR = "Correo o contraseña incorrectos.";
 
@@ -30,13 +31,16 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
     password: formData.get("password"),
     next: formData.get("next") ?? undefined,
   });
-  if (!parsed.success) return { error: GENERIC_LOGIN_ERROR };
+  const typedEmail = typeof formData.get("email") === "string" ? String(formData.get("email")).slice(0, 254) : "";
+  if (!parsed.success) return { error: GENERIC_LOGIN_ERROR, email: typedEmail };
   const { email, password, next } = parsed.data;
   const ip = await getClientIp();
 
-  if (await isLoginBlocked(email, ip)) {
-    await audit({ action: "auth.login_blocked", ip, meta: { email } });
-    return { error: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo." };
+  // Reserva atómica: el intento cuenta como fallido hasta que se confirme la contraseña.
+  const attemptId = await reserveLoginAttempt(email, ip);
+  if (attemptId === null) {
+    await audit({ action: "auth.login_blocked", ip });
+    return { error: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.", email };
   }
 
   const [user] = await db()
@@ -52,17 +56,19 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
     .limit(1);
 
   const valid = user ? await verifyPassword(user.passwordHash, password) : await verifyAgainstDummy(password);
-  if (!user || !valid) {
-    await recordLoginAttempt(email, ip, false);
-    await audit({ action: "auth.login_failed", targetUserId: user?.id, ip, meta: { email } });
-    return { error: GENERIC_LOGIN_ERROR };
-  }
-  if (user.status === "disabled") {
-    await recordLoginAttempt(email, ip, false);
-    return { error: "Tu cuenta está desactivada. Escríbenos para reactivarla." };
+  // La bitácora no guarda el correo escrito (dato personal): solo el usuario si existe.
+  // Una cuenta desactivada recibe el mismo mensaje genérico para no revelar que existe.
+  if (!user || !valid || user.status === "disabled") {
+    await audit({
+      action: "auth.login_failed",
+      targetUserId: user?.id,
+      ip,
+      meta: user && valid ? { reason: "disabled" } : undefined,
+    });
+    return { error: GENERIC_LOGIN_ERROR, email };
   }
 
-  await recordLoginAttempt(email, ip, true);
+  await markLoginAttemptSucceeded(attemptId);
 
   // Rotación: cualquier sesión previa en este navegador se descarta (evita fijación de sesión).
   const previous = await getCurrentSession();

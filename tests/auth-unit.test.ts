@@ -54,6 +54,13 @@ describe("redirecciones seguras", () => {
     ["javascript:alert(1)", "/hoy"],
     ["/ok\nSet-Cookie:x", "/hoy"],
     [undefined, "/hoy"],
+    ["/%2F%2Fevil.com", "/hoy"],
+    ["/%2f%2fevil.com", "/hoy"],
+    ["/%5Cevil.com", "/hoy"],
+    ["/semana\\evil", "/hoy"],
+    ["/‮/moc.live", "/hoy"],
+    ["/ｅvil", "/hoy"],
+    ["/semana?dia=2026-10-21&x=%20", "/semana?dia=2026-10-21&x=%20"],
   ])("%s → %s", (input, expected) => {
     expect(safeRedirectPath(input, "/hoy")).toBe(expected);
   });

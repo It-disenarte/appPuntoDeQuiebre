@@ -10,7 +10,7 @@ export function LoginForm({ next, initialError }: { next?: string; initialError?
     <form action={action} className="flex flex-col gap-4" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       <FormError message={state?.error ?? initialError} />
-      <Field label="Correo" name="email" type="email" autoComplete="email" inputMode="email" required autoCapitalize="none" spellCheck={false} />
+      <Field label="Correo" name="email" type="email" defaultValue={state?.email} autoComplete="email" inputMode="email" required autoCapitalize="none" spellCheck={false} />
       <Field label="Contraseña" name="password" type="password" autoComplete="current-password" required />
       <Button type="submit" size="lg" disabled={pending} className="mt-2 w-full">
         {pending ? "Entrando…" : "Entrar"}

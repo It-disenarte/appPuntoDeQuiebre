@@ -7,6 +7,10 @@
  *
  * Las contraseñas generadas son temporales: el usuario debe cambiarlas al entrar.
  */
+import { randomBytes } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -29,10 +33,22 @@ async function findByEmail(email: string) {
   return u;
 }
 
+/**
+ * Muestra la contraseña temporal SOLO en una terminal interactiva (la consola de Easypanel,
+ * cuya salida no va a los logs del contenedor). Si la salida no es una terminal
+ * (script, tarea programada, redirección a archivo de log), se escribe en un archivo con
+ * permisos 600 y solo se imprime su ruta.
+ */
 function printPassword(email: string, password: string) {
-  console.log("\n  Correo:               " + email);
-  console.log("  Contraseña temporal:  " + password);
-  console.log("\n  Compártela por un canal privado. Se pedirá cambiarla al entrar.\n");
+  if (process.stdout.isTTY) {
+    console.log("\n  Correo:               " + email);
+    console.log("  Contraseña temporal:  " + password);
+    console.log("\n  Compártela por un canal privado y limpia la pantalla. Se pedirá cambiarla al entrar.\n");
+    return;
+  }
+  const file = join(tmpdir(), `pdq-temporal-${randomBytes(6).toString("hex")}.txt`);
+  writeFileSync(file, `${email}\n${password}\n`, { mode: 0o600, flag: "wx" });
+  console.log(`Contraseña temporal de ${email} guardada en ${file} (permisos 600). Léela y bórrala.`);
 }
 
 async function createAdmin(rawEmail?: string, rawName?: string) {

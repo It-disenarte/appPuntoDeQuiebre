@@ -18,12 +18,13 @@ export async function verifyPassword(passwordHash: string, password: string): Pr
   }
 }
 
-// Hash fijo para comparar cuando el correo no existe: iguala el tiempo de respuesta
-// y evita revelar qué correos están registrados.
-let dummyHash: Promise<string> | undefined;
+// Hash precalculado (mismos parámetros) de un valor aleatorio descartado. Se verifica contra él
+// cuando el correo no existe para igualar el tiempo de respuesta y no revelar qué correos están
+// registrados. Es fijo para que tampoco el primer intento cueste distinto.
+const DUMMY_HASH = "$argon2id$v=19$m=19456,t=2,p=1$bq0NAsX+YfJue/0gRAM+Sw$0cs1/6D1350QyGv4dAYoSzfIsMiHvvOojhyUCFYXK00";
+
 export async function verifyAgainstDummy(password: string): Promise<false> {
-  dummyHash ??= hashPassword("pdq-dummy-password-for-timing");
-  await verifyPassword(await dummyHash, password);
+  await verifyPassword(DUMMY_HASH, password);
   return false;
 }
 
@@ -32,8 +33,10 @@ const ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /** Contraseña temporal para altas y restablecimientos hechos por un admin. */
 export function generateTemporaryPassword(length = 14): string {
-  let out = "";
-  for (let i = 0; i < length; i++) out += ALPHABET[randomInt(ALPHABET.length)];
-  // Garantiza al menos un dígito para cumplir la política.
-  return /\d/.test(out) ? out : out.slice(0, -1) + String(randomInt(2, 10));
+  // Se regenera completa hasta tener letra y dígito (política); casi siempre sale a la primera.
+  for (;;) {
+    let out = "";
+    for (let i = 0; i < length; i++) out += ALPHABET[randomInt(ALPHABET.length)];
+    if (/\d/.test(out) && /[a-zA-Z]/.test(out)) return out;
+  }
 }

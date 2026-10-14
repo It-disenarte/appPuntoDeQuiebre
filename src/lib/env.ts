@@ -15,6 +15,10 @@ const schema = z.object({
   DATABASE_POOL_MAX: optional(z.coerce.number().int().min(1).max(50)).default(10),
   /** URL pública de la app, p. ej. https://app.puntodequiebre.mx. Se usa para validar el origen de peticiones. */
   APP_URL: z.string().url(),
+  /** Token opcional para que /api/health verifique también la base de datos (mín. 24 caracteres). */
+  HEALTH_TOKEN: optional(z.string().min(24)),
+  /** Días que se conserva la bitácora de auditoría (por defecto 365). */
+  AUDIT_RETENTION_DAYS: optional(z.coerce.number().int().min(30).max(3650)).default(365),
   TRUSTED_PROXY_HOPS: optional(z.coerce.number().int().min(1).max(5)).default(1),
 
   // Almacenamiento (MinIO / S3). Opcional en Fase 0.

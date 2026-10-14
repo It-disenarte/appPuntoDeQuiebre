@@ -3,9 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 
 export const metadata: Metadata = { title: "Sin conexión" };
 
-// Página estática que el service worker guarda para mostrarla cuando no hay red.
-export const dynamic = "force-static";
-
+// Página que el service worker guarda (con sus encabezados) para mostrarla cuando no hay red.
 export default function OfflinePage() {
   return (
     <div className="pt-safe flex min-h-dvh flex-col items-center justify-center gap-8 bg-azul px-8 text-center text-blanco">
