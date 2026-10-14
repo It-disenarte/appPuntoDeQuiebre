@@ -1,0 +1,56 @@
+{
+  "name": "punto-de-quiebre-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && npm run build:node",
+    "build:node": "node scripts/build-node.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:local": "pglite-server --db=.pglite --port=5432 --max-connections=20",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",
+    "cli": "tsx --env-file=.env.local --conditions=react-server scripts/cli.ts",
+    "worker:dev": "tsx --env-file=.env.local --conditions=react-server src/worker/index.ts",
+    "brand:assets": "tsx scripts/generate-brand-assets.mts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1151.0",
+    "@aws-sdk/s3-request-presigner": "^3.1151.0",
+    "@node-rs/argon2": "^2.2.2",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.4",
+    "lucide-react": "^1.57.0",
+    "next": "16.4.0",
+    "pg-boss": "^12.38.0",
+    "postgres": "^3.4.9",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "^0.2.13",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

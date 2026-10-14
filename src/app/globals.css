@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/*
+ * Sistema de diseño Punto de Quiebre (manual de identidad v1.0).
+ * Proporción: azul 45 % · negro 25 % · blanco 20 % · naranja ≤ 10 % (solo acento).
+ * Contraste: nunca texto naranja sobre blanco (2.8:1). Naranja sobre negro o negro sobre naranja sí.
+ */
+@theme {
+  /* Colores de marca */
+  --color-azul: #191bdf;
+  --color-azul-700: #1113a8;
+  --color-azul-100: #dcdcfa;
+  --color-azul-50: #eeeefd;
+  --color-negro: #09080d;
+  --color-naranja: #fe6807;
+  --color-naranja-100: #ffe4d2;
+  --color-blanco: #fbfbfb;
+
+  /* Neutros derivados del negro profundo */
+  --color-ink-900: #09080d;
+  --color-ink-800: #1b1a22;
+  --color-ink-700: #2c2b35;
+  --color-ink-600: #4a4955;
+  --color-ink-500: #6b6a76;
+  --color-ink-400: #92919c;
+  --color-ink-300: #c6c5cd;
+  --color-ink-200: #e2e2e8;
+  --color-ink-100: #eeeef2;
+
+  /* Estados (solo para etiquetas de estado, no decorativos) */
+  --color-exito: #17803d;
+  --color-exito-100: #dcf3e4;
+  --color-alerta: #b42318;
+  --color-alerta-100: #fde4e1;
+
+  /* Tipografías */
+  --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+  --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
+
+  /* Ángulo del corte del sistema gráfico */
+  --angle-corte: 4.65deg;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(9 8 13 / 0.04), 0 4px 16px rgb(9 8 13 / 0.04);
+}
+
+:root {
+  --app-bg: var(--color-ink-100);
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+
+/* Titulares: Anton, siempre en mayúsculas (manual §09). */
+.font-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 0.95;
+  font-weight: 400;
+}
+
+/* Rótulos tipo "PUNTO DE": Archivo ExtraBold con espaciado amplio. */
+.rotulo {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.6875rem;
+}
+
+/* Áreas seguras de iPhone (notch y barra de inicio) en modo instalado. */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Interacción táctil nativa: respuesta inmediata al presionar. */
+.tap {
+  transition: transform 120ms ease, background-color 150ms ease, opacity 150ms ease;
+}
+.tap:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Foco visible accesible para teclado */
+:focus-visible {
+  outline: 3px solid var(--color-naranja);
+  outline-offset: 2px;
+}
