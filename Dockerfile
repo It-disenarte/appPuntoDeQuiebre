@@ -33,11 +33,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 # argon2 es nativo: se copia completo (incluye el binario para Alpine/musl).
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@node-rs ./node_modules/@node-rs
-COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh scripts/healthcheck.sh ./
 
 USER nextjs
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD sh -c "[ \"$ROLE\" = worker ] || wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"
+  CMD ["sh", "./healthcheck.sh"]
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["sh", "./docker-entrypoint.sh"]

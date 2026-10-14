@@ -44,7 +44,7 @@ Una sola imagen (`Dockerfile`) sirve para dos servicios:
 1. **Postgres** → crea el servicio `pdq-db`. Copia su *Internal Connection URL*.
 2. **App** → servicio `pdq-app` desde el repositorio de GitHub, build con **Dockerfile**.
    - Variables: `DATABASE_URL` (la URL interna), `APP_URL` (p. ej. `https://app.dominio.com`), `TRUSTED_PROXY_HOPS=1`.
-   - Dominio con HTTPS apuntando al puerto **3000**.
+   - Dominio con HTTPS. **El puerto del dominio debe ser el mismo en el que escucha la app**: la app usa la variable `PORT` (3000 por defecto), pero Easypanel puede inyectar `PORT=80`. Revisa en los logs la línea `- Local: http://localhost:XX` y pon ese mismo puerto en el dominio.
    - Al arrancar aplica las migraciones solo.
 3. **Worker** → servicio `pdq-worker`, mismo repositorio y Dockerfile, mismas variables más **`ROLE=worker`**. Sin dominio.
 4. **Primer administrador**: en la consola de `pdq-app`:
