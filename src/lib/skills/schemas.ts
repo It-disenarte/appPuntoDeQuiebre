@@ -28,9 +28,10 @@ export const brujulaV2Output = z
     vision: z.object({ hoy: str, despues: str }).passthrough(),
     estilo_grabacion: z.object({ formato_principal: str, descripcion: str }).passthrough(),
     lives: z.object({ hace_lives: z.boolean(), plataforma: str.nullable(), frecuencia: str.nullable() }).passthrough(),
-    kit_visual_ref: str,
+    // Sin kit visual (Fase 2B) la IA puede devolver null.
+    kit_visual_ref: str.nullable(),
     mensaje_al_creador: str,
-    datos_faltantes: strs,
+    datos_faltantes: strs.default([]),
   })
   .passthrough();
 export type BrujulaV2 = z.infer<typeof brujulaV2Output>;
@@ -56,15 +57,15 @@ export const perfilVozV1Output = z
     ritmo: str,
     estructura_tipica: strs,
     palabras_frecuentes: strs,
-    muletillas: z.array(z.object({ texto: str, uso: str }).passthrough()),
-    frases_firma: strs,
+    muletillas: z.array(z.object({ texto: str, uso: str }).passthrough()).default([]),
+    frases_firma: strs.default([]),
     como_aconseja: str,
     humor: str,
     recursos: strs,
     evitar: strs,
     ejemplo: z.object({ generico: str, en_su_voz: str }).passthrough(),
     reglas_para_guiones: strs,
-    preferencias_aprendidas: z.array(z.object({ cambia: str, por: str, motivo: str }).passthrough()),
+    preferencias_aprendidas: z.array(z.object({ cambia: str, por: str, motivo: str }).passthrough()).default([]),
   })
   .passthrough();
 export type PerfilVozV1 = z.infer<typeof perfilVozV1Output>;

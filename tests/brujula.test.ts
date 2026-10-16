@@ -144,6 +144,13 @@ describe("skills de prueba respetan el esquema real", () => {
     expect(out.kit_visual_ref).toBe("kit-visual-v1");
     expect(out.palabras_si.length).toBeGreaterThanOrEqual(5);
   });
+  it("tolera lo que la IA real suele devolver: kit_visual_ref null y arreglos omitidos", () => {
+    const base = mockBrujulaV2(input()) as Record<string, unknown>;
+    const out = brujulaV2Output.safeParse({ ...base, kit_visual_ref: null, datos_faltantes: undefined });
+    expect(out.success).toBe(true);
+    const voz = mockPerfilVozV1({ creador_id: "u1", muestra_voz: buildMuestraVoz(STORY), brujula: { tono: mockBrujulaV2(input()).tono, palabras_si: [], palabras_no: [] } }, null) as Record<string, unknown>;
+    expect(perfilVozV1Output.safeParse({ ...voz, muletillas: undefined, frases_firma: undefined, preferencias_aprendidas: undefined }).success).toBe(true);
+  });
   it("sin vender hoy no hay pilar de conversión", () => {
     const out = mockBrujulaV2(input({ muestra_voz: { ...buildMuestraVoz(STORY), que_vendes: "más adelante: conferencias" } }));
     expect(out.pilares.some((p) => p.categoria_dominante === "conversion")).toBe(false);
