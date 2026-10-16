@@ -76,7 +76,7 @@ Todo con `ON DELETE CASCADE` desde `users`. **Todo jsonb se valida con zod al le
 
 `ANTHROPIC_API_KEY` (opcional; sin ella todo corre en modo de prueba) y `SKILLS_MODEL` (por defecto `claude-sonnet-5-5`). El `Dockerfile` ahora copia `skills/` a la imagen. La carpeta de trabajo de Mishell (`Punto-de-Quiebre-ClaudeCode*/`, 60 MB con datos de Blombito) está en `.gitignore` y `.dockerignore`. Dependencias nuevas: `pdf-lib`, `@pdf-lib/fontkit`.
 
-**5.6 Transcripción con Gemini** (`src/lib/skills/transcribe.ts`). Con `GEMINI_API_KEY` el audio se manda inline (base64, ≤ 8 MB) a `generateContent` con la llave en el encabezado `x-goog-api-key` (nunca en la URL) y un prompt con el nombre del creador (y de su marca, cuando exista) para escribirlos bien. Si el audio no trae voz → `NoSpeechError` → 422 con mensaje amable. Los errores HTTP incluyen el detalle pero no la llave. **Sin probar con una llave real**: riesgo principal, que Gemini no acepte `audio/webm` (Chrome); si lo rechaza habrá que convertir el audio (ffmpeg) antes de enviarlo. Pruebas con `fetch` simulado en `tests/transcribe.test.ts`. El audio sale a Google: debe mencionarse en el aviso de privacidad.
+**5.6 Transcripción con Gemini** (`src/lib/skills/transcribe.ts`). Con `GEMINI_API_KEY` el audio se manda inline (base64, ≤ 8 MB) a `generateContent` con la llave en el encabezado `x-goog-api-key` (nunca en la URL) y un prompt con el nombre del creador (y de su marca, cuando exista) para escribirlos bien. Si el audio no trae voz → `NoSpeechError` → 422 con mensaje amable. Los errores HTTP incluyen el detalle pero no la llave. **Verificado en el VPS (2026-10-16)** con una llave real y un audio hablado generado con voz sintética de Windows: Gemini aceptó `audio/webm` (Chrome), transcribió el texto completo en ~4 s y respetó el nombre de la marca ("Plombito"); con un tono sin voz devolvió el aviso de "no se escucha voz". **Sin probar:** `audio/mp4` de Safari/iPhone y voces reales con ruido. Pruebas con `fetch` simulado en `tests/transcribe.test.ts`. El audio sale a Google: debe mencionarse en el aviso de privacidad.
 
 ## 7. Controles de seguridad
 
@@ -90,8 +90,8 @@ Todo con `ON DELETE CASCADE` desde `users`. **Todo jsonb se valida con zod al le
 
 ## 8. Riesgos conocidos y decisiones conscientes
 
-1. **Todo corre en modo de prueba** (sin IA). La transcripción y el contenido de brújula/perfil son de reglas; pantallas y PDF lo avisan. Ninguna fase posterior debe usar esos datos como reales sin revisar `mock`.
-2. **Ruta con IA real sin probar** (§5.2). Riesgos: formato de respuesta, longitud (`max_tokens` 8000), costo, y que la skill devuelva campos fuera de esquema.
+1. **Modo de prueba solo si falta una llave.** Con `ANTHROPIC_API_KEY` y `GEMINI_API_KEY` en el VPS, la brújula, el perfil de voz, los ajustes y la transcripción corren con IA real (verificado). Sin llave, esa función cae a la versión de prueba y las pantallas y el PDF lo avisan. Ninguna fase posterior debe usar esos datos como reales sin revisar `mock`.
+2. **Skills con IA real** (§5.2): verificadas en el VPS (brújula, perfil de voz, ajustes ✏️ y 👎). Primer fallo real: la IA devolvió `kit_visual_ref: null` y el esquema lo rechazó; corregido, y los esquemas ahora toleran campos nulos u omitidos. Riesgos que quedan: costo por llamada, la longitud de la respuesta (`max_tokens` 8000) y nuevos campos fuera de esquema.
 3. **`ai_calls.cost_cents` siempre es 0**; solo se guardan los tokens.
 4. **Campo `ajuste` inventado por mí** para recalificar secciones: la skill describe el comportamiento (regla 14) pero no el formato de entrada. Está pendiente de acordar con Mishell y Moy.
 5. **Texto de las respuestas de voz = dato personal** y se conserva mientras exista la cuenta; falta definir retención y mencionarlo en el aviso de privacidad (abogado).

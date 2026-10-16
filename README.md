@@ -85,7 +85,7 @@ Tarjetas de prueba: `4242 4242 4242 4242` (pago ok), `4000 0000 0000 0341` (se r
 
 ### Skills de IA — Fase 2
 
-Las skills de Mishell viven en `skills/<nombre>/v<N>/skill.md` (ver [skills/README.md](skills/README.md)). Sin `ANTHROPIC_API_KEY` la app responde con una **versión de prueba** marcada como tal; con la llave en `pdq-app` ejecuta las skills de verdad con Claude (`SKILLS_MODEL` opcional). La transcripción de audio sigue de prueba hasta conectar Gemini. Dudas abiertas: [docs/pendientes-skills.md](docs/pendientes-skills.md).
+Las skills de Mishell viven en `skills/<nombre>/v<N>/skill.md` (ver [skills/README.md](skills/README.md)). Sin `ANTHROPIC_API_KEY` la app responde con una **versión de prueba** marcada como tal; con la llave en `pdq-app` ejecuta las skills de verdad con Claude (`SKILLS_MODEL` opcional). La transcripción de audio usa Gemini si hay `GEMINI_API_KEY` y, si no, un texto de prueba. Dudas abiertas: [docs/pendientes-skills.md](docs/pendientes-skills.md).
 
 ### Llaves de IA y de terceros
 
@@ -94,7 +94,7 @@ Todas se ponen **solo en Easypanel → `pdq-app` → Environment** (nunca en el 
 | Variable | Para qué | Estado |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` (`sk-ant-…`) | Skills con Claude: brújula, perfil de voz y los ajustes | En uso |
-| `GEMINI_API_KEY` (`AQ.…` o `AIza…`) | Transcripción de audio (fase 2); después calificador de foto y coach de video | Código listo, falta la llave |
+| `GEMINI_API_KEY` (`AQ.…` o `AIza…`) | Transcripción de audio (fase 2); después calificador de foto y coach de video | En uso (transcripción verificada en el VPS) |
 | `APIFY_TOKEN` | Analizador de competencia y tendencias | Fase 5, reservada |
 | `META_APP_ID`, `META_APP_SECRET` | Conexión de Instagram | Fase 3, reservadas |
 
