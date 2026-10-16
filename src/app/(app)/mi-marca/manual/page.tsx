@@ -116,6 +116,7 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
         <Steps overview={overview} current="brujula" />
         <PageHeader eyebrow="Mi marca" title="Tu brújula" />
         {params.limite && <p className="rounded-xl bg-naranja-100 p-4 text-sm">Ya generaste varias veces seguidas. Intenta de nuevo en una hora.</p>}
+        {params.error && <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">No pudimos armar tu brújula con la IA. Tus respuestas están guardadas: intenta de nuevo en un momento y, si sigue pasando, avísanos.</p>}
         {overview.story.ready ? (
           <Card className="flex flex-col gap-3">
             <p className="font-extrabold">Todo listo para armar tu brújula</p>

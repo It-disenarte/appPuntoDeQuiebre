@@ -57,7 +57,10 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
     }),
     signal: AbortSignal.timeout(120_000),
   });
-  if (!res.ok) throw new Error(`Anthropic respondió ${res.status}`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 400);
+    throw new Error(`Anthropic respondió ${res.status}: ${detail}`);
+  }
   const data = (await res.json()) as AnthropicResponse;
   const raw = data.content?.filter((c) => c.type === "text").map((c) => c.text ?? "").join("") ?? "";
   return { raw, inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens };
@@ -72,10 +75,22 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
   }
   try {
     const { raw, inputTokens, outputTokens } = await callClaude(key, input);
-    const output = schema.parse(extractJson(raw));
+    let json: unknown;
+    try {
+      json = extractJson(raw);
+    } catch (err) {
+      console.error(`[skills] ${key}: la respuesta no trae JSON válido. Inicio: ${raw.slice(0, 200)}`);
+      throw err;
+    }
+    const parsed = schema.safeParse(json);
+    if (!parsed.success) {
+      console.error(`[skills] ${key}: la salida no cumple el esquema:`, JSON.stringify(parsed.error.issues.slice(0, 6).map((i) => ({ ruta: i.path.join("."), mensaje: i.message }))));
+      throw new Error(`La salida de ${key} no cumple el esquema`);
+    }
     await logCall(userId, key, { mock: false, status: "ok", inputTokens, outputTokens });
-    return { output, mock: false, skillVersion };
+    return { output: parsed.data, mock: false, skillVersion };
   } catch (err) {
+    console.error(`[skills] ${key} falló:`, err instanceof Error ? err.message : err);
     await logCall(userId, key, { mock: false, status: "error" });
     throw err;
   }

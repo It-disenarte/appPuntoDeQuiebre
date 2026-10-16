@@ -93,7 +93,13 @@ export async function generateManualAction(): Promise<void> {
   const { user } = await requireCreatorAccess();
   // La skill cuesta por llamada cuando es IA real: máximo 4 generaciones por hora.
   if (!(await rateLimit(`manual-ia:user:${user.id}`, 4, HOUR))) redirect("/mi-marca/manual?limite=1");
-  const ok = await generateManual(user.id, user.name);
+  let ok = false;
+  try {
+    ok = await generateManual(user.id, user.name);
+  } catch {
+    // El detalle ya quedó en el log ([skills]); al usuario solo un aviso claro.
+    redirect("/mi-marca/manual?error=ia");
+  }
   if (!ok) redirect("/mi-marca/historia");
   await audit({ action: "brujula.manual_generated", actorUserId: user.id, ip: await getClientIp() });
   redirect("/mi-marca/manual");
@@ -114,7 +120,12 @@ export async function voteSectionAction(_prev: BrujulaState, fd: FormData): Prom
   if (vote === "no" && !note) return { error: "Cuéntanos qué no te representa para poder reescribirlo.", fields: { note } };
   if (vote !== "si" && !(await rateLimit(`manual-ajuste:user:${user.id}`, 15, HOUR))) return { error: "Demasiados ajustes seguidos. Intenta en un rato." };
 
-  const result = await voteSection(user.id, user.name, section, vote, note);
+  let result: Awaited<ReturnType<typeof voteSection>>;
+  try {
+    result = await voteSection(user.id, user.name, section, vote, note);
+  } catch {
+    return { error: "No pudimos aplicar tu ajuste con la IA. Intenta de nuevo en un momento.", fields: { note } };
+  }
   if (!result.ok) return { error: result.error };
   if (result.approved) await audit({ action: "brujula.manual_approved", actorUserId: user.id, ip: await getClientIp() });
   revalidatePath("/mi-marca/manual");
