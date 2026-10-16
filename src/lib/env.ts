@@ -41,7 +41,8 @@ const schema = z.object({
   SKILLS_MODEL: optional(z.string().min(3)).default("claude-sonnet-5-5"),
 
   // Gemini: transcripción de audio (fase 2) y, más adelante, calificador de foto y coach de video.
-  GEMINI_API_KEY: optional(z.string().min(20).startsWith("AIza")),
+  // Google usa formatos distintos según la antigüedad de la llave ("AIza…" las antiguas, "AQ.…" las nuevas): solo se exige un largo mínimo.
+  GEMINI_API_KEY: optional(z.string().min(20)),
   GEMINI_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash"),
   // Reservadas para fases siguientes (hoy no se usan): analizador de competencia (5) e Instagram (3).
   APIFY_TOKEN: optional(z.string().min(10)),

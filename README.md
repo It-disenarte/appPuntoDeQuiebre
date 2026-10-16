@@ -94,7 +94,7 @@ Todas se ponen **solo en Easypanel → `pdq-app` → Environment** (nunca en el 
 | Variable | Para qué | Estado |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` (`sk-ant-…`) | Skills con Claude: brújula, perfil de voz y los ajustes | En uso |
-| `GEMINI_API_KEY` (`AIza…`) | Transcripción de audio (fase 2); después calificador de foto y coach de video | Código listo, falta la llave |
+| `GEMINI_API_KEY` (`AQ.…` o `AIza…`) | Transcripción de audio (fase 2); después calificador de foto y coach de video | Código listo, falta la llave |
 | `APIFY_TOKEN` | Analizador de competencia y tendencias | Fase 5, reservada |
 | `META_APP_ID`, `META_APP_SECRET` | Conexión de Instagram | Fase 3, reservadas |
 
