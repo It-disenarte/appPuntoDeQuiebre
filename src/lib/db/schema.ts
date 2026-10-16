@@ -279,56 +279,6 @@ export type Plan = (typeof planType.enumValues)[number];
 
 /* ───────────── Fase 2 · Brújula ───────────── */
 
-/** Respuestas del formulario por bloques (se puede pausar y continuar). */
-export const brujulas = pgTable("brujulas", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  answers: jsonb("answers").$type<Record<string, Record<string, string | string[]>>>().notNull().default({}),
-  completedBlocks: text("completed_blocks").array().notNull().default(sql`'{}'::text[]`),
-  contentVersion: text("content_version").notNull(),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
-  ...timestamps,
-});
-
-/** Muestra de voz: se guarda la transcripción y el perfil, nunca el audio. */
-export const voiceSamples = pgTable("voice_samples", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  topic: text("topic").notNull(),
-  source: text("source", { enum: ["audio", "texto"] }).notNull(),
-  transcript: text("transcript").notNull(),
-  durationSeconds: integer("duration_seconds"),
-  profile: jsonb("profile").$type<unknown>().notNull(),
-  /** true mientras la transcripción o el perfil vengan de la versión de prueba. */
-  mock: boolean("mock").notNull().default(false),
-  skillVersion: text("skill_version").notNull(),
-  ...timestamps,
-});
-
-/** Horario de grabación: respuestas, propuesta (o ajuste) y fecha de aceptación. */
-export const schedules = pgTable("schedules", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  answers: jsonb("answers").$type<unknown>().notNull(),
-  proposal: jsonb("proposal").$type<unknown>().notNull(),
-  adjusted: boolean("adjusted").notNull().default(false),
-  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
-  ...timestamps,
-});
-
-/** Manual de identidad audiovisual (se reconstruye al cambiar brújula, voz u horario). */
-export const brandManuals = pgTable("brand_manuals", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  content: jsonb("content").$type<unknown>().notNull(),
-  skillVersion: text("skill_version").notNull(),
-  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 /** Registro de cada llamada de IA (y de sus respuestas de prueba) para medir costo por usuario. */
 export const aiCalls = pgTable(
   "ai_calls",
@@ -346,3 +296,53 @@ export const aiCalls = pgTable(
   },
   (t) => [index("ai_calls_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Alta del creador: respuestas de "Tu historia" (7 pasos) y elecciones rápidas. Se guarda texto, nunca audio. */
+export const creatorIntake = pgTable("creator_intake", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  story: jsonb("story").$type<unknown>().notNull().default({ steps: {} }),
+  quick: jsonb("quick").$type<unknown>(),
+  contentVersion: text("content_version").notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  ...timestamps,
+});
+
+/** Manual de marca (salida de la skill brujula-v2) con la calificación por secciones. */
+export const brandManuals = pgTable("brand_manuals", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: jsonb("content").$type<unknown>().notNull(),
+  /** { [sección]: { voto, nota, ajustes } } */
+  votes: jsonb("votes").$type<unknown>().notNull().default({}),
+  status: text("status", { enum: ["borrador", "aprobado"] }).notNull().default("borrador"),
+  /** true mientras el contenido venga de la versión de prueba (sin IA). */
+  mock: boolean("mock").notNull().default(false),
+  skillVersion: text("skill_version").notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Perfil de voz (salida de la skill perfil-voz-v1). */
+export const voiceProfiles = pgTable("voice_profiles", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: jsonb("content").$type<unknown>().notNull(),
+  mock: boolean("mock").notNull().default(false),
+  skillVersion: text("skill_version").notNull(),
+  ...timestamps,
+});
+
+/** Horario de grabación: respuestas y resultado de horario-v1 (reglas fijas). */
+export const schedules = pgTable("schedules", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  answers: jsonb("answers").$type<unknown>().notNull(),
+  result: jsonb("result").$type<unknown>().notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  ...timestamps,
+});

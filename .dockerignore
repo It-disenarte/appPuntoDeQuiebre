@@ -11,3 +11,5 @@ tests
 *.log
 Dockerfile
 .dockerignore
+
+Punto-de-Quiebre-ClaudeCode*

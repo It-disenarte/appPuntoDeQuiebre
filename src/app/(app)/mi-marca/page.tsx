@@ -32,9 +32,10 @@ export default async function MiMarcaPage() {
   const [overview, manual] = await Promise.all([getOverview(user.id), getManual(user.id)]);
   const m = manual?.content;
   const rows = [
-    { href: "/mi-marca/brujula", title: "Mi brújula", sub: overview.progress.complete ? "Completa · toca para editar" : `${overview.progress.done} de ${overview.progress.total} bloques`, done: overview.progress.complete },
-    { href: "/mi-marca/voz", title: "Perfil de voz", sub: overview.hasVoice ? (overview.voiceIsMock ? "Versión de prueba" : "Listo") : "Graba tu muestra de 2 a 3 minutos", done: overview.hasVoice },
-    { href: "/mi-marca/horario", title: "Horario de grabación", sub: overview.scheduleAccepted ? "Aceptado · toca para editar" : overview.hasSchedule ? "Falta confirmar tu propuesta" : "5 preguntas rápidas", done: overview.scheduleAccepted },
+    { href: "/mi-marca/historia", title: "Tu historia", sub: overview.story.ready ? "Completa · toca para editar" : `${overview.story.done} de ${overview.story.total} preguntas`, done: overview.story.ready },
+    { href: "/mi-marca/manual", title: "Mi brújula", sub: overview.manualApproved ? "Aprobada" : overview.hasManual ? `${overview.sectionsApproved} de 5 secciones aprobadas` : "Se arma con tu historia", done: overview.manualApproved },
+    { href: "/mi-marca/voz", title: "Perfil de voz", sub: overview.hasVoiceProfile ? (overview.manualMock ? "Versión de prueba" : "Listo") : "Se genera con tu historia", done: overview.hasVoiceProfile },
+    { href: "/mi-marca/horario", title: "Horario de grabación", sub: overview.scheduleAccepted ? "Aceptado · toca para editar" : overview.hasSchedule ? "Falta confirmar tu propuesta" : "Pocas preguntas", done: overview.scheduleAccepted },
   ];
   return (
     <div className="flex flex-col gap-4">
@@ -69,26 +70,23 @@ export default async function MiMarcaPage() {
 
           <Card>
             <div className="flex items-center justify-between">
-              <p className="text-xs text-ink-500">Manual de identidad</p>
+              <p className="text-xs text-ink-500">Brújula de marca</p>
               {!m && <Chip>Pendiente</Chip>}
             </div>
             {m ? (
               <>
-                <div className="mt-3 flex gap-2">
-                  {m.creative.palette.colors.map((c) => (
-                    <span key={c.hex + c.role} className="size-10 rounded-lg ring-1 ring-ink-200" style={{ background: c.hex }} title={c.name} />
-                  ))}
-                </div>
-                <p className="mt-3 text-sm">Pilares: {m.creative.pillars.map((p) => p.name).join(" · ")}</p>
+                <p className="mt-2 text-sm font-semibold">{m.nicho.principal}</p>
+                <p className="mt-1 text-sm text-ink-600">“{m.frase_de_marca}”</p>
+                <p className="mt-3 text-sm">Pilares: {m.pilares.map((p) => p.nombre).join(" · ")}</p>
                 <Link href="/mi-marca/manual" className="mt-3 inline-block text-sm font-semibold text-azul underline underline-offset-4">
-                  Ver manual completo
+                  {overview.manualApproved ? "Ver mi brújula" : "Revisar mi brújula"}
                 </Link>
               </>
             ) : (
               <>
-                <p className="mt-2 text-sm text-ink-600">Se arma con tu brújula: pilares, tono, paleta y estilo de grabación.</p>
-                <ButtonLink href="/mi-marca/brujula" size="sm" className="mt-3">
-                  {overview.progress.done === 0 ? "Empezar mi brújula" : "Continuar mi brújula"}
+                <p className="mt-2 text-sm text-ink-600">Se arma con tu historia: nicho, público, pilares y tono.</p>
+                <ButtonLink href={overview.next?.href ?? "/mi-marca/historia"} size="sm" className="mt-3">
+                  {overview.next?.text ?? "Empezar mi historia"}
                 </ButtonLink>
               </>
             )}

@@ -1,233 +1,195 @@
-// Contenido de la Brújula de marca (fase 2 del arranque).
-// PROPUESTA editable: si cambian los campos o las opciones, sube BRUJULA_VERSION.
+// Alta del creador, según las skills de Mishell: "Tu historia" (7 pasos por voz o texto) y elecciones rápidas.
+// Las preguntas vienen de skills/brujula/v2/skill.md (sección 1B). Si cambian, sube INTAKE_VERSION.
 import { z } from "zod";
 
-export const BRUJULA_VERSION = "2026-10-v1";
+export const INTAKE_VERSION = "2026-10-brujula-v2";
 
-export type Option = { value: string; label: string };
-export type FieldKind = "text" | "textarea" | "select" | "multi" | "number";
-export type FieldDef = {
-  id: string;
-  label: string;
-  hint?: string;
-  kind: FieldKind;
-  options?: Option[];
-  required?: boolean;
-  max?: number;
-  maxChoices?: number;
-  placeholder?: string;
+export type StepId = "calentamiento" | "por_que_empezaste" | "que_te_molesta" | "mayor_orgullo" | "a_quien_le_hablas" | "historia" | "que_vendes";
+
+export type StoryStep = {
+  id: StepId;
+  n: number;
+  title: string;
+  question: string;
+  /** Mínimos para dar la respuesta por buena (por audio o por texto). 0 = sin mínimo. */
+  minSeconds: number;
+  minWords: number;
+  /** Única repregunta amable si la respuesta queda corta. */
+  followUp: string;
+  /** Respuestas rápidas en lugar de hablar. */
+  kind: "voz" | "venta";
 };
-export type BlockDef = { id: string; title: string; intro: string; minutes: number; fields: FieldDef[] };
-export type AnswerValue = string | string[];
-export type Answers = Record<string, Record<string, AnswerValue>>;
 
-const o = (...pairs: [string, string][]): Option[] => pairs.map(([value, label]) => ({ value, label }));
-
-export const BLOCKS: BlockDef[] = [
+export const STORY_STEPS: StoryStep[] = [
   {
-    id: "quien",
-    title: "Quién eres",
-    intro: "Para que tu contenido suene a ti, empezamos por conocerte.",
-    minutes: 2,
-    fields: [
-      { id: "displayName", label: "¿Cómo quieres que te conozcan?", hint: "Tu nombre o el nombre de tu marca.", kind: "text", required: true, max: 80 },
-      { id: "profession", label: "¿A qué te dedicas hoy?", kind: "text", required: true, max: 120, placeholder: "Ej. Ingeniera agrónoma, barbero, nutrióloga…" },
-      { id: "story", label: "¿Por qué quieres crear contenido?", hint: "Cuéntalo en 2 o 3 frases, como se lo dirías a un amigo.", kind: "textarea", required: true, max: 600 },
-    ],
+    id: "calentamiento",
+    n: 1,
+    title: "Preséntate",
+    question: "Preséntate como si le hablaras a una amiga que acabas de conocer.",
+    minSeconds: 30,
+    minWords: 50,
+    followUp: "¿Y a qué te dedicas o qué te gusta hacer en tu día a día?",
+    kind: "voz",
   },
   {
-    id: "audiencia",
-    title: "A quién ayudas",
-    intro: "Tu contenido es para alguien en concreto. Mientras más claro, mejor funciona.",
-    minutes: 2,
-    fields: [
-      { id: "audience", label: "¿Quién es tu persona ideal?", kind: "text", required: true, max: 200, placeholder: "Ej. Personas que empiezan un huerto en casa" },
-      { id: "pain", label: "¿Qué problema principal le ayudas a resolver?", kind: "textarea", required: true, max: 600 },
-      {
-        id: "feeling",
-        label: "¿Qué quieres que sienta al verte?",
-        kind: "select",
-        required: true,
-        options: o(["confianza", "Confianza"], ["inspiracion", "Inspiración"], ["diversion", "Diversión"], ["curiosidad", "Curiosidad"], ["calma", "Calma"]),
-      },
-    ],
+    id: "por_que_empezaste",
+    n: 2,
+    title: "Por qué empezaste",
+    question: "¿Cuándo decidiste dedicarte a esto? ¿Qué estaba pasando en tu vida?",
+    minSeconds: 45,
+    minWords: 80,
+    followUp: "¿Y cómo te sentiste en ese momento?",
+    kind: "voz",
   },
   {
-    id: "percepcion",
-    title: "Cómo quieres ser percibido",
-    intro: "Elige la personalidad que quieres que vea tu audiencia.",
-    minutes: 2,
-    fields: [
-      {
-        id: "traits",
-        label: "Elige hasta 3 palabras que te describan en cámara",
-        kind: "multi",
-        required: true,
-        maxChoices: 3,
-        options: o(
-          ["cercano", "Cercano"],
-          ["experto", "Experto"],
-          ["divertido", "Divertido"],
-          ["directo", "Directo"],
-          ["inspirador", "Inspirador"],
-          ["elegante", "Elegante"],
-          ["autentico", "Auténtico"],
-          ["atrevido", "Atrevido"],
-        ),
-      },
-      {
-        id: "tone",
-        label: "¿Cómo hablas normalmente?",
-        kind: "select",
-        required: true,
-        options: o(["amigo", "Como con un amigo, relajado"], ["profesional", "Claro y profesional"], ["humor", "Con humor"], ["energia", "Con energía y motivación"]),
-      },
-      { id: "avoid", label: "¿Qué NO quieres que digan de ti?", hint: "Opcional.", kind: "text", max: 200 },
-    ],
+    id: "que_te_molesta",
+    n: 3,
+    title: "Lo que te molesta",
+    question: "¿Qué te molesta de cómo se hace allá afuera?",
+    minSeconds: 45,
+    minWords: 80,
+    followUp: "¿Y qué harías tú diferente?",
+    kind: "voz",
   },
   {
-    id: "nicho",
-    title: "Nicho e intereses",
-    intro: "De qué vas a hablar la mayor parte del tiempo.",
-    minutes: 2,
-    fields: [
-      { id: "niche", label: "¿Cuál es tu nicho?", kind: "text", required: true, max: 120, placeholder: "Ej. Huertos urbanos" },
-      { id: "interests", label: "Escribe de 3 a 5 temas que te apasionan", hint: "Separados por coma o uno por línea.", kind: "textarea", required: true, max: 400 },
-      { id: "taboo", label: "Temas que prefieres no tocar", hint: "Opcional.", kind: "text", max: 200 },
-    ],
+    id: "mayor_orgullo",
+    n: 4,
+    title: "Tu mayor orgullo",
+    question: "¿Cuál es tu mayor orgullo, eso que nadie ve pero sabes que te costó?",
+    minSeconds: 45,
+    minWords: 80,
+    followUp: "¿Qué pasó después?",
+    kind: "voz",
   },
   {
-    id: "objetivo",
-    title: "Objetivo",
-    intro: "Lo que quieres lograr con tu marca personal.",
-    minutes: 2,
-    fields: [
-      {
-        id: "goal",
-        label: "¿Qué quieres lograr principalmente?",
-        kind: "select",
-        required: true,
-        options: o(
-          ["clientes", "Conseguir clientes para mi negocio o servicio"],
-          ["producto", "Vender un producto propio"],
-          ["marca", "Construir mi marca personal"],
-          ["comunidad", "Crear una comunidad"],
-          ["ingresos", "Generar ingresos con mi contenido"],
-        ),
-      },
-      { id: "hasOffer", label: "¿Tienes algo que vender?", kind: "select", required: true, options: o(["si", "Sí, ya vendo algo"], ["pronto", "Todavía no, pero pronto"], ["no", "No por ahora"]) },
-      { id: "offer", label: "¿Qué vendes o venderás?", hint: "Opcional.", kind: "text", max: 200 },
-      { id: "followers", label: "¿Cuántos seguidores tienes hoy en total?", hint: "Escribe 0 si estás empezando.", kind: "number", required: true },
-    ],
+    id: "a_quien_le_hablas",
+    n: 5,
+    title: "A quién le hablas",
+    question: "¿Qué le dirías a alguien que hoy se siente como tú antes de empezar?",
+    minSeconds: 45,
+    minWords: 80,
+    followUp: "¿Y qué es lo primero que le recomendarías hacer?",
+    kind: "voz",
   },
   {
-    id: "formatos",
-    title: "Formatos y referentes",
-    intro: "Cómo te gusta crear y a quién admiras.",
-    minutes: 2,
-    fields: [
-      {
-        id: "formats",
-        label: "¿Qué formatos prefieres? (hasta 4)",
-        kind: "multi",
-        required: true,
-        maxChoices: 4,
-        options: o(
-          ["camara", "Hablando a cámara"],
-          ["tutorial", "Tutoriales paso a paso"],
-          ["historia", "Contar historias"],
-          ["detras", "Detrás de cámaras"],
-          ["humor", "Humor o sketches"],
-          ["opinion", "Opinión y debate"],
-          ["carrusel", "Carruseles"],
-        ),
-      },
-      { id: "refs", label: "Cuentas que te inspiran o competidores", hint: "Hasta 3, una por línea (@usuario). Opcional.", kind: "textarea", max: 300 },
-    ],
+    id: "historia",
+    n: 6,
+    title: "Cuéntanos una historia",
+    question: "Elige una y cuéntala completa: algo salió mal y lo resolviste, el día que supiste que esto era lo tuyo, o algo que te apasiona.",
+    minSeconds: 120,
+    minWords: 250,
+    followUp: "¿Qué pasó después? ¿Cómo terminó?",
+    kind: "voz",
+  },
+  {
+    id: "que_vendes",
+    n: 7,
+    title: "¿Vendes algo?",
+    question: "¿Vendes o quieres vender algo?",
+    minSeconds: 0,
+    minWords: 0,
+    followUp: "",
+    kind: "venta",
   },
 ];
 
-export const BLOCK_IDS = BLOCKS.map((b) => b.id);
-export const getBlock = (id: string) => BLOCKS.find((b) => b.id === id) ?? null;
+export const STORY_CHOICES = [
+  { value: "algo_salio_mal", label: "Algo salió mal y lo resolví" },
+  { value: "dia_que_supe", label: "El día que supe que esto era lo mío" },
+  { value: "lo_que_me_apasiona", label: "Algo que me apasiona" },
+] as const;
+export type StoryChoice = (typeof STORY_CHOICES)[number]["value"];
+export const STORY_CHOICE_VALUES = STORY_CHOICES.map((c) => c.value) as [StoryChoice, ...StoryChoice[]];
 
-const MSG = {
-  required: "Completa este campo para continuar.",
-  invalid: "Elige una de las opciones.",
-  number: "Escribe un número, por ejemplo 0.",
+export const SELL_OPTIONS = [
+  { value: "no", label: "No por ahora" },
+  { value: "hoy", label: "Sí, hoy" },
+  { value: "despues", label: "Más adelante" },
+] as const;
+export type SellMode = (typeof SELL_OPTIONS)[number]["value"];
+export const SELL_VALUES = SELL_OPTIONS.map((o) => o.value) as [SellMode, ...SellMode[]];
+
+export const getStep = (id: string) => STORY_STEPS.find((s) => s.id === id) ?? null;
+
+export const MAX_STEP_CHARS = 6000;
+export const MAX_STEP_SECONDS = 300;
+
+/* ───────────── Lo que se guarda ───────────── */
+
+export type StepAnswer =
+  | { skipped: true }
+  | { skipped?: false; text: string; source: "audio" | "texto"; seconds: number | null; mock: boolean };
+
+export type Story = {
+  steps: Partial<Record<StepId, StepAnswer>>;
+  storyChoice?: StoryChoice;
+  sell?: { mode: SellMode; text: string };
 };
 
-/** Construye el esquema de validación de un bloque a partir de su definición. */
-export function blockSchema(block: BlockDef) {
-  const shape: Record<string, z.ZodType> = {};
-  for (const f of block.fields) {
-    const max = f.max ?? (f.kind === "textarea" ? 600 : 200);
-    switch (f.kind) {
-      case "text":
-      case "textarea": {
-        const base = z.string().trim().max(max, `Máximo ${max} caracteres.`);
-        shape[f.id] = f.required ? base.min(1, MSG.required) : base.optional().default("");
-        break;
-      }
-      case "select": {
-        const values = f.options!.map((x) => x.value);
-        const base = z.string().refine((v) => values.includes(v), MSG.invalid);
-        shape[f.id] = f.required ? base : base.or(z.literal("")).optional().default("");
-        break;
-      }
-      case "multi": {
-        const values = f.options!.map((x) => x.value);
-        let arr = z.array(z.string().refine((v) => values.includes(v), MSG.invalid)).max(f.maxChoices ?? values.length, `Elige máximo ${f.maxChoices}.`);
-        if (f.required) arr = arr.min(1, "Elige al menos una opción.");
-        shape[f.id] = arr;
-        break;
-      }
-      case "number":
-        shape[f.id] = z
-          .string()
-          .trim()
-          .regex(/^\d{1,9}$/, MSG.number);
-        break;
-    }
-  }
-  return z.object(shape);
+export const wordCount = (text: string): number => (text.toLowerCase().match(/[a-záéíóúüñ0-9]+/gi) ?? []).length;
+
+/** ¿El paso ya está resuelto (respondido o saltado)? */
+export function stepDone(story: Story, id: StepId): boolean {
+  if (id === "que_vendes") return Boolean(story.sell) || Boolean(story.steps.que_vendes?.skipped);
+  return Boolean(story.steps[id]);
 }
 
-/** Lee el FormData de un bloque en un objeto plano (los campos múltiples como arreglo). */
-export function readBlockForm(block: BlockDef, fd: FormData): Record<string, AnswerValue> {
-  const out: Record<string, AnswerValue> = {};
-  for (const f of block.fields) {
-    if (f.kind === "multi") out[f.id] = fd.getAll(f.id).filter((v): v is string => typeof v === "string");
-    else {
-      const v = fd.get(f.id);
-      out[f.id] = typeof v === "string" ? v : "";
-    }
-  }
-  return out;
+export function storyProgress(story: Story | null) {
+  const s = story ?? { steps: {} };
+  const done = STORY_STEPS.filter((x) => stepDone(s, x.id)).length;
+  const next = STORY_STEPS.find((x) => !stepDone(s, x.id));
+  return { done, total: STORY_STEPS.length, nextStep: next?.id ?? null, complete: !next };
 }
 
-export type Stage = "arranque" | "crecimiento" | "monetizacion";
+/* ───────────── Elecciones rápidas ───────────── */
 
-/** Etapa del creador según sus seguidores y si tiene algo que vender (reglas del motor, guía de Luis). */
-export function creatorStage(followers: number, hasOffer: string): Stage {
-  if (followers > 10_000 || (hasOffer === "si" && followers >= 1_000)) return "monetizacion";
-  if (followers >= 1_000) return "crecimiento";
-  return "arranque";
-}
+const o = (...pairs: [string, string][]) => pairs.map(([value, label]) => ({ value, label }));
 
-export const STAGE_LABEL: Record<Stage, string> = {
-  arranque: "Arranque",
-  crecimiento: "Crecimiento",
-  monetizacion: "Monetización",
-};
+export const NETWORKS = o(["instagram", "Instagram"], ["tiktok", "TikTok"], ["facebook", "Facebook"], ["youtube", "YouTube"]);
+export const FORMATS = o(
+  ["frente_a_camara", "Frente a cámara"],
+  ["voz_en_off_con_clips", "Voz en off con clips"],
+  ["frase_en_pantalla", "Frase en pantalla"],
+  ["manos", "Solo mis manos"],
+  ["entrevista_podcast", "Entrevista o podcast"],
+  ["en_vivo", "En vivo"],
+);
+export const TONES = o(
+  ["inspiradora", "Inspirador/a"],
+  ["autentica", "Auténtico/a"],
+  ["energetica", "Enérgico/a"],
+  ["cercana", "Cercano/a"],
+  ["divertida", "Divertido/a"],
+  ["profesional", "Profesional"],
+  ["directa", "Directo/a"],
+  ["tranquila", "Tranquilo/a"],
+  ["atrevida", "Atrevido/a"],
+);
+export const MIN_REFERENTS = 3;
+export const MAX_REFERENTS = 5;
 
-export function str(a: Answers, block: string, field: string): string {
-  const v = a[block]?.[field];
-  return typeof v === "string" ? v : "";
-}
-export function list(a: Answers, block: string, field: string): string[] {
-  const v = a[block]?.[field];
-  return Array.isArray(v) ? v : [];
-}
-export function optionLabel(blockId: string, fieldId: string, value: string): string {
-  return getBlock(blockId)?.fields.find((f) => f.id === fieldId)?.options?.find((x) => x.value === value)?.label ?? value;
-}
+const vals = (opts: { value: string }[]) => opts.map((x) => x.value) as [string, ...string[]];
+
+export const quickSchema = z.object({
+  redes: z.array(z.enum(vals(NETWORKS))).min(1, "Elige al menos una red.").max(4),
+  formatos: z.array(z.enum(vals(FORMATS))).min(1, "Elige al menos un formato.").max(6),
+  tono: z.array(z.enum(vals(TONES))).min(1, "Elige al menos una palabra de tono.").max(3, "Elige máximo 3 palabras de tono."),
+  referentes: z
+    .array(z.string().trim().max(120))
+    .transform((a) => a.filter(Boolean))
+    .pipe(z.array(z.string()).min(MIN_REFERENTS, `Escribe al menos ${MIN_REFERENTS} cuentas de referencia.`).max(MAX_REFERENTS)),
+});
+export type Quick = z.infer<typeof quickSchema>;
+
+export const labelOf = (opts: { value: string; label: string }[], v: string) => opts.find((x) => x.value === v)?.label ?? v;
+
+/** Validación al leer lo guardado: un registro dañado se trata como inexistente. */
+const stepAnswerSchema = z.union([
+  z.object({ skipped: z.literal(true) }),
+  z.object({ skipped: z.literal(false).optional(), text: z.string(), source: z.enum(["audio", "texto"]), seconds: z.number().nullable(), mock: z.boolean() }),
+]);
+export const storySchema = z.object({
+  steps: z.record(z.string(), stepAnswerSchema),
+  storyChoice: z.enum(STORY_CHOICE_VALUES).optional(),
+  sell: z.object({ mode: z.enum(SELL_VALUES), text: z.string() }).optional(),
+});

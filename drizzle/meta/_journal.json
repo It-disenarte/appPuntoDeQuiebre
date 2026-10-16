@@ -22,6 +22,20 @@
       "when": 1792175682222,
       "tag": "0002_fase2_brujula",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792181172265,
+      "tag": "0003_fase2_rediseno_drop",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792181181407,
+      "tag": "0004_fase2_rediseno_tablas",
+      "breakpoints": true
     }
   ]
 }

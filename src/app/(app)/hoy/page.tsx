@@ -21,13 +21,7 @@ export default async function HoyPage() {
   const { user } = await requireCreatorAccess();
   const firstName = user.name.split(" ")[0];
   const overview = await getOverview(user.id);
-  const nextStep = !overview.progress.complete
-    ? { href: overview.progress.nextBlock ? `/mi-marca/brujula/${overview.progress.nextBlock}` : "/mi-marca/brujula", text: overview.progress.done === 0 ? "Empieza tu brújula" : "Continúa tu brújula" }
-    : !overview.hasVoice
-      ? { href: "/mi-marca/voz", text: "Graba tu muestra de voz" }
-      : !overview.scheduleAccepted
-        ? { href: "/mi-marca/horario", text: "Define tu horario de grabación" }
-        : null;
+  const nextStep = overview.next;
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,7 +37,7 @@ export default async function HoyPage() {
       {nextStep && (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
           <div>
-            <p className="font-extrabold">Lo primero: tu brújula de marca</p>
+            <p className="font-extrabold">Lo primero: arma tu marca</p>
             <p className="text-sm text-ink-600">{overview.stepsDone} de {overview.stepsTotal} pasos listos. Con ella tus guiones sonarán a ti.</p>
           </div>
           <ButtonLink href={nextStep.href} size="sm">

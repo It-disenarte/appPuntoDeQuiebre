@@ -8,7 +8,8 @@ El desarrollo va por fases. Cada fase deja un documento de contexto para auditor
 | --- | --- |
 | 0 · Cimientos (proyecto, BD, inicio de sesión, diseño, PWA, shell, admin mínimo, Docker) | Aprobada |
 | 1 · Base (registro, 18+, Stripe, compromiso, MinIO, panel de clientes, códigos y facturas) | Aprobada |
-| 2 · Brújula (formulario, voz, horario, manual PDF) | En revisión |
+| 2A · Alta con las skills de Mishell (Tu historia por voz, brújula por secciones, perfil de voz, horario, PDF) | En revisión |
+| 2B · Kit visual (5 rondas) | Pendiente |
 
 ## Desarrollo local (Windows, sin Docker)
 
@@ -81,6 +82,10 @@ Tarjetas de prueba: `4242 4242 4242 4242` (pago ok), `4000 0000 0000 0341` (se r
 4. El video de bienvenida se sube desde **Panel → Ajustes**.
 5. **Easypanel nombra los servicios `proyecto_servicio` (con guion bajo) y MinIO rechaza esos nombres de host** (`InvalidRequest: invalid hostname`). Usa la **IP interna** del servicio en `S3_ENDPOINT`: desde la consola de `pdq-app` ejecuta `getent hosts PROYECTO_pdq-minio` y pon `http://IP:9000`. Si recreas `pdq-minio`, la IP puede cambiar: repite el paso en `pdq-app` y `pdq-worker`.
 6. Las imágenes `minio/minio` (Docker Hub) y `quay.io/minio/minio` ya no se pueden descargar sin cuenta; se usa `cgr.dev/chainguard/minio:latest`. Esa imagen ya no se actualiza con frecuencia: antes de abrir a clientes reales, revisar si se sigue con ella o se cambia de almacenamiento. La consola de esta edición no tiene *Access Keys*: la app usa el usuario raíz (pendiente: llave con permisos limitados con `mc`).
+
+### Skills de IA — Fase 2
+
+Las skills de Mishell viven en `skills/<nombre>/v<N>/skill.md` (ver [skills/README.md](skills/README.md)). Sin `ANTHROPIC_API_KEY` la app responde con una **versión de prueba** marcada como tal; con la llave en `pdq-app` ejecuta las skills de verdad con Claude (`SKILLS_MODEL` opcional). La transcripción de audio sigue de prueba hasta conectar Gemini. Dudas abiertas: [docs/pendientes-skills.md](docs/pendientes-skills.md).
 
 ### Reglas de operación
 

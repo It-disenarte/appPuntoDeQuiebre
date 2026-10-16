@@ -36,6 +36,10 @@ const schema = z.object({
   /** Días de gracia tras un cobro fallido antes de suspender la sesión. */
   BILLING_GRACE_DAYS: optional(z.coerce.number().int().min(0).max(30)).default(7),
 
+  // Skills de IA (fase 2). Sin llave, las skills responden con la versión de prueba.
+  ANTHROPIC_API_KEY: optional(z.string().min(20).startsWith("sk-ant-")),
+  SKILLS_MODEL: optional(z.string().min(3)).default("claude-sonnet-5-5"),
+
   // Web Push. Opcional en Fase 0.
   VAPID_PUBLIC_KEY: optional(z.string()),
   VAPID_PRIVATE_KEY: optional(z.string()),

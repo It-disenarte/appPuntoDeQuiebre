@@ -45,3 +45,6 @@ next-env.d.ts
 # procesos empaquetados
 /dist
 !.env.example
+
+# Material de trabajo de Mishell (skills, pruebas y entregables); no va al repo ni a la imagen
+Punto-de-Quiebre-ClaudeCode*/

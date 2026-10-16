@@ -31,6 +31,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+COPY --from=builder --chown=nextjs:nodejs /app/skills ./skills
 # argon2 es nativo: se copia completo (incluye el binario para Alpine/musl).
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@node-rs ./node_modules/@node-rs
 COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh scripts/healthcheck.sh ./

@@ -1,119 +1,155 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
-import { BLOCKS, blockSchema, getBlock, readBlockForm, type AnswerValue } from "./content";
-import { getSchedule, rebuildManual, saveBlock, saveSchedule, saveVoice } from "./service";
-import { proposeSchedule, scheduleAnswersSchema, scheduleBlockSchema, validateAdjusted, type ScheduleBlock } from "./schedule";
-import { VOICE_MIN_WORDS_TEXT, VOICE_TOPIC_VALUES, wordCount } from "./voice";
-import { runVoiceSkill } from "@/lib/skills";
+import { SECTION_IDS } from "@/lib/skills/schemas";
+import { getStep, MAX_STEP_CHARS, quickSchema, SELL_VALUES, STORY_CHOICE_VALUES, wordCount } from "./content";
+import { acceptSchedule, generateManual, getIntake, intakeProgress, saveQuick, saveScheduleAnswers, saveSell, saveStep, skipSell, voteSection } from "./service";
+import { scheduleAnswersSchema, DAYS } from "./schedule";
 
-export type BrujulaState = { error?: string; fields?: Record<string, AnswerValue>; errors?: Record<string, string> } | undefined;
+export type BrujulaState = { error?: string; followUp?: string; fields?: Record<string, string | string[]> } | undefined;
 
-/* ───────────── Formulario por bloques ───────────── */
+const str = (fd: FormData, k: string) => {
+  const v = fd.get(k);
+  return typeof v === "string" ? v : "";
+};
 
-export async function saveBlockAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
-  const { user } = await requireCreatorAccess();
-  const blockId = String(fd.get("block") ?? "");
-  const block = getBlock(blockId);
-  if (!block) return { error: "Ese bloque no existe." };
-  if (!(await rateLimit(`brujula:user:${user.id}`, 120, HOUR))) return { error: "Demasiados cambios seguidos. Intenta en un rato." };
-
-  const raw = readBlockForm(block, fd);
-  const parsed = blockSchema(block).safeParse(raw);
-  if (!parsed.success) {
-    const errors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) errors[String(issue.path[0])] ??= issue.message;
-    return { error: "Revisa los campos marcados.", errors, fields: raw };
-  }
-
-  const { complete } = await saveBlock(user.id, block.id, parsed.data as Record<string, AnswerValue>);
-  if (complete) {
-    // La skill de IA cuesta por llamada: máximo 6 regeneraciones por hora (si se pasa, se conserva el manual anterior).
-    const regenerate = await rateLimit(`manual-ia:user:${user.id}`, 6, HOUR);
-    await rebuildManual(user.id, { regenerateCreative: regenerate });
-    await audit({ action: "brujula.completed", actorUserId: user.id, ip: await getClientIp() });
-  }
-  const idx = BLOCKS.findIndex((b) => b.id === block.id);
-  const next = BLOCKS[idx + 1];
-  redirect(next && !complete ? `/mi-marca/brujula/${next.id}` : "/mi-marca/brujula");
+/** Después de cada paso: al siguiente, o a las elecciones rápidas cuando ya no queda ninguno. */
+async function afterStory(userId: string): Promise<never> {
+  const intake = await getIntake(userId);
+  const p = intakeProgress(intake);
+  redirect(p.nextStep ? `/mi-marca/historia/${p.nextStep}` : "/mi-marca/historia/elecciones");
 }
 
-/* ───────────── Muestra de voz escrita (alternativa a grabar) ───────────── */
+/* ───────────── Tu historia (7 pasos) ───────────── */
 
-const voiceTextSchema = z.object({
-  topic: z.enum(VOICE_TOPIC_VALUES, "Elige un tema."),
-  text: z.string().trim().max(8000, "El texto es demasiado largo."),
+const stepFormSchema = z.object({
+  text: z.string().trim().max(MAX_STEP_CHARS, "El texto es demasiado largo."),
+  choice: z.enum(STORY_CHOICE_VALUES).optional(),
 });
 
-export async function saveVoiceTextAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
+/** Respuesta escrita de un paso. Si queda corta, una sola repregunta amable (`insisted` = ya se la hicimos). */
+export async function saveStepTextAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
   const { user } = await requireCreatorAccess();
-  const parsed = voiceTextSchema.safeParse({ topic: fd.get("topic"), text: fd.get("text") });
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa el texto.", fields: { text: String(fd.get("text") ?? "") } };
-  const words = wordCount(parsed.data.text);
-  if (words < VOICE_MIN_WORDS_TEXT) {
-    return { error: `Escribe al menos ${VOICE_MIN_WORDS_TEXT} palabras, como si estuvieras hablando (llevas ${words}).`, fields: { text: parsed.data.text } };
-  }
-  if (!(await rateLimit(`voz:user:${user.id}`, 8, HOUR))) return { error: "Demasiados intentos. Intenta más tarde." };
+  const step = getStep(str(fd, "step"));
+  if (!step || step.kind !== "voz") return { error: "Ese paso no existe." };
+  const parsed = stepFormSchema.safeParse({ text: fd.get("text"), choice: str(fd, "choice") || undefined });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tu respuesta.", fields: { text: str(fd, "text") } };
+  if (step.id === "historia" && !parsed.data.choice) return { error: "Elige primero cuál historia vas a contar.", fields: { text: parsed.data.text } };
+  if (!(await rateLimit(`historia:user:${user.id}`, 80, HOUR))) return { error: "Demasiados cambios seguidos. Intenta en un rato." };
 
-  const profile = await runVoiceSkill(user.id, parsed.data.text, null);
-  await saveVoice(user.id, { topic: parsed.data.topic, source: "texto", transcript: parsed.data.text, durationSeconds: null, profile, mock: false });
-  await rebuildManual(user.id, { regenerateCreative: false });
-  await audit({ action: "brujula.voice_saved", actorUserId: user.id, ip: await getClientIp(), meta: { source: "texto", words } });
-  redirect("/mi-marca/voz?listo=1");
+  const words = wordCount(parsed.data.text);
+  if (words === 0) return { error: "Escribe algo o salta esta pregunta.", fields: { text: "" } };
+  if (words < step.minWords && str(fd, "insisted") !== "1") {
+    return { followUp: step.followUp, error: `Cuéntanos un poco más (llevas ${words} de ${step.minWords} palabras). ${step.followUp} Si prefieres seguir así, vuelve a pulsar Continuar.`, fields: { text: parsed.data.text } };
+  }
+  await saveStep(user.id, step.id, { text: parsed.data.text, source: "texto", seconds: null, mock: false }, parsed.data.choice);
+  return afterStory(user.id);
+}
+
+export async function skipStepAction(fd: FormData): Promise<void> {
+  const { user } = await requireCreatorAccess();
+  const step = getStep(str(fd, "step"));
+  if (!step) redirect("/mi-marca/historia");
+  if (step.id === "que_vendes") await skipSell(user.id);
+  else await saveStep(user.id, step.id, { skipped: true });
+  await afterStory(user.id);
+}
+
+export async function saveSellAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
+  const { user } = await requireCreatorAccess();
+  const mode = z.enum(SELL_VALUES).safeParse(fd.get("mode"));
+  if (!mode.success) return { error: "Elige una opción." };
+  const text = str(fd, "text").trim().slice(0, 300);
+  if (mode.data !== "no" && !text) return { error: "Cuéntanos en una frase qué vendes o qué te gustaría vender.", fields: { text: "", mode: mode.data } };
+  await saveSell(user.id, mode.data, mode.data === "no" ? "" : text);
+  return afterStory(user.id);
+}
+
+/* ───────────── Elecciones rápidas ───────────── */
+
+export async function saveQuickAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
+  const { user } = await requireCreatorAccess();
+  const raw = {
+    redes: fd.getAll("redes").filter((v): v is string => typeof v === "string"),
+    formatos: fd.getAll("formatos").filter((v): v is string => typeof v === "string"),
+    tono: fd.getAll("tono").filter((v): v is string => typeof v === "string"),
+    referentes: fd.getAll("referentes").filter((v): v is string => typeof v === "string"),
+  };
+  const parsed = quickSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tus elecciones.", fields: raw };
+  await saveQuick(user.id, parsed.data);
+  redirect("/mi-marca/manual?generar=1");
+}
+
+/* ───────────── Manual de marca ───────────── */
+
+export async function generateManualAction(): Promise<void> {
+  const { user } = await requireCreatorAccess();
+  // La skill cuesta por llamada cuando es IA real: máximo 4 generaciones por hora.
+  if (!(await rateLimit(`manual-ia:user:${user.id}`, 4, HOUR))) redirect("/mi-marca/manual?limite=1");
+  const ok = await generateManual(user.id, user.name);
+  if (!ok) redirect("/mi-marca/historia");
+  await audit({ action: "brujula.manual_generated", actorUserId: user.id, ip: await getClientIp() });
+  redirect("/mi-marca/manual");
+}
+
+const voteSchema = z.object({
+  section: z.enum(SECTION_IDS),
+  vote: z.enum(["si", "ajustar", "no"]),
+  note: z.string().trim().max(300),
+});
+
+export async function voteSectionAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
+  const { user } = await requireCreatorAccess();
+  const parsed = voteSchema.safeParse({ section: fd.get("section"), vote: fd.get("vote"), note: str(fd, "note") });
+  if (!parsed.success) return { error: "Revisa tu calificación." };
+  const { section, vote, note } = parsed.data;
+  if (vote === "ajustar" && (!note || note.length > 120)) return { error: "Escribe una nota corta (máximo 120 caracteres) con lo que quieres cambiar.", fields: { note } };
+  if (vote === "no" && !note) return { error: "Cuéntanos qué no te representa para poder reescribirlo.", fields: { note } };
+  if (vote !== "si" && !(await rateLimit(`manual-ajuste:user:${user.id}`, 15, HOUR))) return { error: "Demasiados ajustes seguidos. Intenta en un rato." };
+
+  const result = await voteSection(user.id, user.name, section, vote, note);
+  if (!result.ok) return { error: result.error };
+  if (result.approved) await audit({ action: "brujula.manual_approved", actorUserId: user.id, ip: await getClientIp() });
+  revalidatePath("/mi-marca/manual");
+  redirect(`/mi-marca/manual#${section}`);
 }
 
 /* ───────────── Horario ───────────── */
 
+/** Lee las respuestas del horario: por cada día elegido, momentos, duración y "a veces no puedo". */
+function readSchedule(fd: FormData) {
+  const chosen = fd.getAll("dias").filter((v): v is string => typeof v === "string");
+  return {
+    dias: DAYS.filter((d) => chosen.includes(d.code)).map((d) => ({
+      dia: d.code,
+      momentos: fd.getAll(`momentos_${d.code}`).filter((v): v is string => typeof v === "string"),
+      duracion_min: Number(fd.get(`duracion_${d.code}`) ?? 0),
+      a_veces_no: fd.get(`aveces_${d.code}`) === "on",
+    })),
+    lugar: fd.getAll("lugar").filter((v): v is string => typeof v === "string"),
+    luz: fd.getAll("luz").filter((v): v is string => typeof v === "string"),
+  };
+}
+
 export async function saveScheduleAnswersAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
   const { user } = await requireCreatorAccess();
-  const raw = {
-    days: fd.getAll("days").filter((v): v is string => typeof v === "string"),
-    moment: fd.get("moment"),
-    duration: fd.get("duration"),
-    place: fd.get("place"),
-    light: fd.get("light"),
-  };
-  const parsed = scheduleAnswersSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Revisa tus respuestas.", fields: { days: raw.days, moment: String(raw.moment ?? ""), duration: String(raw.duration ?? ""), place: String(raw.place ?? ""), light: String(raw.light ?? "") } };
-  }
-  await saveSchedule(user.id, { answers: parsed.data, proposal: proposeSchedule(parsed.data), adjusted: false, accepted: false });
+  const parsed = scheduleAnswersSchema.safeParse(readSchedule(fd));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tus respuestas." };
+  await saveScheduleAnswers(user.id, parsed.data);
   redirect("/mi-marca/horario");
 }
 
 export async function acceptScheduleAction(): Promise<void> {
   const { user } = await requireCreatorAccess();
-  const current = await getSchedule(user.id);
-  if (!current) redirect("/mi-marca/horario");
-  await saveSchedule(user.id, { answers: current.answers, proposal: current.proposal, adjusted: current.adjusted, accepted: true });
-  await rebuildManual(user.id, { regenerateCreative: false });
-  await audit({ action: "brujula.schedule_saved", actorUserId: user.id, ip: await getClientIp(), meta: { adjusted: current.adjusted } });
-  redirect("/mi-marca/horario?listo=1");
-}
-
-export async function adjustScheduleAction(_prev: BrujulaState, fd: FormData): Promise<BrujulaState> {
-  const { user } = await requireCreatorAccess();
-  const current = await getSchedule(user.id);
-  if (!current) redirect("/mi-marca/horario");
-
-  const blocks: ScheduleBlock[] = [];
-  for (let i = 0; i < current.proposal.blocks.length; i++) {
-    const base = current.proposal.blocks[i]!;
-    const candidate = scheduleBlockSchema.safeParse({ kind: base.kind, day: fd.get(`day_${i}`), start: fd.get(`start_${i}`), minutes: base.minutes });
-    if (!candidate.success) return { error: "Revisa los días y las horas." };
-    blocks.push(candidate.data);
-  }
-  const problem = validateAdjusted(blocks);
-  if (problem) return { error: problem };
-
-  await saveSchedule(user.id, { answers: current.answers, proposal: { ...current.proposal, blocks }, adjusted: true, accepted: true });
-  await rebuildManual(user.id, { regenerateCreative: false });
-  await audit({ action: "brujula.schedule_saved", actorUserId: user.id, ip: await getClientIp(), meta: { adjusted: true } });
+  if (!(await acceptSchedule(user.id))) redirect("/mi-marca/horario");
+  await audit({ action: "brujula.schedule_saved", actorUserId: user.id, ip: await getClientIp() });
   redirect("/mi-marca/horario?listo=1");
 }
 

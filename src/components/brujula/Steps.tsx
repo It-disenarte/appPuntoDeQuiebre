@@ -3,18 +3,18 @@ import Link from "next/link";
 import { cn } from "@/components/ui";
 import type { BrujulaOverview } from "@/lib/brujula/service";
 
-type StepId = "brujula" | "voz" | "horario" | "manual";
+type StepId = "historia" | "brujula" | "voz" | "horario";
 
-/** Los 4 pasos de la Brújula, con su estado. Cada paso se puede hacer en cualquier momento. */
+/** Los 4 pasos del alta, con su estado. Cada paso se puede abrir en cualquier momento. */
 export function Steps({ overview, current }: { overview: BrujulaOverview; current: StepId }) {
   const steps: { id: StepId; label: string; href: string; done: boolean }[] = [
-    { id: "brujula", label: "Formulario", href: "/mi-marca/brujula", done: overview.progress.complete },
-    { id: "voz", label: "Voz", href: "/mi-marca/voz", done: overview.hasVoice },
+    { id: "historia", label: "Tu historia", href: "/mi-marca/historia", done: overview.story.ready },
+    { id: "brujula", label: "Brújula", href: "/mi-marca/manual", done: overview.manualApproved },
+    { id: "voz", label: "Voz", href: "/mi-marca/voz", done: overview.hasVoiceProfile },
     { id: "horario", label: "Horario", href: "/mi-marca/horario", done: overview.scheduleAccepted },
-    { id: "manual", label: "Manual", href: "/mi-marca/manual", done: overview.hasManual },
   ];
   return (
-    <nav aria-label="Pasos de tu brújula">
+    <nav aria-label="Pasos de tu alta">
       <ol className="grid grid-cols-4 gap-2">
         {steps.map((s, i) => (
           <li key={s.id}>

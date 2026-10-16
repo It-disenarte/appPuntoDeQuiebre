@@ -1,110 +1,115 @@
-# CONTEXT · Fase 2 — Brújula de marca
+# CONTEXT · Fase 2 (parte A) — Alta del creador con las skills de Mishell
 
 Documento para la IA que audita. Describe qué se construyó, cómo, y dónde buscar errores o vulnerabilidades.
-Fase anterior: [CONTEXT-FASE-1.md](CONTEXT-FASE-1.md). Especificación de origen: "Luis — Guía de desarrollo de la app", Fase 2 y Bloque 2.
+Fase anterior: [CONTEXT-FASE-1.md](CONTEXT-FASE-1.md). Especificación: las skills de Mishell en [`skills/`](../../skills/) y la "Guía de desarrollo" de Luis.
+Dudas abiertas para Mishell y Moy: [../pendientes-skills.md](../pendientes-skills.md).
+
+> **Historia de esta fase.** Una primera versión (commit `caa590e`) usaba un formulario de 6 bloques que yo había propuesto. Al recibir las skills de Mishell, que definen otro flujo, se **rediseñó** sobre su especificación. Las migraciones `0002` (formulario viejo) y `0003`/`0004` (se eliminan esas tablas y se crean las nuevas) quedan en el historial; las tablas viejas solo tenían cuentas de prueba.
 
 ## 1. Alcance
 
-El creador (con pago y compromiso aceptado) completa su **brújula de marca** y obtiene su **manual de identidad audiovisual**:
+Con pago activo y compromiso aceptado, el creador hace su **alta dinámica**:
 
-1. **Formulario por bloques** (6 bloques cortos: quién eres, a quién ayudas, cómo quieres ser percibido, nicho e intereses, objetivo, formatos y referentes). Se guarda por bloque; se puede pausar y continuar.
-2. **Muestra de voz**: grabación en el teléfono (2 a 4 min) o texto escrito (≥150 palabras). Produce un **perfil de voz** (vocabulario, muletillas, ritmo, largo de frase). El audio **no se conserva**.
-3. **Horario**: 5 preguntas de opción múltiple → propuesta de 2 bloques de grabación + 1 de respaldo con el porqué y consejo de luz (aro de luz si graba de noche sin luz). El usuario acepta o ajusta.
-4. **Manual de identidad** visible en la app y **descargable en PDF** (pilares, tono, perfil de voz, paleta, tipografías, estilo de grabación, horario).
-5. **Skills de IA con respuestas de prueba**: la guía indica que las skills las escribe Mishell y que Luis deja el espacio con respuestas de prueba. Hay una capa de skills con esquema JSON fijo, versión y registro de costo (`ai_calls`). **No hay llamadas reales a IA en esta fase.**
-6. Integración: tarjeta "tu brújula" en Hoy y datos reales en Mi marca.
+1. **Tu historia** (skill brujula-v2, sección 1B): 7 preguntas, una a la vez, por **voz o por texto**, con mínimos (30 s/50 palabras, 45 s/80, 2 min/250 en la historia), barra de progreso, **una sola repregunta amable** si queda corta, y **cualquier pregunta se puede saltar**. La historia se elige entre 3 opciones; la pregunta 7 es de botones (¿vendes algo?).
+2. **Elecciones rápidas**: redes, formatos, tono (máx. 3) y 3 a 5 cuentas de referencia (mínimo 3).
+3. **Brújula de marca** (skill `brujula-v2`): nicho, público, propuesta de valor, frase de marca, pilares, tono, palabras sí/no, postura, puente, visión, estilo de grabación, lives. Se revela **por 5 secciones** que el creador califica 👍 / ✏️ (ajuste corto, ≤120 caracteres) / 👎 (nota obligatoria); máximo 3 ajustes por sección; con las 5 en 👍 queda **aprobada** y se habilita el **PDF**.
+4. **Perfil de voz** (skill `perfil-voz-v1`), generado junto con la brújula.
+5. **Horario** (skill `horario-v1`): reglas fijas implementadas en código (sin IA, como indica la skill): 2 bloques fijos + 1 de respaldo, por día elige momento y tiempo, "a veces no puedo", consejos de luz y lugar, recordatorios (como datos), hora de publicación.
+6. **Capa de skills**: cada skill es un archivo versionado en `skills/<nombre>/v<N>/skill.md` (el archivo completo se manda como *system prompt*). Si hay `ANTHROPIC_API_KEY` se ejecuta con Claude y se valida con el esquema real; **sin llave responde una versión de PRUEBA** (reglas) con el mismo esquema, marcada `mock` en pantalla. Cada llamada se registra en `ai_calls`.
 
-Fuera de alcance (fases siguientes): Instagram, optimización de perfil, analizador, parrilla, grabación de guiones, recordatorios (Web Push) y la alerta de "10 días sin terminar la brújula" (Fase 10).
+**Decisiones del usuario (2026-10-16):** (a) la fase se parte: **2A** (esto) y **2B** (kit visual de 5 rondas); (b) la **auditoría** (skill 0) necesita Instagram y se hace en la Fase 3: por ahora la brújula corre en modo `sin_contenido`; (c) se trabaja con el **esquema real y respuestas de prueba** hasta tener llaves.
 
-## 2. Decisiones y desviaciones
+Fuera de alcance: kit visual (2B), auditoría y tarjetas "Así te vemos" (Fase 3), prueba de voz con 3 guiones (requiere la skill de guiones, no entregada), recordatorios Web Push (Fase 10), revisión automática del horario si falla 2 bloques (Fase 10).
 
-| Decisión | Por qué |
+## 2. Archivos principales
+
+| Ruta | Para qué |
 | --- | --- |
-| **Transcripción de audio de PRUEBA**: devuelve un texto fijo (`MOCK_TRANSCRIPT`) y el perfil queda marcado `mock = true` ("Versión de prueba" en pantalla y PDF). | No hay servicio de transcripción conectado (Gemini). Se evita inventar un perfil a partir de un audio que no se leyó, y se avisa al usuario. |
-| **Alternativa "Prefiero escribir"** con análisis real por reglas. | Da un perfil real hoy y es accesible si no se puede grabar. El ritmo (palabras/min) solo se mide con audio. |
-| El **horario es lógica de reglas, no IA**. | Rápido, gratis y predecible; así lo describe la guía (reglas del motor sin gastar IA). |
-| El audio se guarda en MinIO **solo durante la transcripción** y se borra en `finally`. | Misma política que los videos ("se borran del servidor después de analizarse"). Si no hay MinIO configurado, se procesa sin guardar. |
-| Las fases **no se bloquean entre sí**: el manual se arma con la brújula completa y se completa solo cuando llegan voz y horario. | La guía: "solo se bloquea lo que depende de una fase anterior". |
-| Tipografías de la paleta (Fraunces, Montserrat…) son **recomendaciones en texto**; el PDF usa Anton y Archivo (OFL) de `public/fonts/`. | No se incrustan fuentes del creador; el PDF sigue la identidad de la app. |
-| Textos del formulario, opciones, paletas y etapas son **propuestas editables** (`BRUJULA_VERSION`). | Pendiente de validar con Erick y Mishell. |
+| `skills/**/skill.md`, `skills/README.md` | Skills de Mishell, versionadas, fuera del código. |
+| `src/lib/skills/schemas.ts` | Esquemas zod de salida de brujula-v2, perfil-voz-v1 y horario-v1 (con `passthrough`: la regla de oro permite agregar campos). |
+| `src/lib/skills/index.ts` | Ejecutor: llama a Anthropic (fetch) o usa la versión de prueba; valida salida; registra en `ai_calls`. |
+| `src/lib/skills/mock.ts` | Versión de prueba de brujula-v2 y perfil-voz-v1 y armado de la `muestra_voz`. |
+| `src/lib/brujula/content.ts` | Los 7 pasos, elecciones rápidas y sus esquemas. |
+| `src/lib/brujula/schedule.ts` | Reglas de `horario-v1`. |
+| `src/lib/brujula/voice.ts` | Estadísticas de voz (reglas) y las transcripciones de prueba. |
+| `src/lib/brujula/service.ts`, `actions.ts` | Acceso a datos y Server Actions. |
+| `src/lib/brujula/pdf.ts` | PDF de la brújula (pdf-lib + fuentes Anton/Archivo en `public/fonts`). |
+| `src/lib/form-submit.ts` | Envía formularios a acciones sin que React 19 los reinicie al fallar. |
+| `src/app/api/historia/audio/route.ts`, `src/app/api/manual/pdf/route.ts` | Audio por paso y descarga del PDF. |
+| `src/app/(app)/mi-marca/{historia,manual,voz,horario}/…` | Pantallas. |
+| `drizzle/0003_*`, `drizzle/0004_*` | Se eliminan las tablas del primer intento y se crean las nuevas. |
 
-## 3. Modelo de datos (migración `0002_fase2_brujula.sql`)
+## 3. Modelo de datos
 
 | Tabla | Contenido |
 | --- | --- |
-| `brujulas` | PK `user_id`. `answers` jsonb por bloque, `completed_blocks text[]`, `content_version`, `completed_at`. |
-| `voice_samples` | PK `user_id` (una por usuario; regrabar la reemplaza). `topic`, `source` (`audio`/`texto`), `transcript`, `duration_seconds`, `profile` jsonb, `mock`, `skill_version`. **Sin columna de audio.** |
-| `schedules` | PK `user_id`. `answers`, `proposal` jsonb, `adjusted`, `accepted_at`. |
-| `brand_manuals` | PK `user_id`. `content` jsonb (validado con zod al leer y al escribir), `skill_version`, `generated_at`. |
-| `ai_calls` | Registro por llamada de skill: `skill`, `skill_version`, `mock`, `status`, `cost_cents`, tokens. Índice `(user_id, created_at)`. |
+| `creator_intake` | PK `user_id`. `story` jsonb (pasos, historia elegida, qué vende), `quick` jsonb, `completed_at`. **Texto, nunca audio.** |
+| `brand_manuals` | PK `user_id`. `content` (salida de brujula-v2), `votes` por sección `{voto: si|pendiente, nota, ajustes}`, `status` borrador/aprobado, `mock`, `skill_version`. |
+| `voice_profiles` | PK `user_id`. `content` (salida de perfil-voz-v1), `mock`. |
+| `schedules` | PK `user_id`. `answers` y `result` (salida de horario-v1), `accepted_at`. |
+| `ai_calls` | Por llamada: skill, versión, `mock`, estado, `cost_cents` (hoy 0), tokens. |
 
-Todas con `ON DELETE CASCADE` desde `users` (`ai_calls` con `SET NULL`). Los jsonb se **validan con zod al leerlos**: un registro dañado se trata como inexistente, no rompe la pantalla.
+Todo con `ON DELETE CASCADE` desde `users`. **Todo jsonb se valida con zod al leerlo**; si está dañado se trata como inexistente.
 
 ## 4. Rutas y autorización
 
-| Ruta | Tipo | Autorización |
-| --- | --- | --- |
-| `/mi-marca/brujula`, `/mi-marca/brujula/[bloque]`, `/mi-marca/voz`, `/mi-marca/horario`, `/mi-marca/manual` | Páginas | `requireCreatorAccess()` (sesión + pago/gracia + compromiso; admin pasa). `[bloque]` desconocido → 404. |
-| `saveBlockAction`, `saveVoiceTextAction`, `saveScheduleAnswersAction`, `acceptScheduleAction`, `adjustScheduleAction` | Server Actions | `requireCreatorAccess()`; operan siempre sobre `user.id` de la sesión (nunca un id recibido). |
-| `POST /api/voz?tema=&segundos=` | Route Handler | `isSameOrigin` + `getApiCreator()` (acceso pagado + compromiso) + límite 8/h por usuario. |
-| `GET /api/manual/pdf` | Route Handler | `getApiCreator()` + límite 20/h; solo devuelve el manual del propio usuario. `Cache-Control: private, no-store`. |
-
-`getApiCreator()` (en `src/lib/auth/gates.ts`) es la versión sin redirecciones de `requireCreatorAccess` para Route Handlers.
+| Ruta | Autorización |
+| --- | --- |
+| Páginas `/mi-marca/historia`, `/historia/[paso]`, `/historia/elecciones`, `/manual`, `/voz`, `/horario` | `requireCreatorAccess()` (sesión + pago/gracia + compromiso). `[paso]` desconocido → 404. |
+| Server Actions de `actions.ts` | `requireCreatorAccess()`; siempre sobre el `user.id` de la sesión. |
+| `POST /api/historia/audio` | `isSameOrigin` + `getApiCreator()` + límite 40/h por usuario. |
+| `GET /api/manual/pdf` | `getApiCreator()` + límite 20/h; solo el propio manual, solo si está **aprobado** (409 si no). |
 
 ## 5. Flujos sensibles
 
-### 5.1 Subida de audio (`/api/voz`)
-1. Valida origen, sesión con acceso, límite de frecuencia, tema (lista cerrada) y duración declarada (90 a 255 s).
-2. Exige `Content-Type` en lista cerrada (`webm`, `ogg`, `mp4`/`m4a`, `mpeg`), `Content-Length` presente y ≤ 8 MB, y **firma de los primeros bytes** (`matchesAudioSignature`), igual que el video de Fase 1.
-3. Guarda en `voz/<userId>/<uuid>.<ext>` (si hay MinIO), transcribe (prueba), calcula el perfil, guarda texto y perfil, reconstruye el manual y **borra el audio en `finally`**.
-4. La duración la informa el cliente; se usa solo para el ritmo (palabras/min). No es un dato de confianza.
+**5.1 Audio por paso.** Valida origen, sesión con acceso, límite, paso (lista cerrada, solo pasos de voz), duración (≥ mínimo del paso, o ≥10 s si es la segunda vez tras la repregunta; ≤ 315 s), `eleccion` válida en la historia, `Content-Type` en lista cerrada, `Content-Length` presente y ≤ 8 MB y **firma de los primeros bytes**. El audio se guarda en MinIO solo mientras se transcribe y se **borra siempre** en `finally`. La transcripción real (Gemini) no está conectada: devuelve `null` y se usa un texto de ejemplo por paso, marcado `mock`.
 
-### 5.2 Formulario por bloques
-Cada campo se valida con un esquema generado de su definición (`blockSchema`): texto con máximo de caracteres, `select`/`multi` contra lista cerrada de valores, máximo de elecciones, número solo con dígitos. El FormData se lee solo para los campos definidos (no se guardan campos extra). El guardado hace `INSERT … ON CONFLICT DO NOTHING` + `SELECT … FOR UPDATE` + `UPDATE` en una transacción para que dos pestañas no se pisen.
+**5.2 Ejecución de skills.** Con llave: `POST https://api.anthropic.com/v1/messages` con el `skill.md` como `system`, entrada JSON como mensaje, timeout de 120 s. La respuesta se extrae (`extractJson`, tolera ```json) y se valida con zod; si no cumple el esquema, **se rechaza y no se guarda**. La llave se lee de `env()` y nunca se envía al navegador. **Esta ruta con llave real NO se ha probado** (no hay llave); solo la de prueba y `extractJson` tienen pruebas.
 
-### 5.3 Manual
-`rebuildManual` lee brújula, voz y horario, llama a la skill (solo si cambiaron las respuestas del formulario; voz y horario reutilizan la parte creativa) y guarda un `ManualContent` validado. La regeneración con IA tiene un tope propio de 6 por hora por usuario (`manual-ia:user:…`); si se excede se conserva el manual anterior.
+**5.3 Calificación del manual.** `voteSection` reintenta la skill con un campo nuevo `ajuste` (sección, voto, nota, manual actual) y guarda el resultado; la sección vuelve a "pendiente" hasta que se califique otra vez. Topes: 3 ajustes por sección (en BD), 15 ajustes/h por usuario, 4 generaciones/h por usuario (`manual-ia`).
 
-### 5.4 PDF
-Se genera en el servidor con `pdf-lib` + `@pdf-lib/fontkit`, leyendo `public/fonts/Anton-Regular.ttf` y `Archivo.ttf`. Solo dibuja texto (sin HTML ni URLs). Los textos del usuario se parten por palabras con `widthOfTextAtSize`.
+**5.4 Horario.** Entradas validadas con zod (mín. 2 días, sin repetidos, momento por día, duraciones cerradas). Las reglas son determinísticas.
+
+**5.5 Formularios.** Los formularios cliente usan `submitKeepingState`: con `action={fn}`, React 19 reinicia el formulario tras un error y desmarcaba lo elegido (bug encontrado en pruebas).
 
 ## 6. Configuración nueva
 
-Ninguna variable de entorno nueva. Usa las `S3_*` ya existentes (opcionales para esta fase). Dependencias nuevas: `pdf-lib`, `@pdf-lib/fontkit`. Archivos nuevos en `public/fonts/` (licencia OFL: Anton, Archivo). Carpeta `skills/` con la documentación de cada skill y su esquema.
+`ANTHROPIC_API_KEY` (opcional; sin ella todo corre en modo de prueba) y `SKILLS_MODEL` (por defecto `claude-sonnet-5-5`). El `Dockerfile` ahora copia `skills/` a la imagen. La carpeta de trabajo de Mishell (`Punto-de-Quiebre-ClaudeCode*/`, 60 MB con datos de Blombito) está en `.gitignore` y `.dockerignore`. Dependencias nuevas: `pdf-lib`, `@pdf-lib/fontkit`.
 
-## 7. Controles de seguridad de esta fase
+## 7. Controles de seguridad
 
-- Todas las tablas y consultas se filtran por el `user_id` de la sesión; no hay rutas con `[id]` de usuario.
-- Validación de entradas con listas cerradas; límites de longitud en todo texto libre.
-- Firma de contenido para el audio; tope de tamaño y de duración; audio borrado siempre.
-- Límites de frecuencia atómicos (`rate.ts`) en subida de voz, voz escrita, guardado de bloques, descargas de PDF y regeneración con IA.
-- Salida validada con zod en ambos sentidos (skill → manual → BD → pantalla/PDF).
-- Los textos del usuario solo se renderizan como texto de React (sin `dangerouslySetInnerHTML`).
-- Registro de auditoría: `brujula.completed`, `brujula.voice_saved`, `brujula.schedule_saved`, `brujula.manual_downloaded`.
+- Filtro por `user_id` de la sesión en todo; no hay rutas con id de usuario.
+- Listas cerradas y límites de longitud en todo texto libre (respuestas de hasta 6000 caracteres).
+- Firma de contenido, tope de tamaño y de duración en el audio; borrado siempre.
+- Límites atómicos (`rate.ts`) en historia, audio, ajustes, generación con IA y PDF.
+- Salida de IA validada con esquema antes de persistir; contenido solo renderizado como texto de React; PDF solo dibuja texto.
+- Auditoría: `brujula.voice_saved`, `brujula.manual_generated`, `brujula.manual_approved`, `brujula.schedule_saved`, `brujula.manual_downloaded`.
+- Privacidad (regla 13 de la skill): "lo íntimo no se publica". La **versión de prueba no filtra contenido sensible**; con IA real depende del prompt de Mishell, y conviene que el auditor revise los resultados reales cuando existan.
 
 ## 8. Riesgos conocidos y decisiones conscientes
 
-1. **Transcripción y skill de brújula son de prueba.** El perfil de voz por audio no refleja lo que dijo el usuario hasta conectar el servicio real. Está señalado en pantalla (`mock`), pero un auditor debe confirmar que ninguna fase futura lo use como si fuera real sin revisar ese campo.
-2. **`ai_calls.cost_cents` siempre es 0** hasta que existan llamadas reales; el registro ya está, el cálculo de costo no.
-3. **El audio completo se lee en memoria** (`request.arrayBuffer()`, máximo 8 MB) y pasa por el proxy de Next (límite de cuerpo del proxy 10 MB). Es deliberado por el tamaño pequeño; no debe reutilizarse para archivos grandes.
-4. **Sin lectura de duración real del audio**: se confía en `segundos` del cliente (acotado a 90–255). Un cliente malicioso solo falsea su propio ritmo.
-5. **`voice_samples.transcript` es dato personal** (lo que el usuario dijo). Se conserva mientras exista la cuenta; falta definir su retención y mencionarlo en el aviso de privacidad (pendiente del abogado).
-6. **Edición de bloques completados** regenera el manual (con el tope de 6/h). El manual anterior se sobrescribe, sin historial de versiones.
-7. **El horario no considera zona horaria** ni calendario; son horas locales del usuario.
-8. **Aviso de hidratación en el navegador de pruebas** por un estilo inyectado en un checkbox deshabilitado de Mi marca (`caret-color`), ajeno a la app.
+1. **Todo corre en modo de prueba** (sin IA). La transcripción y el contenido de brújula/perfil son de reglas; pantallas y PDF lo avisan. Ninguna fase posterior debe usar esos datos como reales sin revisar `mock`.
+2. **Ruta con IA real sin probar** (§5.2). Riesgos: formato de respuesta, longitud (`max_tokens` 8000), costo, y que la skill devuelva campos fuera de esquema.
+3. **`ai_calls.cost_cents` siempre es 0**; solo se guardan los tokens.
+4. **Campo `ajuste` inventado por mí** para recalificar secciones: la skill describe el comportamiento (regla 14) pero no el formato de entrada. Está pendiente de acordar con Mishell y Moy.
+5. **Texto de las respuestas de voz = dato personal** y se conserva mientras exista la cuenta; falta definir retención y mencionarlo en el aviso de privacidad (abogado).
+6. **Horario:** (a) la regla 4 (mañana 08:00) contradice el ejemplo de Blombito (domingo 10:00); se siguió la regla. (b) No se implementó partir un día de 1 h en dos tramos con descanso (la skill es ambigua). (c) `cuando` de los recordatorios usa el formato del ejemplo ("lunes 20:00"), no el del esquema.
+7. **Sin auditoría ni tarjetas** hasta la Fase 3: la brújula no tiene `puente` y su calidad será menor que la diseñada.
+8. **Audio completo en memoria** (≤ 8 MB) en el servidor; deliberado por el tamaño.
+9. **La prueba de voz (3 guiones)** no se implementó: la skill no define quién genera los guiones de prueba.
+10. Un cambio en las respuestas de "Tu historia" **no regenera** la brújula automáticamente; hay un botón "Rehacer mi brújula" (reinicia las calificaciones).
 
-## 9. Qué conviene revisar en la auditoría
+## 9. Qué conviene revisar
 
-- `src/app/api/voz/route.ts`: orden de validaciones, el `finally` que borra el audio, lectura completa en memoria, límites.
-- `src/lib/brujula/content.ts` (`blockSchema`, `readBlockForm`): que ningún campo se guarde sin validar y que `multi` no admita valores fuera de la lista.
-- `src/lib/brujula/service.ts`: transacción de `saveBlock`, y que `getVoice`/`getSchedule`/`getManual` tratan jsonb corrupto como inexistente.
-- `src/lib/auth/gates.ts` (`getApiCreator`): que un usuario suspendido o sin compromiso no pueda subir audio ni bajar el PDF.
-- `src/lib/brujula/pdf.ts`: textos muy largos, caracteres no soportados por las fuentes, ruta de fuentes (`process.cwd()` en Docker).
-- Regexes de `voice.ts` (`countPhrase` construye una RegExp con frases fijas: confirmar que no entra texto del usuario a la expresión).
-- Tope de regeneración con IA (`manual-ia`) y que `rebuildManual` no se pueda forzar sin él.
+- `src/app/api/historia/audio/route.ts`: orden de validaciones y el borrado en `finally`.
+- `src/lib/skills/index.ts`: manejo de la llave, errores de red, validación de la salida y que ningún error filtre la respuesta cruda al usuario.
+- `src/lib/brujula/service.ts`: transacción de `mutateIntake`, `voteSection` (topes y estado) y lectura segura de jsonb.
+- `src/lib/brujula/actions.ts`: que un usuario sin acceso no pueda ejecutar ninguna acción y que las repreguntas (`insisted`) no se puedan abusar para saltarse mínimos (solo relaja el mínimo de palabras en la misma sesión; el servidor no confía en otra cosa).
+- `src/lib/brujula/schedule.ts`: casos borde (todos los días "a veces", solo 2 días, bloques que cruzan medianoche).
+- `src/lib/brujula/pdf.ts` y `public/fonts` (ruta con `process.cwd()` en Docker; `skills/` también se lee con `process.cwd()`).
 
 ## 10. Cómo probar
 
-- `npm test` (61 pruebas; nuevas en `tests/brujula.test.ts`: esquemas, etapa, horario, voz, manual, **generación de PDF** y firmas de audio) · `npm run typecheck` · `npm run lint` · `npm run build`.
-- Prueba extremo a extremo local (navegador, PGlite): registro → pago simulado → 6 bloques con validación y pausa → voz escrita (texto corto rechazado) → horario con consejo de luz → aceptar → manual completo → PDF `application/pdf` válido → PDF sin sesión = 401.
-- **Pendiente en el VPS con la imagen de Docker**: grabación real con micrófono en iPhone (Safari entrega `audio/mp4`) y Android (Chrome entrega `audio/webm`); confirmar que MinIO guarda y borra el audio; descargar el PDF y revisar que las fuentes se incrusten.
+- `npm test` (70 pruebas; en `tests/brujula.test.ts`: reglas del horario incl. el ejemplo de Blombito, validación de la alta, esquemas de las skills de prueba, ajuste por sección, extracción de JSON, PDF y firma de audio), `npm run typecheck`, `npm run lint`, `npm run build`.
+- Prueba extremo a extremo local en navegador (PGlite, micrófono simulado): Hoy → 7 pasos (audio corto con repregunta, audio ≥30 s, texto corto con repregunta, saltar, historia sin elegir, vende sin descripción) → elecciones (tono máx. 3, mínimo 3 referentes) → generar → PDF 409 sin aprobar → ajuste ✏️ → 5×👍 → aprobada → perfil de voz → horario (ejemplo de Blombito) → aceptar → PDF 200 → PDF sin sesión 401.
+- **Pendiente en el VPS:** grabación con micrófono real en iPhone (Safari: `audio/mp4`) y Android (Chrome: `audio/webm`); conectar `ANTHROPIC_API_KEY` y probar las skills reales.
