@@ -12,7 +12,7 @@ Los esquemas de salida se validan con zod antes de guardar (`src/lib/skills/sche
 | `brujula` | v2 | Conectada (Fase 2). Respuesta de **prueba** hasta que haya `ANTHROPIC_API_KEY`. |
 | `perfil-voz` | v1 | Conectada (Fase 2). Respuesta de **prueba** hasta que haya `ANTHROPIC_API_KEY`. |
 | `horario` | v1 | Conectada (Fase 2). **Reglas fijas en código**, sin IA, como indica la skill. |
-| `kit-visual` | v1 | Guardada, se conecta en la Fase 2B. |
+| `kit-visual` | v1 | Conectada (Fase 2B). Respuesta de **prueba** hasta que haya `ANTHROPIC_API_KEY`. |
 | `auditoria` | v1 | Guardada, se conecta en la Fase 3 (requiere Instagram). |
 | `6-textos-publicacion`, `7-ideas-historias`, `8-carruseles`, `calificador-foto`, `optimizacion-perfil`, `guia-lives` | — | Se agregan en las fases que las usan. |
 

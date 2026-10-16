@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { aiCalls } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { mockApplyAdjustment, mockBrujulaV2, mockPerfilVozV1, type BrujulaInput, type PerfilVozInput } from "./mock";
+import { mockKitFinal, mockKitRound, type KitInput } from "@/lib/kit/mock";
+import { finalKitSchema, fontRoundSchema, paletteRoundSchema, titleRoundSchema, type FinalKit, type FontOption, type PaletteOption, type TitleOption } from "@/lib/kit/schemas";
 import { transcribeWithGemini } from "./transcribe";
 import { brujulaV2Output, perfilVozV1Output, type BrujulaV2, type PerfilVozV1 } from "./schemas";
 
@@ -18,6 +20,7 @@ import { brujulaV2Output, perfilVozV1Output, type BrujulaV2, type PerfilVozV1 } 
 export const SKILLS = {
   brujula: { dir: "brujula/v2", version: "brujula-v2" },
   perfilVoz: { dir: "perfil-voz/v1", version: "perfil-voz-v1" },
+  kitVisual: { dir: "kit-visual/v1", version: "kit-visual-v1" },
 } as const;
 type SkillKey = keyof typeof SKILLS;
 
@@ -104,6 +107,21 @@ export const runBrujula = (userId: string, input: BrujulaInput) =>
 
 export const runPerfilVoz = (userId: string, input: PerfilVozInput, durationSeconds: number | null) =>
   run<PerfilVozV1>(userId, "perfilVoz", input, perfilVozV1Output as ZodType<PerfilVozV1>, () => mockPerfilVozV1(input, durationSeconds));
+
+/** Una ronda del kit visual (modo "ronda"): devuelve las opciones sin filtrar; quien llama aplica las validaciones por código. */
+export async function runKitRound(userId: string, input: KitInput): Promise<SkillResult<{ options: PaletteOption[] | FontOption[] | TitleOption[] }>> {
+  const schema = input.numero_ronda <= 2 ? paletteRoundSchema : input.numero_ronda === 3 ? fontRoundSchema : titleRoundSchema;
+  const r = await run<{ opciones: unknown[] }>(userId, "kitVisual", input, schema as unknown as ZodType<{ opciones: unknown[] }>, () => ({
+    skill_version: "kit-visual-v1",
+    ronda: input.numero_ronda,
+    opciones: mockKitRound(input),
+  }));
+  return { ...r, output: { options: r.output.opciones as PaletteOption[] } };
+}
+
+/** El kit completo (modo "final"). `previous` es el kit anterior: al recalificar solo se ajustan las piezas con 👎. */
+export const runKitFinal = (userId: string, input: KitInput, previous: FinalKit | null) =>
+  run<FinalKit>(userId, "kitVisual", { ...input, kit_actual: previous }, finalKitSchema as unknown as ZodType<FinalKit>, () => mockKitFinal(input, previous));
 
 /**
  * Transcripción de una grabación. Con GEMINI_API_KEY usa Gemini; sin ella devuelve `text: null` (PRUEBA) para que

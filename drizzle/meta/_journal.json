@@ -36,6 +36,13 @@
       "when": 1792181181407,
       "tag": "0004_fase2_rediseno_tablas",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792188873732,
+      "tag": "0005_fase2b_kit_visual",
+      "breakpoints": true
     }
   ]
 }

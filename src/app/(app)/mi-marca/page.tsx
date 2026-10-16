@@ -34,6 +34,7 @@ export default async function MiMarcaPage() {
   const rows = [
     { href: "/mi-marca/historia", title: "Tu historia", sub: overview.story.ready ? "Completa · toca para editar" : `${overview.story.done} de ${overview.story.total} preguntas`, done: overview.story.ready },
     { href: "/mi-marca/manual", title: "Mi brújula", sub: overview.manualApproved ? "Aprobada" : overview.hasManual ? `${overview.sectionsApproved} de 5 secciones aprobadas` : "Se arma con tu historia", done: overview.manualApproved },
+    { href: "/mi-marca/kit", title: "Kit visual", sub: overview.kitApproved ? "Aprobado · toca para ver o rehacer" : "Colores, letras y estilo de títulos", done: overview.kitApproved },
     { href: "/mi-marca/voz", title: "Perfil de voz", sub: overview.hasVoiceProfile ? (overview.manualMock ? "Versión de prueba" : "Listo") : "Se genera con tu historia", done: overview.hasVoiceProfile },
     { href: "/mi-marca/horario", title: "Horario de grabación", sub: overview.scheduleAccepted ? "Aceptado · toca para editar" : overview.hasSchedule ? "Falta confirmar tu propuesta" : "Pocas preguntas", done: overview.scheduleAccepted },
   ];

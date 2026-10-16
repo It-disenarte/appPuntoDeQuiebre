@@ -346,3 +346,33 @@ export const schedules = pgTable("schedules", {
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   ...timestamps,
 });
+
+/* ───────────── Fase 2B · Kit visual ───────────── */
+
+/** Estado del juego del kit visual (rondas, elecciones, kit final y calificación de la revelación). */
+export const kitVisual = pgTable("kit_visual", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  state: jsonb("state").$type<unknown>().notNull().default({}),
+  /** true mientras las opciones vengan de la versión de prueba (sin IA). */
+  mock: boolean("mock").notNull().default(false),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  ...timestamps,
+});
+
+/** Fotos que el creador sube para la revelación del kit (se guardan en MinIO, sin metadatos EXIF). */
+export const kitPhotos = pgTable(
+  "kit_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    storageKey: text("storage_key").notNull(),
+    contentType: text("content_type").notNull(),
+    size: integer("size").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("kit_photos_user_idx").on(t.userId, t.createdAt)],
+);

@@ -3,19 +3,20 @@ import Link from "next/link";
 import { cn } from "@/components/ui";
 import type { BrujulaOverview } from "@/lib/brujula/service";
 
-type StepId = "historia" | "brujula" | "voz" | "horario";
+type StepId = "historia" | "brujula" | "kit" | "voz" | "horario";
 
 /** Los 4 pasos del alta, con su estado. Cada paso se puede abrir en cualquier momento. */
 export function Steps({ overview, current }: { overview: BrujulaOverview; current: StepId }) {
   const steps: { id: StepId; label: string; href: string; done: boolean }[] = [
     { id: "historia", label: "Tu historia", href: "/mi-marca/historia", done: overview.story.ready },
     { id: "brujula", label: "Brújula", href: "/mi-marca/manual", done: overview.manualApproved },
+    { id: "kit", label: "Kit", href: "/mi-marca/kit", done: overview.kitApproved },
     { id: "voz", label: "Voz", href: "/mi-marca/voz", done: overview.hasVoiceProfile },
     { id: "horario", label: "Horario", href: "/mi-marca/horario", done: overview.scheduleAccepted },
   ];
   return (
     <nav aria-label="Pasos de tu alta">
-      <ol className="grid grid-cols-4 gap-2">
+      <ol className="grid grid-cols-5 gap-1">
         {steps.map((s, i) => (
           <li key={s.id}>
             <Link

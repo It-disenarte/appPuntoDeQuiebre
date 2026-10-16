@@ -8,8 +8,8 @@ El desarrollo va por fases. Cada fase deja un documento de contexto para auditor
 | --- | --- |
 | 0 · Cimientos (proyecto, BD, inicio de sesión, diseño, PWA, shell, admin mínimo, Docker) | Aprobada |
 | 1 · Base (registro, 18+, Stripe, compromiso, MinIO, panel de clientes, códigos y facturas) | Aprobada |
-| 2A · Alta con las skills de Mishell (Tu historia por voz, brújula por secciones, perfil de voz, horario, PDF) | En revisión |
-| 2B · Kit visual (5 rondas) | Pendiente |
+| 2A · Alta con las skills de Mishell (Tu historia por voz, brújula por secciones, perfil de voz, horario, PDF) | Aprobada |
+| 2B · Kit visual (5 rondas y revelación con fotos) | En revisión |
 
 ## Desarrollo local (Windows, sin Docker)
 

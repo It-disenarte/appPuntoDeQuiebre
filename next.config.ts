@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   // Paquetes nativos / de servidor que no deben empaquetarse.
-  serverExternalPackages: ["@node-rs/argon2", "pg-boss", "web-push"],
+  serverExternalPackages: ["@node-rs/argon2", "pg-boss", "web-push", "sharp"],
   turbopack: {
     rules: {
       "*.css": {

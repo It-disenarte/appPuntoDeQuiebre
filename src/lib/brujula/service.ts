@@ -2,7 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { brandManuals, creatorIntake, schedules, voiceProfiles } from "@/lib/db/schema";
+import { brandManuals, creatorIntake, kitVisual, schedules, voiceProfiles } from "@/lib/db/schema";
 import { runBrujula, runPerfilVoz, SKILLS } from "@/lib/skills";
 import { buildMuestraVoz, type BrujulaInput, type PerfilVozInput } from "@/lib/skills/mock";
 import { brujulaV2Output, horarioV1Output, MANUAL_SECTIONS, perfilVozV1Output, SECTION_IDS, type BrujulaV2, type HorarioV1, type PerfilVozV1, type SectionId } from "@/lib/skills/schemas";
@@ -201,6 +201,7 @@ export type BrujulaOverview = {
   hasVoiceProfile: boolean;
   hasSchedule: boolean;
   scheduleAccepted: boolean;
+  kitApproved: boolean;
   stepsDone: number;
   stepsTotal: number;
   /** Siguiente paso recomendado (o null si todo está listo). */
@@ -208,18 +209,26 @@ export type BrujulaOverview = {
 };
 
 export async function getOverview(userId: string): Promise<BrujulaOverview> {
-  const [intake, manual, voice, schedule] = await Promise.all([getIntake(userId), getManual(userId), getVoiceProfile(userId), getSchedule(userId)]);
+  const [intake, manual, voice, schedule, kit] = await Promise.all([
+    getIntake(userId),
+    getManual(userId),
+    getVoiceProfile(userId),
+    getSchedule(userId),
+    db().select({ approvedAt: kitVisual.approvedAt }).from(kitVisual).where(eq(kitVisual.userId, userId)).limit(1),
+  ]);
+  const kitApproved = Boolean(kit[0]?.approvedAt);
   const story = intakeProgress(intake);
   const scheduleAccepted = Boolean(schedule?.acceptedAt);
   const manualApproved = manual?.status === "aprobado";
   const sectionsApproved = manual ? MANUAL_SECTIONS.filter((s) => manual.votes[s.id]?.voto === "si").length : 0;
-  const stepsDone = Number(story.ready) + Number(manualApproved) + Number(scheduleAccepted);
+  const stepsDone = Number(story.ready) + Number(manualApproved) + Number(kitApproved) + Number(scheduleAccepted);
 
   let next: BrujulaOverview["next"] = null;
   if (!story.complete) next = { href: story.nextStep ? `/mi-marca/historia/${story.nextStep}` : "/mi-marca/historia", text: story.done === 0 ? "Empieza tu historia" : "Continúa tu historia" };
   else if (!story.quickDone) next = { href: "/mi-marca/historia/elecciones", text: "Haz tus elecciones rápidas" };
   else if (!manual) next = { href: "/mi-marca/manual", text: "Genera tu brújula" };
   else if (!manualApproved) next = { href: "/mi-marca/manual", text: "Revisa tu brújula" };
+  else if (!kitApproved) next = { href: "/mi-marca/kit", text: "Arma tu kit visual" };
   else if (!scheduleAccepted) next = { href: "/mi-marca/horario", text: "Define tu horario de grabación" };
 
   return {
@@ -231,8 +240,9 @@ export async function getOverview(userId: string): Promise<BrujulaOverview> {
     hasVoiceProfile: Boolean(voice),
     hasSchedule: Boolean(schedule),
     scheduleAccepted,
+    kitApproved,
     stepsDone,
-    stepsTotal: 3,
+    stepsTotal: 4,
     next,
   };
 }
