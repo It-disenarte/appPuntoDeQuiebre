@@ -76,6 +76,8 @@ Todo con `ON DELETE CASCADE` desde `users`. **Todo jsonb se valida con zod al le
 
 `ANTHROPIC_API_KEY` (opcional; sin ella todo corre en modo de prueba) y `SKILLS_MODEL` (por defecto `claude-sonnet-5-5`). El `Dockerfile` ahora copia `skills/` a la imagen. La carpeta de trabajo de Mishell (`Punto-de-Quiebre-ClaudeCode*/`, 60 MB con datos de Blombito) está en `.gitignore` y `.dockerignore`. Dependencias nuevas: `pdf-lib`, `@pdf-lib/fontkit`.
 
+**5.6 Transcripción con Gemini** (`src/lib/skills/transcribe.ts`). Con `GEMINI_API_KEY` el audio se manda inline (base64, ≤ 8 MB) a `generateContent` con la llave en el encabezado `x-goog-api-key` (nunca en la URL) y un prompt con el nombre del creador (y de su marca, cuando exista) para escribirlos bien. Si el audio no trae voz → `NoSpeechError` → 422 con mensaje amable. Los errores HTTP incluyen el detalle pero no la llave. **Sin probar con una llave real**: riesgo principal, que Gemini no acepte `audio/webm` (Chrome); si lo rechaza habrá que convertir el audio (ffmpeg) antes de enviarlo. Pruebas con `fetch` simulado en `tests/transcribe.test.ts`. El audio sale a Google: debe mencionarse en el aviso de privacidad.
+
 ## 7. Controles de seguridad
 
 - Filtro por `user_id` de la sesión en todo; no hay rutas con id de usuario.

@@ -40,6 +40,14 @@ const schema = z.object({
   ANTHROPIC_API_KEY: optional(z.string().min(20).startsWith("sk-ant-")),
   SKILLS_MODEL: optional(z.string().min(3)).default("claude-sonnet-5-5"),
 
+  // Gemini: transcripción de audio (fase 2) y, más adelante, calificador de foto y coach de video.
+  GEMINI_API_KEY: optional(z.string().min(20).startsWith("AIza")),
+  GEMINI_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash"),
+  // Reservadas para fases siguientes (hoy no se usan): analizador de competencia (5) e Instagram (3).
+  APIFY_TOKEN: optional(z.string().min(10)),
+  META_APP_ID: optional(z.string().min(5)),
+  META_APP_SECRET: optional(z.string().min(10)),
+
   // Web Push. Opcional en Fase 0.
   VAPID_PUBLIC_KEY: optional(z.string()),
   VAPID_PRIVATE_KEY: optional(z.string()),

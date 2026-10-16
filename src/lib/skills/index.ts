@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { aiCalls } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { mockApplyAdjustment, mockBrujulaV2, mockPerfilVozV1, type BrujulaInput, type PerfilVozInput } from "./mock";
+import { transcribeWithGemini } from "./transcribe";
 import { brujulaV2Output, perfilVozV1Output, type BrujulaV2, type PerfilVozV1 } from "./schemas";
 
 /**
@@ -104,7 +105,13 @@ export const runBrujula = (userId: string, input: BrujulaInput) =>
 export const runPerfilVoz = (userId: string, input: PerfilVozInput, durationSeconds: number | null) =>
   run<PerfilVozV1>(userId, "perfilVoz", input, perfilVozV1Output as ZodType<PerfilVozV1>, () => mockPerfilVozV1(input, durationSeconds));
 
-/** Transcripción de una grabación. PRUEBA: el servicio real (Gemini) aún no está conectado; devuelve `null` para que quien llama use el texto de ejemplo. */
-export async function transcribeAudio(): Promise<{ text: string | null; mock: true }> {
-  return { text: null, mock: true };
+/**
+ * Transcripción de una grabación. Con GEMINI_API_KEY usa Gemini; sin ella devuelve `text: null` (PRUEBA) para que
+ * quien llama use el texto de ejemplo. Lanza NoSpeechError si el audio no trae voz.
+ */
+export async function transcribeAudio(input: { data: Buffer; mime: string; name: string }): Promise<{ text: string | null; mock: boolean }> {
+  if (!env().GEMINI_API_KEY) return { text: null, mock: true };
+  return { text: await transcribeWithGemini(input), mock: false };
 }
+
+export { NoSpeechError } from "./transcribe";

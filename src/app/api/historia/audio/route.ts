@@ -8,7 +8,7 @@ import { intakeProgress, getIntake, saveStep } from "@/lib/brujula/service";
 import { MOCK_STORY, VOICE_MAX_BYTES } from "@/lib/brujula/voice";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
-import { transcribeAudio } from "@/lib/skills";
+import { NoSpeechError, transcribeAudio } from "@/lib/skills";
 import { deleteObject, putObjectStream, storageConfigured } from "@/lib/storage";
 import { AUDIO_TYPES, matchesAudioSignature } from "@/lib/video-signature";
 
@@ -55,14 +55,17 @@ export async function POST(request: Request) {
   const stored = storageConfigured();
   try {
     if (stored) await putObjectStream(key, Readable.from(data), contentType);
-    const transcription = await transcribeAudio();
+    const transcription = await transcribeAudio({ data, mime: contentType, name: user.name });
     const text = transcription.text ?? MOCK_STORY[step.id as keyof typeof MOCK_STORY];
     await saveStep(user.id, step.id, { text, source: "audio", seconds: Math.round(seconds), mock: transcription.mock }, choice);
     await audit({ action: "brujula.voice_saved", actorUserId: user.id, ip: await getClientIp(), meta: { paso: step.id, seconds: Math.round(seconds), mock: transcription.mock } });
     const p = intakeProgress(await getIntake(user.id));
     return Response.json({ ok: true, mock: transcription.mock, next: p.nextStep ? `/mi-marca/historia/${p.nextStep}` : "/mi-marca/historia/elecciones" });
   } catch (err) {
-    console.error("[historia] no se pudo procesar el audio", err);
+    if (err instanceof NoSpeechError) {
+      return Response.json({ error: "No alcanzamos a escuchar tu voz. Revisa tu micrófono e inténtalo de nuevo, o escribe tu respuesta." }, { status: 422 });
+    }
+    console.error("[historia] no se pudo procesar el audio", err instanceof Error ? err.message : err);
     return Response.json({ error: "No se pudo procesar tu audio. Intenta de nuevo o escribe tu respuesta." }, { status: 500 });
   } finally {
     if (stored) await deleteObject(key).catch(() => undefined);
