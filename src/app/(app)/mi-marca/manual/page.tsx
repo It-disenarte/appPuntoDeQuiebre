@@ -22,8 +22,8 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 );
 const Pills = ({ items, tone = "azul" as const }: { items: string[]; tone?: "azul" | "neutral" }) => (
   <div className="flex flex-wrap gap-2">
-    {items.map((x) => (
-      <Chip key={x} tone={tone}>
+    {items.map((x, i) => (
+      <Chip key={`${x}-${i}`} tone={tone}>
         {x}
       </Chip>
     ))}
@@ -48,10 +48,10 @@ function SectionBody({ id, m }: { id: SectionId; m: BrujulaV2 }) {
           <Row label="Tu público">{m.publico.descripcion}</Row>
           <Row label="Edad">{m.publico.rango_edad}</Row>
           <Row label="Lo que les duele">
-            <ul className="list-disc pl-5">{m.publico.dolores.map((x) => <li key={x}>{x}</li>)}</ul>
+            <ul className="list-disc pl-5">{m.publico.dolores.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ul>
           </Row>
           <Row label="Lo que desean">
-            <ul className="list-disc pl-5">{m.publico.deseos.map((x) => <li key={x}>{x}</li>)}</ul>
+            <ul className="list-disc pl-5">{m.publico.deseos.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ul>
           </Row>
         </dl>
       );

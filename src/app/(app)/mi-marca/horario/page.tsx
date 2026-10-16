@@ -74,7 +74,7 @@ export default async function HorarioPage({ searchParams }: PageProps<"/mi-marca
               <h2 className="flex items-center gap-2 text-sm font-extrabold">
                 <Lightbulb className="size-4" aria-hidden /> Consejos para tus grabaciones
               </h2>
-              <ul className="list-disc pl-5 text-sm text-ink-700">{r.consejos.map((c) => <li key={c}>{c}</li>)}</ul>
+              <ul className="list-disc pl-5 text-sm text-ink-700">{r.consejos.map((c, i) => <li key={`${c}-${i}`}>{c}</li>)}</ul>
             </Card>
 
             <Card>

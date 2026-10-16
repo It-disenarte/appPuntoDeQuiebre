@@ -376,3 +376,88 @@ export const kitPhotos = pgTable(
   },
   (t) => [index("kit_photos_user_idx").on(t.userId, t.createdAt)],
 );
+
+/* ───────────── Fase 6 · Parrilla semanal ───────────── */
+
+/** Una semana de contenido del creador (de lunes a domingo). */
+export const weekPlans = pgTable(
+  "week_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: date("week_start").notNull(),
+    tier: text("tier", { enum: ["basico", "pro"] }).notNull(),
+    stage: text("stage", { enum: ["arranque", "crecimiento", "monetizacion"] }).notNull(),
+    mix: jsonb("mix").$type<unknown>().notNull(),
+    summary: text("summary").notNull().default(""),
+    /** Enfoque de las historias de la semana (tarjeta 1C): temas y tipos apagados. */
+    focus: jsonb("focus").$type<unknown>().notNull().default({}),
+    mock: boolean("mock").notNull().default(false),
+    skillVersion: text("skill_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("week_plans_user_week_idx").on(t.userId, t.weekStart)],
+);
+
+/** Cada pieza de la parrilla: un video o un carrusel con su guion y sus textos por red. */
+export const contentPieces = pgTable(
+  "content_pieces",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => weekPlans.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    n: integer("n").notNull(),
+    day: date("day").notNull(),
+    publishTime: text("publish_time").notNull(),
+    kind: text("kind", { enum: ["video", "carrusel"] }).notNull(),
+    category: text("category", { enum: ["viral", "nicho", "conversion"] }).notNull(),
+    type: text("type", { enum: ["probado", "prueba"] }).notNull(),
+    /** Número `n` de la pieza que esta variante repite con otro gancho o ángulo. */
+    variantOfN: integer("variant_of_n"),
+    testKind: text("test_kind", { enum: ["gancho", "angulo"] }),
+    pillar: text("pillar").notNull(),
+    topic: text("topic").notNull(),
+    idea: text("idea").notNull().default(""),
+    script: jsonb("script").$type<unknown>().notNull(),
+    variant: jsonb("variant").$type<unknown>(),
+    testCard: text("test_card"),
+    /** Salida de la skill de textos y cómo la calificó el creador. */
+    texts: jsonb("texts").$type<unknown>(),
+    textsReview: jsonb("texts_review").$type<unknown>(),
+    status: text("status", { enum: ["pendiente", "grabado", "programado", "publicado", "descartado"] })
+      .notNull()
+      .default("pendiente"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("content_pieces_plan_n_idx").on(t.planId, t.n), index("content_pieces_user_day_idx").on(t.userId, t.day)],
+);
+
+/** Una idea de historia por día. */
+export const storyIdeas = pgTable(
+  "story_ideas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => weekPlans.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    data: jsonb("data").$type<unknown>().notNull(),
+    /** Qué alternativa se muestra: 0 = la sugerida; 1 en adelante = "otra idea". */
+    altIndex: integer("alt_index").notNull().default(0),
+    vote: text("vote", { enum: ["no", "mas_o_menos", "si"] }),
+    editedText: text("edited_text"),
+    ownIdea: text("own_idea"),
+    done: boolean("done").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("story_ideas_plan_day_idx").on(t.planId, t.day)],
+);

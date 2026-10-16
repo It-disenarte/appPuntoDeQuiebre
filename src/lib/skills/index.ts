@@ -7,9 +7,10 @@ import { aiCalls } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { mockApplyAdjustment, mockBrujulaV2, mockPerfilVozV1, type BrujulaInput, type PerfilVozInput } from "./mock";
 import { mockKitFinal, mockKitRound, type KitInput } from "@/lib/kit/mock";
+import { mockHistorias, mockParrilla, mockTextos, type HistoriasInput, type ParrillaInput, type TextosInput } from "@/lib/plan/mock";
 import { finalKitSchema, fontRoundSchema, paletteRoundSchema, titleRoundSchema, type FinalKit, type FontOption, type PaletteOption, type TitleOption } from "@/lib/kit/schemas";
 import { transcribeWithGemini } from "./transcribe";
-import { brujulaV2Output, perfilVozV1Output, type BrujulaV2, type PerfilVozV1 } from "./schemas";
+import { brujulaV2Output, historiasV2Output, parrillaV1Output, perfilVozV1Output, textosV2Output, type BrujulaV2, type HistoriasV2, type ParrillaV1, type PerfilVozV1, type TextosV2 } from "./schemas";
 
 /**
  * Ejecutor de skills. Cada skill es un archivo versionado (skills/<nombre>/v<N>/skill.md) que se manda a Claude como
@@ -21,6 +22,9 @@ export const SKILLS = {
   brujula: { dir: "brujula/v2", version: "brujula-v2" },
   perfilVoz: { dir: "perfil-voz/v1", version: "perfil-voz-v1" },
   kitVisual: { dir: "kit-visual/v1", version: "kit-visual-v1" },
+  parrilla: { dir: "parrilla-guiones/v1", version: "parrilla-guiones-v1" },
+  textos: { dir: "textos-publicacion/v2", version: "textos-publicacion-v2" },
+  historias: { dir: "ideas-historias/v2", version: "ideas-historias-v2" },
 } as const;
 type SkillKey = keyof typeof SKILLS;
 
@@ -107,6 +111,15 @@ export const runBrujula = (userId: string, input: BrujulaInput) =>
 
 export const runPerfilVoz = (userId: string, input: PerfilVozInput, durationSeconds: number | null) =>
   run<PerfilVozV1>(userId, "perfilVoz", input, perfilVozV1Output as ZodType<PerfilVozV1>, () => mockPerfilVozV1(input, durationSeconds));
+
+/** Parrilla semanal: tema y guion de cada espacio (el reparto lo decide el código). */
+export const runParrilla = (userId: string, input: ParrillaInput) => run<ParrillaV1>(userId, "parrilla", input, parrillaV1Output as ZodType<ParrillaV1>, () => mockParrilla(input));
+
+/** Textos de publicación por red para una pieza. */
+export const runTextos = (userId: string, input: TextosInput) => run<TextosV2>(userId, "textos", input, textosV2Output as ZodType<TextosV2>, () => mockTextos(input));
+
+/** Ideas de historias de la semana. */
+export const runHistorias = (userId: string, input: HistoriasInput) => run<HistoriasV2>(userId, "historias", input, historiasV2Output as ZodType<HistoriasV2>, () => mockHistorias(input));
 
 /** Una ronda del kit visual (modo "ronda"): devuelve las opciones sin filtrar; quien llama aplica las validaciones por código. */
 export async function runKitRound(userId: string, input: KitInput): Promise<SkillResult<{ options: PaletteOption[] | FontOption[] | TitleOption[] }>> {

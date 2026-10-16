@@ -64,7 +64,7 @@ const sentences = (s: string) =>
     .map((x) => x.trim())
     .filter((x) => x.length > 12);
 const clip = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n - 1).trimEnd()}…`);
-const pad = <T>(arr: T[], filler: T[], n: number) => [...arr, ...filler].slice(0, n);
+const pad = <T>(arr: T[], filler: T[], n: number) => [...new Set([...arr, ...filler])].slice(0, n);
 
 /* ───────────── Brújula v2 (prueba) ───────────── */
 

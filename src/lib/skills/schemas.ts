@@ -97,3 +97,79 @@ export const horarioV1Output = z
   })
   .passthrough();
 export type HorarioV1 = z.infer<typeof horarioV1Output>;
+
+/* ───────────── parrilla-guiones-v1 (borrador) ───────────── */
+
+export const videoGuionSchema = z
+  .object({ gancho: str, cuerpo: strs.min(1).max(8), cierre: str, duracion_segundos: z.number().default(35), nota_grabacion: str.default("") })
+  .passthrough();
+export const carruselGuionSchema = z.object({ titulo: str, idea_central: str.default(""), puntos: strs.min(1).max(10), cierre: str.default("") }).passthrough();
+export type VideoGuion = z.infer<typeof videoGuionSchema>;
+export type CarruselGuion = z.infer<typeof carruselGuionSchema>;
+
+export const parrillaV1Output = z
+  .object({
+    skill_version: str.optional(),
+    resumen_semana: str.default(""),
+    piezas: z
+      .array(
+        z
+          .object({
+            n: z.number().int(),
+            pilar: str,
+            tema: str,
+            idea: str.default(""),
+            guion: z.union([videoGuionSchema, carruselGuionSchema]),
+            variante: z.object({ gancho_b: str.nullable().default(null), angulo_b: str.nullable().default(null) }).passthrough().nullable().default(null),
+            tarjeta_prueba: str.nullable().default(null),
+          })
+          .passthrough(),
+      )
+      .min(1)
+      .max(10),
+  })
+  .passthrough();
+export type ParrillaV1 = z.infer<typeof parrillaV1Output>;
+
+/* ───────────── textos-publicacion-v2 ───────────── */
+
+export const textosV2Output = z
+  .object({
+    skill_version: str.optional(),
+    ganchos: strs.min(1).max(5),
+    gancho_elegido: z.number().int().min(0).max(4).default(0),
+    instagram: z.object({ texto: str, hashtags: strs.default([]), primer_comentario: str.nullable().default(null), caracteres: z.number().optional() }).passthrough().optional(),
+    tiktok: z.object({ texto: str, hashtags: strs.default([]), texto_en_pantalla: str.default("") }).passthrough().optional(),
+    facebook: z.object({ texto: str, hashtags: strs.default([]) }).passthrough().optional(),
+    datos_a_verificar: strs.default([]),
+  })
+  .passthrough();
+export type TextosV2 = z.infer<typeof textosV2Output>;
+
+/* ───────────── ideas-historias-v2 ───────────── */
+
+const storyIdea = z.object({ tipo: str, idea: str, texto_sugerido: str.default(""), sticker: str.nullable().default(null) }).passthrough();
+export const historiasV2Output = z
+  .object({
+    skill_version: str.optional(),
+    temas_boton: strs.default([]),
+    semana: z
+      .array(
+        z
+          .object({
+            dia: str,
+            tipo: str,
+            idea: str,
+            texto_sugerido: str.default(""),
+            sticker: str.nullable().default(null),
+            minutos: z.number().default(3),
+            tema_enfoque: str.nullable().default(null),
+            alternativas: z.array(storyIdea).default([]),
+          })
+          .passthrough(),
+      )
+      .min(1)
+      .max(7),
+  })
+  .passthrough();
+export type HistoriasV2 = z.infer<typeof historiasV2Output>;

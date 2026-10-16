@@ -15,8 +15,8 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 );
 const Pills = ({ items }: { items: string[] }) => (
   <div className="flex flex-wrap gap-2">
-    {items.map((x) => (
-      <Chip key={x} tone="azul">
+    {items.map((x, i) => (
+      <Chip key={`${x}-${i}`} tone="azul">
         {x}
       </Chip>
     ))}
@@ -62,7 +62,7 @@ export default async function VozPage() {
             </dl>
             <dl className="flex flex-col gap-4">
               <Row label="Cómo armas una idea">
-                <ol className="list-decimal pl-5">{profile.content.estructura_tipica.map((x) => <li key={x}>{x}</li>)}</ol>
+                <ol className="list-decimal pl-5">{profile.content.estructura_tipica.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ol>
               </Row>
               {profile.content.palabras_frecuentes.length > 0 && (
                 <Row label="Palabras que más usas">
@@ -86,10 +86,10 @@ export default async function VozPage() {
                 </Row>
               )}
               <Row label="Recursos que usas">
-                <ul className="list-disc pl-5">{profile.content.recursos.map((x) => <li key={x}>{x}</li>)}</ul>
+                <ul className="list-disc pl-5">{profile.content.recursos.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ul>
               </Row>
               <Row label="Evitamos en tus guiones">
-                <ul className="list-disc pl-5">{profile.content.evitar.map((x) => <li key={x}>{x}</li>)}</ul>
+                <ul className="list-disc pl-5">{profile.content.evitar.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ul>
               </Row>
             </dl>
           </Card>
@@ -102,7 +102,7 @@ export default async function VozPage() {
 
           <Card>
             <h2 className="text-sm font-extrabold">Reglas para tus guiones</h2>
-            <ul className="mt-2 list-disc pl-5 text-sm text-ink-700">{profile.content.reglas_para_guiones.map((x) => <li key={x}>{x}</li>)}</ul>
+            <ul className="mt-2 list-disc pl-5 text-sm text-ink-700">{profile.content.reglas_para_guiones.map((x, i) => <li key={`${x}-${i}`}>{x}</li>)}</ul>
             <p className="mt-3 text-xs text-ink-500">La prueba de voz (3 guiones cortos para calificar) llega con la generación de guiones.</p>
           </Card>
         </>

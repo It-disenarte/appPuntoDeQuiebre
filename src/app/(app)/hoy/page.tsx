@@ -1,27 +1,54 @@
 import { Camera, Flame } from "lucide-react";
 import type { Metadata } from "next";
-import { ButtonLink, Card, Chip, cn, PageHeader, SampleBadge } from "@/components/ui";
+import Link from "next/link";
+import { ButtonLink, Card, Chip, cn, PageHeader } from "@/components/ui";
+import { StoryCard } from "@/components/plan/StoryCard";
 import { requireCreatorAccess } from "@/lib/auth/gates";
-import { getOverview } from "@/lib/brujula/service";
+import { getOverview, getSchedule } from "@/lib/brujula/service";
+import { blockRange, dayLabel } from "@/lib/brujula/schedule";
+import { addDays, CATEGORY_LABEL, DAY_CODES, DAY_SHORT, dowMon0, mondayOf, todayIso } from "@/lib/plan/rules";
+import { currentStory, getCurrentPlan } from "@/lib/plan/service";
 
 export const metadata: Metadata = { title: "Hoy" };
-
-// Fase 0: datos de ejemplo (referencia visual). Se conectan en Fases 6 (parrilla) y 10 (racha).
-const WEEK = [
-  { d: "L", state: "done" },
-  { d: "M", state: "done" },
-  { d: "M", state: "today" },
-  { d: "J", state: "future" },
-  { d: "V", state: "future" },
-  { d: "S", state: "future" },
-  { d: "D", state: "future" },
-] as const;
 
 export default async function HoyPage() {
   const { user } = await requireCreatorAccess();
   const firstName = user.name.split(" ")[0];
-  const overview = await getOverview(user.id);
+  const today = todayIso();
+  const [overview, data, schedule] = await Promise.all([getOverview(user.id), getCurrentPlan(user.id, today), getSchedule(user.id)]);
   const nextStep = overview.next;
+
+  const pieces = data?.pieces ?? [];
+  const stories = data?.stories ?? [];
+  const todays = pieces.filter((p) => p.day === today && p.status !== "descartado");
+  const upcoming = pieces.filter((p) => p.day > today && p.status === "pendiente").sort((a, b) => (a.day < b.day ? -1 : 1))[0] ?? null;
+  const story = stories.find((s) => s.day === today) ?? null;
+  const storyView = story ? currentStory(story) : null;
+
+  // Racha de la semana (vista previa): un día cuenta si publicó una pieza o marcó su historia como hecha.
+  const monday = mondayOf(today);
+  const doneDay = (iso: string) => pieces.some((p) => p.day === iso && p.status === "publicado") || stories.some((s) => s.day === iso && s.done);
+  const week = DAY_CODES.map((_, i) => {
+    const iso = addDays(monday, i);
+    return { iso, d: DAY_SHORT[i]!.slice(0, 1), state: iso === today ? ("today" as const) : iso < today ? (doneDay(iso) ? ("done" as const) : ("missed" as const)) : ("future" as const) };
+  });
+  let streak = 0;
+  for (let i = dowMon0(today); i >= 0; i--) {
+    const iso = addDays(monday, i);
+    if (doneDay(iso)) streak += 1;
+    else if (iso !== today) break;
+  }
+
+  // Próxima sesión de grabación según su horario (bloques fijos).
+  const blocks = (schedule?.result.bloques ?? []).filter((b) => b.tipo === "fijo" && b.dia && b.inicio);
+  const nextBlock = blocks
+    .map((b) => {
+      const idx = DAY_CODES.indexOf(b.dia as (typeof DAY_CODES)[number]);
+      const delta = (idx - dowMon0(today) + 7) % 7;
+      return { b, date: addDays(today, delta), delta };
+    })
+    .sort((a, b) => a.delta - b.delta)[0];
+  const readyScripts = pieces.filter((p) => p.kind === "video" && p.status === "pendiente").length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,7 +57,7 @@ export default async function HoyPage() {
         title="Tu día"
         action={
           <span className="inline-flex items-center gap-1.5 rounded-full bg-naranja px-3.5 py-2 text-sm font-extrabold text-negro">
-            <Flame className="size-4" aria-hidden /> 12 días
+            <Flame className="size-4" aria-hidden /> {streak} {streak === 1 ? "día" : "días"}
           </span>
         }
       />
@@ -38,68 +65,101 @@ export default async function HoyPage() {
         <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
           <div>
             <p className="font-extrabold">Lo primero: arma tu marca</p>
-            <p className="text-sm text-ink-600">{overview.stepsDone} de {overview.stepsTotal} pasos listos. Con ella tus guiones sonarán a ti.</p>
+            <p className="text-sm text-ink-600">
+              {overview.stepsDone} de {overview.stepsTotal} pasos listos. Con ella tus guiones sonarán a ti.
+            </p>
           </div>
           <ButtonLink href={nextStep.href} size="sm">
             {nextStep.text}
           </ButtonLink>
         </Card>
       )}
-      <div className="flex justify-end">
-        <SampleBadge />
-      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="flex flex-col gap-4">
           <Card className="py-4">
             <ol className="grid grid-cols-7 text-center" aria-label="Racha de esta semana">
-              {WEEK.map((w, i) => (
+              {week.map((w, i) => (
                 <li key={i} className="flex flex-col items-center gap-2">
                   <span className={cn("text-xs", w.state === "today" ? "font-extrabold text-ink-900" : "text-ink-500")}>{w.d}</span>
                   <span
-                    className={cn(
-                      "size-8 rounded-full",
-                      w.state === "done" && "bg-naranja",
-                      w.state === "today" && "border-[2.5px] border-azul",
-                      w.state === "future" && "bg-ink-200",
-                    )}
-                    aria-label={w.state === "done" ? "cumplido" : w.state === "today" ? "hoy" : "pendiente"}
+                    className={cn("size-8 rounded-full", w.state === "done" && "bg-naranja", w.state === "today" && "border-[2.5px] border-azul", (w.state === "future" || w.state === "missed") && "bg-ink-200")}
+                    aria-label={w.state === "done" ? "cumplido" : w.state === "today" ? "hoy" : w.state === "missed" ? "sin actividad" : "pendiente"}
                   />
                 </li>
               ))}
             </ol>
           </Card>
 
-          <section className="relative overflow-hidden rounded-card bg-azul p-6 text-blanco">
-            <p className="rotulo text-azul-100">Tarea de hoy</p>
-            <h2 className="font-display mt-3 text-3xl lg:text-4xl">Publica tu video: 3 errores al empezar un huerto</h2>
-            <div className="mt-4 flex gap-2">
-              <Chip tone="invert">Viral</Chip>
-              <Chip tone="outlineLight">Probado</Chip>
-            </div>
-            <p className="mt-4 text-sm text-azul-100">Programado en Instagram · 7:30 p. m.</p>
-            <ButtonLink href="/semana" variant="light" className="mt-5">
-              Ver guion y textos
-            </ButtonLink>
-          </section>
+          {todays.length > 0 ? (
+            todays.map((p) => (
+              <section key={p.id} className="relative overflow-hidden rounded-card bg-azul p-6 text-blanco">
+                <p className="rotulo text-azul-100">Tarea de hoy</p>
+                <h2 className="font-display mt-3 text-3xl lg:text-4xl">
+                  {p.kind === "video" ? "Publica tu video" : "Publica tu carrusel"}: {p.topic}
+                </h2>
+                <div className="mt-4 flex gap-2">
+                  <Chip tone="invert">{CATEGORY_LABEL[p.category]}</Chip>
+                  <Chip tone="outlineLight">{p.type === "prueba" ? "Prueba" : "Probado"}</Chip>
+                </div>
+                <p className="mt-4 text-sm text-azul-100">A las {p.publishTime} h</p>
+                <ButtonLink href={`/semana/${p.id}`} variant="light" className="mt-5">
+                  Ver guion y textos
+                </ButtonLink>
+              </section>
+            ))
+          ) : (
+            <Card>
+              <p className="text-xs text-ink-500">Tarea de hoy</p>
+              {data ? (
+                <p className="mt-2 font-semibold">{upcoming ? `Hoy no publicas. Lo siguiente: ${upcoming.topic}.` : "Hoy no tienes nada que publicar."}</p>
+              ) : (
+                <p className="mt-2 font-semibold">Todavía no tienes parrilla para esta semana.</p>
+              )}
+              <ButtonLink href="/semana" variant="outline" size="sm" className="mt-3">
+                {data ? "Ver mi semana" : "Armar mi semana"}
+              </ButtonLink>
+            </Card>
+          )}
 
-          <Card className="flex items-center gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-naranja-100 text-ink-900">
-              <Camera className="size-5" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-ink-500">Historia del día</p>
-              <p className="font-semibold">Muestra tu huerto antes de regarlo</p>
+          {storyView && story ? (
+            <div className="flex flex-col gap-2">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <Camera className="size-4" aria-hidden /> Historia del día
+              </p>
+              <StoryCard id={story.id} dayLabel="Hoy" tipo={storyView.tipo} idea={storyView.idea} texto={storyView.texto} sticker={storyView.sticker} minutos={storyView.minutos} own={storyView.own} vote={story.vote} done={story.done} mode="rapido" />
             </div>
-            <Chip tone="naranja">Pendiente</Chip>
-          </Card>
+          ) : (
+            <Card className="flex items-center gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-naranja-100 text-ink-900">
+                <Camera className="size-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-ink-500">Historia del día</p>
+                <p className="font-semibold">Tus ideas llegan con tu parrilla semanal.</p>
+              </div>
+            </Card>
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
           <Card>
             <p className="text-xs text-ink-500">Tu próxima sesión de grabación</p>
-            <p className="mt-2 text-lg font-extrabold">Jueves · 7:30 a 9:00 p. m.</p>
-            <p className="mt-1 text-sm text-ink-500">4 guiones listos · Luz: usa tu aro de luz</p>
+            {nextBlock ? (
+              <>
+                <p className="mt-2 text-lg font-extrabold">
+                  {nextBlock.delta === 0 ? "Hoy" : dayLabel(nextBlock.b.dia)} · {blockRange(nextBlock.b)}
+                </p>
+                <p className="mt-1 text-sm text-ink-500">{readyScripts} {readyScripts === 1 ? "guion listo" : "guiones listos"}</p>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-ink-600">Define tu horario para que te avisemos cuándo grabar.</p>
+                <Link href="/mi-marca/horario" className="mt-2 inline-block text-sm font-semibold text-azul underline underline-offset-4">
+                  Definir mi horario
+                </Link>
+              </>
+            )}
             <ButtonLink href="/grabar" variant="dark" className="mt-4">
               Ir al estudio
             </ButtonLink>

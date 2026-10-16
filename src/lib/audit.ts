@@ -16,6 +16,7 @@ export type AuditAction =
   | "brujula.voice_saved"
   | "brujula.schedule_saved"
   | "brujula.manual_downloaded"
+  | "plan.generated"
   | "kit.approved"
   | "kit.reset"
   | "billing.checkout_started"
