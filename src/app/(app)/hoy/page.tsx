@@ -2,6 +2,7 @@ import { Camera, Flame } from "lucide-react";
 import type { Metadata } from "next";
 import { ButtonLink, Card, Chip, cn, PageHeader, SampleBadge } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
+import { getOverview } from "@/lib/brujula/service";
 
 export const metadata: Metadata = { title: "Hoy" };
 
@@ -19,6 +20,14 @@ const WEEK = [
 export default async function HoyPage() {
   const { user } = await requireCreatorAccess();
   const firstName = user.name.split(" ")[0];
+  const overview = await getOverview(user.id);
+  const nextStep = !overview.progress.complete
+    ? { href: overview.progress.nextBlock ? `/mi-marca/brujula/${overview.progress.nextBlock}` : "/mi-marca/brujula", text: overview.progress.done === 0 ? "Empieza tu brújula" : "Continúa tu brújula" }
+    : !overview.hasVoice
+      ? { href: "/mi-marca/voz", text: "Graba tu muestra de voz" }
+      : !overview.scheduleAccepted
+        ? { href: "/mi-marca/horario", text: "Define tu horario de grabación" }
+        : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,6 +40,17 @@ export default async function HoyPage() {
           </span>
         }
       />
+      {nextStep && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
+          <div>
+            <p className="font-extrabold">Lo primero: tu brújula de marca</p>
+            <p className="text-sm text-ink-600">{overview.stepsDone} de {overview.stepsTotal} pasos listos. Con ella tus guiones sonarán a ti.</p>
+          </div>
+          <ButtonLink href={nextStep.href} size="sm">
+            {nextStep.text}
+          </ButtonLink>
+        </Card>
+      )}
       <div className="flex justify-end">
         <SampleBadge />
       </div>

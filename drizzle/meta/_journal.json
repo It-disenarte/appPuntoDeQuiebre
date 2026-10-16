@@ -15,6 +15,13 @@
       "when": 1792012092281,
       "tag": "0001_fase1_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792175682222,
+      "tag": "0002_fase2_brujula",
+      "breakpoints": true
     }
   ]
 }

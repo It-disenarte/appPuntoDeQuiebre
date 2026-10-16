@@ -1,23 +1,21 @@
 import { ChevronRight, LogOut } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button, ButtonLink, Card, SampleBadge } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip } from "@/components/ui";
 import { portalAction } from "@/lib/account/actions";
 import { logoutAction } from "@/lib/auth/actions";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { subscriptionSummary } from "@/lib/billing/labels";
+import { getManual, getOverview } from "@/lib/brujula/service";
 import { PLANS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Mi marca" };
 
-// Datos de ejemplo: brújula, voz y perfil llegan en las Fases 2 y 3. El plan ya es real (Fase 1).
-const ROWS = [
-  { title: "Perfil de voz", sub: "Basado en tu muestra del 14 de oct" },
-  { title: "Perfil optimizado", sub: "Biografías listas · Foto 8 de 10" },
-  { title: "Horario de grabación", sub: "Martes y jueves · 7:30 p. m." },
-  { title: "Comunidad", sub: "Sesión en vivo jueves 8 p. m. · Discord · WhatsApp" },
+// Perfil optimizado y comunidad llegan en fases posteriores (3-4 y 10).
+const SOON = [
+  { title: "Perfil optimizado", sub: "Biografías y calificación de foto · Fase 4" },
+  { title: "Comunidad", sub: "Sesión en vivo, Discord y WhatsApp · Fase 10" },
 ];
-const PALETTE = ["#3D6B3A", "#D8A23A", "#EFE5D2", "#26262A"];
 
 function initials(name: string) {
   return name
@@ -31,6 +29,13 @@ function initials(name: string) {
 export default async function MiMarcaPage() {
   const { user, access } = await requireCreatorAccess();
   const sub = access.subscription;
+  const [overview, manual] = await Promise.all([getOverview(user.id), getManual(user.id)]);
+  const m = manual?.content;
+  const rows = [
+    { href: "/mi-marca/brujula", title: "Mi brújula", sub: overview.progress.complete ? "Completa · toca para editar" : `${overview.progress.done} de ${overview.progress.total} bloques`, done: overview.progress.complete },
+    { href: "/mi-marca/voz", title: "Perfil de voz", sub: overview.hasVoice ? (overview.voiceIsMock ? "Versión de prueba" : "Listo") : "Graba tu muestra de 2 a 3 minutos", done: overview.hasVoice },
+    { href: "/mi-marca/horario", title: "Horario de grabación", sub: overview.scheduleAccepted ? "Aceptado · toca para editar" : overview.hasSchedule ? "Falta confirmar tu propuesta" : "5 preguntas rápidas", done: overview.scheduleAccepted },
+  ];
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-center gap-4">
@@ -65,28 +70,52 @@ export default async function MiMarcaPage() {
           <Card>
             <div className="flex items-center justify-between">
               <p className="text-xs text-ink-500">Manual de identidad</p>
-              <SampleBadge />
+              {!m && <Chip>Pendiente</Chip>}
             </div>
-            <div className="mt-3 flex gap-2">
-              {PALETTE.map((c) => (
-                <span key={c} className="size-10 rounded-lg ring-1 ring-ink-200" style={{ background: c }} />
-              ))}
-            </div>
-            <p className="mt-3 text-sm">Tono: cercano, práctico y alegre</p>
-            <p className="mt-1 text-sm">Pilares: errores comunes · cultivos fáciles · mi historia</p>
-            <p className="mt-3 text-sm font-semibold text-azul underline underline-offset-4">Ver manual completo</p>
+            {m ? (
+              <>
+                <div className="mt-3 flex gap-2">
+                  {m.creative.palette.colors.map((c) => (
+                    <span key={c.hex + c.role} className="size-10 rounded-lg ring-1 ring-ink-200" style={{ background: c.hex }} title={c.name} />
+                  ))}
+                </div>
+                <p className="mt-3 text-sm">Pilares: {m.creative.pillars.map((p) => p.name).join(" · ")}</p>
+                <Link href="/mi-marca/manual" className="mt-3 inline-block text-sm font-semibold text-azul underline underline-offset-4">
+                  Ver manual completo
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-ink-600">Se arma con tu brújula: pilares, tono, paleta y estilo de grabación.</p>
+                <ButtonLink href="/mi-marca/brujula" size="sm" className="mt-3">
+                  {overview.progress.done === 0 ? "Empezar mi brújula" : "Continuar mi brújula"}
+                </ButtonLink>
+              </>
+            )}
           </Card>
         </div>
 
         <Card className="p-0">
           <ul className="divide-y divide-ink-200">
-            {ROWS.map((r) => (
+            {rows.map((r) => (
+              <li key={r.title}>
+                <Link href={r.href} className="flex items-center gap-3 px-5 py-4 hover:bg-ink-100">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{r.title}</p>
+                    <p className="truncate text-xs text-ink-500">{r.sub}</p>
+                  </div>
+                  {r.done && <Chip tone="exito">Listo</Chip>}
+                  <ChevronRight className="size-4 text-ink-400" aria-hidden />
+                </Link>
+              </li>
+            ))}
+            {SOON.map((r) => (
               <li key={r.title} className="flex items-center gap-3 px-5 py-4">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{r.title}</p>
+                  <p className="font-semibold text-ink-600">{r.title}</p>
                   <p className="truncate text-xs text-ink-500">{r.sub}</p>
                 </div>
-                <ChevronRight className="size-4 text-ink-400" aria-hidden />
+                <Chip>Pronto</Chip>
               </li>
             ))}
             <li className="flex items-center gap-3 px-5 py-4">

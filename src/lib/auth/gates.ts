@@ -6,7 +6,7 @@ import { hasCreatorAccess } from "@/lib/billing/access";
 import { getAccess, type AccessInfo } from "@/lib/billing/service";
 import { db } from "@/lib/db";
 import { commitments } from "@/lib/db/schema";
-import { requireUser } from "./dal";
+import { getApiUser, requireUser } from "./dal";
 import type { SessionUser } from "./session";
 
 /** Acceso por pago, cacheado por petición (layout + página no consultan dos veces). */
@@ -39,4 +39,17 @@ export async function requirePaidUser(): Promise<{ user: SessionUser; access: Ac
   const access = await getAccessCached(user.id);
   if (!hasCreatorAccess(access.state)) redirect("/suscripcion");
   return { user, access };
+}
+
+/**
+ * Para Route Handlers del creador (sin redirecciones): sesión válida con acceso pagado y compromiso aceptado.
+ * Los admins pasan. Devuelve null si no corresponde.
+ */
+export async function getApiCreator(): Promise<SessionUser | null> {
+  const user = await getApiUser();
+  if (!user) return null;
+  if (user.role === "admin") return user;
+  const access = await getAccessCached(user.id);
+  if (!hasCreatorAccess(access.state)) return null;
+  return (await hasAcceptedCommitment(user.id)) ? user : null;
 }

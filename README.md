@@ -7,8 +7,8 @@ El desarrollo va por fases. Cada fase deja un documento de contexto para auditor
 | Fase | Estado |
 | --- | --- |
 | 0 · Cimientos (proyecto, BD, inicio de sesión, diseño, PWA, shell, admin mínimo, Docker) | Aprobada |
-| 1 · Base (registro, 18+, Stripe, compromiso, MinIO, panel de clientes, códigos y facturas) | En revisión |
-| 2 · Brújula (formulario, voz, horario, manual PDF) | Pendiente |
+| 1 · Base (registro, 18+, Stripe, compromiso, MinIO, panel de clientes, códigos y facturas) | Aprobada |
+| 2 · Brújula (formulario, voz, horario, manual PDF) | En revisión |
 
 ## Desarrollo local (Windows, sin Docker)
 
