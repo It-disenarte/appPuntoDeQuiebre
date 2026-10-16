@@ -23,7 +23,8 @@ describe("horario-v1 (reglas de la skill)", () => {
     expect(fijos.map((b) => [b.dia, b.inicio, b.fin])).toEqual([["M", "19:00", "20:00"], ["J", "19:00", "20:00"]]);
     const respaldo = r.bloques.find((b) => b.tipo === "respaldo")!;
     expect(respaldo.dia).toBe("D");
-    expect(respaldo.inicio).toBe("08:00"); // regla 4: mañana 08:00
+    expect(respaldo.inicio).toBe("10:00"); // mañana de fin de semana a las 10:00 (decisión 4b)
+    expect(respaldo.fin).toBe("12:00");
     expect(r.horas_semana).toBe(2);
     expect(r.horas_con_extra).toBe(4);
     expect(r.sugerencia).toMatch(/suman 2 horas/);
@@ -32,6 +33,11 @@ describe("horario-v1 (reglas de la skill)", () => {
     expect(r.recordatorios.some((x) => x.cuando === "martes 18:00")).toBe(true);
     expect(r.consejos.length).toBeGreaterThanOrEqual(2);
     expect(r.consejos.length).toBeLessThanOrEqual(3);
+  });
+  it("la mañana arranca a las 08:00 entre semana y a las 10:00 en fin de semana", () => {
+    const r = buildSchedule({ dias: [day("L", ["manana"], 60), day("J", ["manana"], 60), day("S", ["manana"], 60, true)], lugar: ["casa"], luz: ["natural"] });
+    expect(r.bloques.filter((b) => b.tipo === "fijo").map((b) => b.inicio)).toEqual(["08:00", "08:00"]);
+    expect(r.bloques.find((b) => b.tipo === "respaldo")!.inicio).toBe("10:00");
   });
   it("un día con 'a veces no puedo' nunca es fijo", () => {
     const r = buildSchedule({ dias: [day("L", ["tarde"], 120), day("X", ["tarde"], 120, true), day("V", ["tarde"], 120)], lugar: ["casa"], luz: ["natural"] });

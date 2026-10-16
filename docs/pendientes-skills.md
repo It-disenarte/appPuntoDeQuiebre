@@ -1,29 +1,28 @@
-# Pendientes y dudas sobre las skills (para Mishell y Moy)
+# Decisiones y dudas sobre las skills (para Mishell y Moy)
 
-Surgieron al conectar `brujula-v2`, `perfil-voz-v1` y `horario-v1` en la Fase 2A. Marcado como [Mishell] o [Moy] según quién decide.
+Surgieron al conectar `brujula-v2`, `perfil-voz-v1` y `horario-v1` en la Fase 2A. El 2026-10-16 el usuario aceptó las recomendaciones de las dudas 1 a 8; quedan como decisiones registradas. **Mishell debe actualizar sus archivos originales** con lo marcado como "cambia en su copia".
 
-## Esquemas y entradas
+## Decisiones tomadas (2026-10-16)
 
-1. **[Mishell + Moy] Ajuste por sección.** La skill dice que con ✏️ cambia "solo lo que dice la nota" y con 👎 reescribe la sección, pero no define la entrada. Hoy la app manda la entrada normal más un campo nuevo:
-   ```json
-   "ajuste": { "seccion": "nicho | publico | pilares | tono | postura", "voto": "ajustar | no", "nota": "string", "manual_actual": { "...salida actual de la brújula": {} } }
-   ```
-   ¿Les sirve así? (Es un campo agregado: la regla de oro lo permite.)
-2. **[Mishell] Perfil de voz, `formalidad`.** El esquema dice `"1 a 5"` (texto) y el ejemplo trae el número `2`. La app acepta número entero de 1 a 5.
-3. **[Mishell] Horario, `cuando` de los recordatorios.** El esquema dice `dia_anterior_20:00 | 1h_antes`; el ejemplo usa `"lunes 20:00"`. La app sigue el ejemplo.
-4. **[Mishell] Horario, hora de inicio.** La regla 4 dice mañana 08:00; el ejemplo de Blombito pone el domingo (mañana) a las 10:00. La app sigue la regla (08:00). ¿Cuál queda?
-5. **[Mishell] Horario, día de 1 hora.** La regla 2 dice que se parte en dos tramos con 15 minutos de descanso "(1 h + 30 min)" o se suma un tercer bloque fijo. No quedó claro; no está implementado.
-6. **[Mishell] Prueba de voz.** Pide "3 guiones cortos de prueba (uno por pilar)", pero ninguna skill entregada genera guiones. ¿Qué skill los hace? Sin ella no se puede construir esa pantalla.
-7. **[Mishell] Brújula con campo `kit_visual`.** Hoy se manda `null` (el kit visual se construye en la Fase 2B). ¿La brújula debe poder correr sin kit y regenerarse después?
+| # | Tema | Decisión | Qué cambió |
+| --- | --- | --- | --- |
+| 1 | Campo `ajuste` para recalificar una sección | **Confirmado tal cual.** `ajuste: { seccion, voto, nota, manual_actual }` se agrega a la entrada de `brujula-v2` (la regla de oro permite agregar campos). Probado con Claude real: ✏️ y 👎 cambian solo la sección pedida. | Nada. Mishell: agregarlo a la sección "Entrada" de su skill. |
+| 2 | `formalidad` del perfil de voz | **Número entero de 1 a 5.** | Cambia en su copia (`skills/perfil-voz/v1/skill.md`): el esquema dice `3` con el comentario, no `"1 a 5"`. Mishell: igual en el original. |
+| 3 | Formato de `cuando` en recordatorios | **El del ejemplo:** `"lunes 20:00"`. | Nada. Mishell: corregir la línea del esquema (`dia_anterior_20:00 \| 1h_antes`). |
+| 4 | Hora de inicio de la mañana | **08:00 entre semana y 10:00 en fin de semana.** Con esto el ejemplo de Blombito (domingo 10:00 a 12:00) sale igual. | Código (`schedule.ts`), prueba nueva y regla 4 de su copia. Mishell: igual en el original. |
+| 5 | Día de solo 1 hora | **Un solo bloque**, con el consejo "graba un solo video y llega con el guion leído". No se parte en dos tramos ni se suma un tercer bloque. | Nada. Mishell: aclarar o quitar la frase de la regla 2 sobre dos tramos. |
+| 6 | Prueba de voz (3 guiones) | **Se hace en la Fase 6**, cuando llegue la skill de guiones. | Nada por ahora. |
+| 7 | Brújula antes del kit visual | **Corre sin kit** (`kit_visual: null`) y se puede rehacer después. La IA real lo acepta (`kit_visual_ref` puede ser `null`). | Esquema tolerante. Mishell: indicar que sin kit `kit_visual_ref` va en `null`. |
+| 8 | "Lo íntimo no se publica" (regla 13) | **Se confía en el prompt**, y los primeros resultados reales se revisan a mano antes de abrir a usuarios. | Nada. |
 
-## Producto
+## Ya resueltas antes
 
-8. **[Mishell] Lo íntimo no se publica (regla 13).** Con IA real, ¿quieren que la app filtre algo por su cuenta (por ejemplo, avisar si la historia menciona salud o familia), o se confía solo en el prompt?
-9. **[Moy] Transcripción.** El transcriptor debe recibir el nombre de la marca como contexto (ya transcribió "Plombito"). Hoy la transcripción es de prueba; falta la cuenta y la llave de Gemini.
-10. **[Moy] Costos.** `ai_calls` guarda tokens pero el costo en centavos queda en 0: falta la tabla de precios por modelo para calcularlo.
-11. **[Mishell] Modo sin auditoría.** Hasta la Fase 3 la brújula no tiene auditoría ni tarjetas ("Así te vemos"). Está contemplado (`modo: sin_contenido`), pero el `puente` queda en `null` y los datos de audiencia en `datos_faltantes`.
+- **Transcripción** (antes la duda 9): usa **Gemini**, verificado en el VPS. Se le manda el nombre de quien habla para escribirlo bien (funcionó con "Plombito"). Falta sumar el nombre de la marca cuando exista en el perfil.
+- **Auditoría y tarjetas** (antes la 11): esperan a la Fase 3 (Instagram); mientras tanto la brújula corre en modo `sin_contenido`, con `puente: null`.
+- **Costo por llamada** (antes la 10): `ai_calls` guarda los tokens; el costo en pesos se calcula cuando se construya el panel de métricas del negocio (Fase 7), con una tabla de precios por modelo.
 
-## Pendientes ya anotados en `pendientes-moy.md` que siguen abiertos
+## Siguen abiertas (de `pendientes-moy.md`)
 
-- Métricas de la cuenta propia (opción A/B/C): se decide en la Fase 3.
-- Dónde se generan las imágenes y costo por alta de cada cliente.
+- Métricas de la cuenta propia (opción A/B/C de Meta): se decide en la Fase 3.
+- Dónde se generan las imágenes de los carruseles y si en Pro se usa la API de Gemini.
+- Costo por alta de cada cliente (Claude + Gemini + Apify): se puede estimar con los tokens que ya se registran.

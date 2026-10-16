@@ -84,7 +84,9 @@ type Planned = { day: DayAnswer; moment: MomentId; start: number; end: number };
 
 function plan(d: DayAnswer): Planned {
   const moment = d.momentos[0]!;
-  const start = toMin(MOMENTS.find((m) => m.value === moment)!.start);
+  // Decisión (2026-10-16): la mañana arranca a las 08:00 entre semana y a las 10:00 en fin de semana.
+  const weekend = day(d.dia).idx >= 5;
+  const start = toMin(moment === "manana" && weekend ? "10:00" : MOMENTS.find((m) => m.value === moment)!.start);
   return { day: d, moment, start, end: start + d.duracion_min };
 }
 

@@ -29,7 +29,7 @@ Eres una editora de guiones que escucha con atención cómo habla una persona: q
 ```json
 {
   "skill_version": "perfil-voz-v1",
-  "formalidad": "1 a 5 (1 = muy casual, 5 = muy formal)",
+  "formalidad": 3,   // número entero de 1 a 5 (1 = muy casual, 5 = muy formal)
   "energia": "string",
   "ritmo": "string (largo de frases, cómo encadena ideas)",
   "estructura_tipica": ["string (pasos en que suele armar una idea)"],
