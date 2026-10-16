@@ -79,6 +79,8 @@ Tarjetas de prueba: `4242 4242 4242 4242` (pago ok), `4000 0000 0000 0341` (se r
 2. En la consola de MinIO crea un usuario (o *access key*) solo para la app.
 3. Variables en `pdq-app` y `pdq-worker`: `S3_ENDPOINT=http://NOMBRE-INTERNO-DEL-SERVICIO:9000`, `S3_BUCKET=pdq-media`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`. El bucket se crea solo la primera vez.
 4. El video de bienvenida se sube desde **Panel → Ajustes**.
+5. **Easypanel nombra los servicios `proyecto_servicio` (con guion bajo) y MinIO rechaza esos nombres de host** (`InvalidRequest: invalid hostname`). Usa la **IP interna** del servicio en `S3_ENDPOINT`: desde la consola de `pdq-app` ejecuta `getent hosts PROYECTO_pdq-minio` y pon `http://IP:9000`. Si recreas `pdq-minio`, la IP puede cambiar: repite el paso en `pdq-app` y `pdq-worker`.
+6. Las imágenes `minio/minio` (Docker Hub) y `quay.io/minio/minio` ya no se pueden descargar sin cuenta; se usa `cgr.dev/chainguard/minio:latest`. Esa imagen ya no se actualiza con frecuencia: antes de abrir a clientes reales, revisar si se sigue con ella o se cambia de almacenamiento. La consola de esta edición no tiene *Access Keys*: la app usa el usuario raíz (pendiente: llave con permisos limitados con `mc`).
 
 ### Reglas de operación
 

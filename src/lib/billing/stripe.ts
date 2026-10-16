@@ -33,7 +33,7 @@ export function billingConfigured(): boolean {
 }
 
 export function isLiveMode(): boolean {
-  return env().STRIPE_SECRET_KEY?.includes("_live_") ?? false;
+  return /^(sk|rk)_live_/.test(env().STRIPE_SECRET_KEY ?? "");
 }
 
 export function priceIdFor(plan: PlanId): string {

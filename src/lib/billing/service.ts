@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { auditLog, billingEvents, payments, promoCodes, promoRedemptions, subscriptions, users, type Subscription } from "@/lib/db/schema";
 import { env } from "@/lib/env";
+import { rateLimit } from "@/lib/rate";
 import type { PlanId } from "@/lib/plans";
 import { computeAccess, graceEndsAt, hasLiveSubscription, type AccessState } from "./access";
 import { customerIdOf, mapSubscription, nextPastDueSince, shouldOverwrite, type ProviderSubscription } from "./map";
@@ -176,8 +177,12 @@ export async function openPortal(userId: string): Promise<string | null> {
 /** Al volver de Stripe: confirma el pago sin esperar al webhook (y verifica que la sesión sea de este usuario). */
 export async function confirmCheckout(sessionId: string, userId: string): Promise<boolean> {
   if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) return false;
+  // Recargar la página no vuelve a llamar a Stripe si la suscripción ya quedó registrada.
+  if (hasLiveSubscription((await getAccess(userId)).state)) return true;
+  // Tope por usuario: esta ruta se ejecuta al renderizar y consulta a Stripe.
+  if (!(await rateLimit(`confirmar:user:${userId}`, 20, 10 * 60 * 1000))) return false;
   const session = await stripe().checkout.sessions.retrieve(sessionId);
-  if (session.client_reference_id !== userId || session.status !== "complete") return false;
+  if (session.client_reference_id !== userId || session.metadata?.userId !== userId || session.status !== "complete") return false;
   await completeRedemption(session.id);
   const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
   if (subId) await syncSubscription(subId);

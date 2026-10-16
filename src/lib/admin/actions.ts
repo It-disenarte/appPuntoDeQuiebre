@@ -98,7 +98,7 @@ const optionalDay = (endOfDay: boolean) =>
     (v) => (v === "" || v === null ? undefined : v),
     z
       .string()
-      .regex(/^d{4}-d{2}-d{2}$/)
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
       .transform((d) => new Date(`${d}T${endOfDay ? "23:59:59" : "00:00:00"}-06:00`))
       .optional(),
   );

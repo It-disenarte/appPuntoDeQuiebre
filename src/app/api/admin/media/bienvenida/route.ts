@@ -6,6 +6,7 @@ import { getApiUser, isSameOrigin } from "@/lib/auth/dal";
 import { getClientIp } from "@/lib/request";
 import { getSetting, setSetting, SETTING_KEYS, type WelcomeVideo } from "@/lib/settings";
 import { deleteObject, putObjectStream, storageConfigured } from "@/lib/storage";
+import { matchesVideoSignature, SIGNATURE_BYTES } from "@/lib/video-signature";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,25 @@ export async function POST(request: Request) {
   if (!request.body) return Response.json({ error: "Archivo vacío." }, { status: 400 });
 
   // Cuenta los bytes reales: corta si el cuerpo excede lo declarado o el máximo.
+  // Además verifica que los primeros bytes sean de un video real (MP4/MOV/WebM).
   let received = 0;
+  let head: Buffer | null = Buffer.alloc(0);
   const limiter = new Transform({
     transform(chunk: Buffer, _enc, cb) {
       received += chunk.length;
-      if (received > MAX_BYTES || received > declared) cb(new Error("Tamaño excedido"));
-      else cb(null, chunk);
+      if (received > MAX_BYTES || received > declared) return cb(new Error("Tamaño excedido"));
+      if (head) {
+        head = Buffer.concat([head, chunk]);
+        if (head.length < SIGNATURE_BYTES) return cb();
+        if (!matchesVideoSignature(head, contentType)) return cb(new Error("Firma de video inválida"));
+        const ready = head;
+        head = null;
+        return cb(null, ready);
+      }
+      cb(null, chunk);
+    },
+    flush(cb) {
+      cb(head ? new Error("Archivo demasiado corto") : null);
     },
   });
   const body = Readable.fromWeb(request.body as unknown as NodeWebReadableStream).pipe(limiter);
