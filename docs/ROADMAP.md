@@ -35,7 +35,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A11 | Conectar Instagram (inicio de sesión oficial, desconectar cuando quiera) y guía de cuenta profesional | 3 | ⬜ ⛔B1 | — |
 | A12 | Auditoría de su cuenta y tarjetas "Así te vemos" | 3 | ⬜ ⛔B1 | — |
 | A13 | Optimización de perfil (capturas → nombre, bio por red, destacadas) y calificador de foto | 4 | ⬜ | — |
-| A14 | Analizador de competencia (1 vez cada 7 días, con contador) | 5 | ⬜ ⛔B3 | — |
+| A14 | Analizador de competencia (1 vez cada 7 días, con contador) | 5 | 🧪 | Con APIFY_TOKEN y Gemini: correr sobre 2 cuentas reales; sin llaves corre con ejemplos |
 | A15 | Parrilla semanal (4 videos + 3 carruseles en Básico; 5 + 2 en Pro) con categoría, probado/prueba y tarjeta de prueba | 6 | 🧪 | Generar la semana en Básico y en Pro; revisar mezcla y variante |
 | A16 | Guion completo y textos distintos por red (Instagram, TikTok, Facebook) con 3 ganchos | 6 | 🧪 | Abrir una pieza, escribir textos, elegir gancho, 👍 ✏️, copiar |
 | A17 | Idea de historia diaria (otra idea, voto, idea propia) | 6 | 🧪 | Usar las 7 tarjetas de la semana y la de Hoy |
@@ -43,9 +43,9 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | ⬜ | — |
 | A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | ⬜ | — |
 | A21 | Publicar y programar en Instagram; descargar y copiar para TikTok y Facebook | 9 | ⬜ ⛔B1 | — |
-| A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | ⬜ | — |
+| A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |
 | A23 | Comunidad: sesión en vivo, Discord, WhatsApp | 10 | ⬜ ⛔B5 | — |
-| A24 | Progreso: métricas en lenguaje sencillo, comparadas contra sí mismo, hallazgos como hipótesis | 11 | ⬜ ⛔B1 | — |
+| A24 | Progreso: métricas en lenguaje sencillo, comparadas contra sí mismo, hallazgos como hipótesis | 11 | 🧪 | Por capturas mensuales (sin API de Meta); probar con capturas reales |
 | A25 | Coach de video, tendencias, edición automática (solo Pro) | V2 | ⬜ ⛔B4 ⛔B5 | — |
 | A26 | Instalar como app en el teléfono (PWA), modo sin conexión básico | 0 | ✅ | Instalar en iPhone y Android |
 

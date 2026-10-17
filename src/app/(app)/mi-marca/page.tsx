@@ -7,6 +7,10 @@ import { logoutAction } from "@/lib/auth/actions";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { subscriptionSummary } from "@/lib/billing/labels";
 import { getManual, getOverview } from "@/lib/brujula/service";
+import { PushToggle } from "@/components/notify/PushToggle";
+import { endPauseAction, startPauseAction, toggleNotificationsAction } from "@/lib/notify/actions";
+import { getSettings, isPaused } from "@/lib/notify/service";
+import { env } from "@/lib/env";
 import { PLANS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Mi marca" };
@@ -31,6 +35,10 @@ export default async function MiMarcaPage() {
   const sub = access.subscription;
   const [overview, manual] = await Promise.all([getOverview(user.id), getManual(user.id)]);
   const m = manual?.content;
+  const settings = await getSettings(user.id);
+  const paused = isPaused(settings?.pauseUntil);
+  const notificationsOn = settings?.notificationsEnabled ?? true;
+  const vapid = env().VAPID_PUBLIC_KEY ?? null;
   const rows = [
     { href: "/mi-marca/historia", title: "Tu historia", sub: overview.story.ready ? "Completa · toca para editar" : `${overview.story.done} de ${overview.story.total} preguntas`, done: overview.story.ready },
     { href: "/mi-marca/manual", title: "Mi brújula", sub: overview.manualApproved ? "Aprobada" : overview.hasManual ? `${overview.sectionsApproved} de 5 secciones aprobadas` : "Se arma con tu historia", done: overview.manualApproved },
@@ -94,6 +102,50 @@ export default async function MiMarcaPage() {
           </Card>
         </div>
 
+        <div className="flex flex-col gap-4">
+        <Card className="flex flex-col gap-3">
+          <p className="font-extrabold">Avisos</p>
+          <p className="text-sm text-ink-600">Te recordamos tus sesiones de grabación, tus publicaciones y tus métricas del mes.</p>
+          {notificationsOn ? <PushToggle publicKey={vapid} /> : <p className="text-sm text-ink-600">Tienes los avisos apagados.</p>}
+          <form action={toggleNotificationsAction}>
+            <input type="hidden" name="enabled" value={notificationsOn ? "0" : "1"} />
+            <button type="submit" className="tap text-sm font-semibold text-ink-600 underline underline-offset-4">
+              {notificationsOn ? "Apagar todos los avisos" : "Volver a encender los avisos"}
+            </button>
+          </form>
+        </Card>
+        <Card className="flex flex-col gap-3">
+          <p className="font-extrabold">Modo pausa</p>
+          {paused ? (
+            <>
+              <p className="text-sm text-ink-700">Tu racha está congelada y no te mandamos avisos hasta el <strong>{settings!.pauseUntil}</strong>.</p>
+              <form action={endPauseAction}>
+                <Button type="submit" size="sm">
+                  Volver ahora
+                </Button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink-600">¿Semana difícil? Congela tu racha hasta una semana, sin culpas.</p>
+              <form action={startPauseAction} className="flex flex-wrap items-end gap-2">
+                <label className="flex flex-col gap-1 text-sm font-semibold">
+                  Por cuántos días
+                  <select name="dias" defaultValue="3" className="h-11 rounded-xl border border-ink-300 bg-blanco px-3 font-normal">
+                    {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? "día" : "días"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Button type="submit" variant="outline" size="sm">
+                  Pausar
+                </Button>
+              </form>
+            </>
+          )}
+        </Card>
         <Card className="p-0">
           <ul className="divide-y divide-ink-200">
             {rows.map((r) => (
@@ -117,15 +169,9 @@ export default async function MiMarcaPage() {
                 <Chip>Pronto</Chip>
               </li>
             ))}
-            <li className="flex items-center gap-3 px-5 py-4">
-              <div className="flex-1">
-                <p className="font-semibold">Modo pausa</p>
-                <p className="text-xs text-ink-500">Congela tu racha hasta 1 semana</p>
-              </div>
-              <input type="checkbox" disabled className="size-5 accent-azul" aria-label="Modo pausa" />
-            </li>
           </ul>
         </Card>
+        </div>
       </div>
 
       <div className="mt-2 flex flex-wrap gap-3 lg:hidden">

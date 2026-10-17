@@ -12,6 +12,10 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
+import { runAnalyzer } from "@/lib/analyzer/service";
+import { claimNext, completeJob, failJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
+import { runExtraction } from "@/lib/metrics/service";
+import { tickNotifications } from "@/lib/notify/service";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -28,7 +32,46 @@ const db = drizzle(sqlClient, { casing: "snake_case" });
 export const QUEUES = {
   cleanup: "maintenance-cleanup",
   releaseReservations: "billing-release-reservations",
+  notifyTick: "notify-tick",
 } as const;
+
+/** Trabajos largos que encola la app (tabla `jobs`). Cada tipo tiene su propio ciclo para que uno lento no bloquee a los demás. */
+const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
+  "metricas.leer": async (job) => {
+    const p = job.payload as { period?: string };
+    if (!job.userId || !p.period) throw new Error("Trabajo sin usuario o periodo");
+    await runExtraction(job.userId, p.period);
+  },
+  "analizador.correr": async (job) => {
+    const p = job.payload as { runId?: string };
+    if (!job.userId || !p.runId) throw new Error("Trabajo sin usuario o corrida");
+    await runAnalyzer(job.userId, p.runId);
+  },
+};
+
+async function jobLoop(kind: JobKind, everyMs: number, stop: { value: boolean }) {
+  while (!stop.value) {
+    try {
+      const job = await claimNext([kind]);
+      if (!job) {
+        await new Promise((r) => setTimeout(r, everyMs));
+        continue;
+      }
+      const handler = JOB_HANDLERS[job.kind];
+      try {
+        if (!handler) throw new Error(`Sin manejador para ${job.kind}`);
+        await handler(job);
+        await completeJob(job.id);
+      } catch (err) {
+        console.error(`[worker] el trabajo ${job.kind} falló`, err instanceof Error ? err.message : err);
+        await failJob(job.id, err instanceof Error ? err.message : "Error desconocido");
+      }
+    } catch (err) {
+      console.error("[worker] error en el ciclo de trabajos", err instanceof Error ? err.message : err);
+      await new Promise((r) => setTimeout(r, everyMs * 3));
+    }
+  }
+}
 
 async function cleanup() {
   const now = new Date();
@@ -86,10 +129,23 @@ async function main() {
     await releaseReservations();
   });
 
+  // Avisos (Web Push): cada 5 minutos se revisa a quién le toca algo.
+  await boss.createQueue(QUEUES.notifyTick);
+  await boss.schedule(QUEUES.notifyTick, "*/5 * * * *", null, { tz: "America/Mexico_City" });
+  await boss.work(QUEUES.notifyTick, async () => {
+    const r = await tickNotifications();
+    if (r.sent > 0) console.log("[worker] avisos enviados", r);
+  });
+
+  const stopJobs = { value: false };
+  void jobLoop("metricas.leer", 4000, stopJobs);
+  for (const kind of Object.keys(JOB_HANDLERS)) if (kind !== "metricas.leer") void jobLoop(kind as JobKind, 5000, stopJobs);
+
   console.log("[worker] listo");
 
   const shutdown = async (signal: string) => {
     console.log(`[worker] ${signal}: deteniendo…`);
+    stopJobs.value = true;
     await boss.stop({ graceful: true, timeout: 20_000 });
     await sqlClient.end();
     process.exit(0);

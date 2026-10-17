@@ -461,3 +461,164 @@ export const storyIdeas = pgTable(
   },
   (t) => [uniqueIndex("story_ideas_plan_day_idx").on(t.planId, t.day)],
 );
+
+/* ───────────── Fases 5, 10 y 11 · Trabajos, notificaciones, métricas y analizador ───────────── */
+
+/** Cola de trabajos largos (analizador, lectura de capturas). El worker los toma con SKIP LOCKED. */
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    payload: jsonb("payload").$type<unknown>().notNull().default({}),
+    status: text("status", { enum: ["pendiente", "corriendo", "lista", "error"] }).notNull().default("pendiente"),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(2),
+    runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [index("jobs_pick_idx").on(t.status, t.runAfter), index("jobs_user_kind_idx").on(t.userId, t.kind, t.createdAt)],
+);
+
+/** Suscripciones de Web Push (una por navegador o teléfono). */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    failures: integer("failures").notNull().default(0),
+    lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("push_endpoint_idx").on(t.endpoint), index("push_user_idx").on(t.userId)],
+);
+
+/** Registro de notificaciones: la clave (usuario, tipo, referencia) evita enviar dos veces lo mismo. */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    refKey: text("ref_key").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    url: text("url").notNull(),
+    status: text("status", { enum: ["pendiente", "enviada", "fallida", "omitida"] }).notNull().default("pendiente"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("notifications_dedupe_idx").on(t.userId, t.kind, t.refKey), index("notifications_user_idx").on(t.userId, t.createdAt)],
+);
+
+/** Preferencias del creador: modo pausa y avisos. */
+export const creatorSettings = pgTable("creator_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** El modo pausa congela la racha y silencia los avisos hasta esta fecha (máximo 7 días). */
+  pauseUntil: date("pause_until"),
+  pauseStartedAt: timestamp("pause_started_at", { withTimezone: true }),
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(true),
+  ...timestamps,
+});
+
+/** Informe mensual de métricas leído de las capturas de pantalla del creador. */
+export const metricReports = pgTable(
+  "metric_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Mes que se reporta, AAAA-MM. */
+    period: text("period").notNull(),
+    /** captura (subiendo imágenes) → procesando (leyendo) → revision (el creador confirma sus cifras) → lista (con explicación). */
+    status: text("status", { enum: ["captura", "procesando", "revision", "lista", "error"] }).notNull().default("captura"),
+    shots: integer("shots").notNull().default(0),
+    /** Llaves en MinIO de las capturas; se borran al terminar de leerlas. */
+    shotKeys: jsonb("shot_keys").$type<unknown>().notNull().default([]),
+    extracted: jsonb("extracted").$type<unknown>(),
+    confirmed: jsonb("confirmed").$type<unknown>(),
+    explanation: jsonb("explanation").$type<unknown>(),
+    mock: boolean("mock").notNull().default(false),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("metric_reports_user_period_idx").on(t.userId, t.period)],
+);
+
+/** Cuentas que el creador quiere estudiar: sus referentes del alta y las que agregue. */
+export const competitors = pgTable(
+  "competitors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    username: text("username").notNull(),
+    source: text("source", { enum: ["referente", "manual"] }).notNull().default("manual"),
+    followers: integer("followers"),
+    reels30d: integer("reels_30d"),
+    avgViews30d: integer("avg_views_30d"),
+    lastScrapedAt: timestamp("last_scraped_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("competitors_user_name_idx").on(t.userId, t.username)],
+);
+
+/** Una corrida del analizador de competencia (1 cada 7 días). */
+export const analyzerRuns = pgTable(
+  "analyzer_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["en_cola", "corriendo", "lista", "error"] }).notNull().default("en_cola"),
+    params: jsonb("params").$type<unknown>().notNull(),
+    progress: jsonb("progress").$type<unknown>().notNull().default({}),
+    summary: jsonb("summary").$type<unknown>(),
+    mock: boolean("mock").notNull().default(false),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("analyzer_runs_user_idx").on(t.userId, t.createdAt)],
+);
+
+/** Cada video de la competencia ya analizado, con los conceptos nuevos adaptados al creador. */
+export const analyzedVideos = pgTable(
+  "analyzed_videos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => analyzerRuns.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    creator: text("creator").notNull(),
+    link: text("link").notNull(),
+    thumbnailKey: text("thumbnail_key"),
+    views: integer("views").notNull().default(0),
+    likes: integer("likes").notNull().default(0),
+    comments: integer("comments").notNull().default(0),
+    datePosted: date("date_posted"),
+    analysis: jsonb("analysis").$type<unknown>().notNull(),
+    concepts: jsonb("concepts").$type<unknown>().notNull(),
+    starred: boolean("starred").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("analyzed_videos_run_idx").on(t.runId), index("analyzed_videos_user_idx").on(t.userId, t.views)],
+);
