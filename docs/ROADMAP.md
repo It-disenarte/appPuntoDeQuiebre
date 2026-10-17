@@ -39,8 +39,8 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A15 | Parrilla semanal (4 videos + 3 carruseles en Básico; 5 + 2 en Pro) con categoría, probado/prueba y tarjeta de prueba | 6 | 🧪 | Generar la semana en Básico y en Pro; revisar mezcla y variante |
 | A16 | Guion completo y textos distintos por red (Instagram, TikTok, Facebook) con 3 ganchos | 6 | 🧪 | Abrir una pieza, escribir textos, elegir gancho, 👍 ✏️, copiar |
 | A17 | Idea de historia diaria (otra idea, voto, idea propia) | 6 | 🧪 | Usar las 7 tarjetas de la semana y la de Hoy |
-| A18 | Grabar: teleprompter, grabación por partes (gancho, cuerpo, cierre), repetir una parte, guía de encuadre | 7 | ⬜ | — |
-| A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | ⬜ | — |
+| A18 | Grabar: teleprompter, grabación por partes (gancho, cuerpo, cierre), repetir una parte, guía de encuadre | 7 | 🧪 | Probar en iPhone y Android: permisos, teleprompter, repetir parte, reproducir lo subido |
+| A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | 🧪 | Subir con WiFi, con datos móviles (Android avisa; iPhone no informa el tipo de red) y cortando el internet a media subida |
 | A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | ⬜ | — |
 | A21 | Publicar y programar en Instagram; descargar y copiar para TikTok y Facebook | 9 | ⬜ ⛔B1 | — |
 | A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |

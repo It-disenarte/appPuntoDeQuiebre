@@ -622,3 +622,24 @@ export const analyzedVideos = pgTable(
   },
   (t) => [index("analyzed_videos_run_idx").on(t.runId), index("analyzed_videos_user_idx").on(t.userId, t.views)],
 );
+
+/** Una parte grabada de un video (gancho, cuerpo o cierre). Regrabar reemplaza la anterior. */
+export const recordings = pgTable(
+  "recordings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    part: text("part", { enum: ["gancho", "cuerpo", "cierre"] }).notNull(),
+    objectKey: text("object_key").notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    seconds: integer("seconds").notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("recordings_piece_part_idx").on(t.pieceId, t.part), index("recordings_user_idx").on(t.userId)],
+);

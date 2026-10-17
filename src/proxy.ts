@@ -65,6 +65,6 @@ export const config = {
   matcher: [
     // Todo excepto estáticos de Next, el service worker, el manifiesto, archivos con extensión y la
     // subida de video del admin (el proxy guardaría el cuerpo en memoria; esa ruta valida todo sola).
-    "/((?!_next/static|_next/image|api/admin/media/|sw\\.js|manifest\\.webmanifest|.*\\.(?:png|svg|ico|jpg|jpeg|webp|woff2?|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|api/admin/media/|api/grabaciones$|sw\\.js|manifest\\.webmanifest|.*\\.(?:png|svg|ico|jpg|jpeg|webp|woff2?|txt|xml)$).*)",
   ],
 };

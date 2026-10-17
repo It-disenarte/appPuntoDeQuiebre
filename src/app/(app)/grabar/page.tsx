@@ -1,58 +1,100 @@
 import type { Metadata } from "next";
-import { cn, PageHeader } from "@/components/ui";
+import Link from "next/link";
+import { z } from "zod";
+import { RecordingStudio } from "@/components/record/RecordingStudio";
+import { Card, Chip, PageHeader } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
+import { DAY_NAMES, dowMon0 } from "@/lib/plan/rules";
+import { getPiece, parseScript } from "@/lib/plan/service";
+import { deleteRecordingAction } from "@/lib/recording/actions";
+import { PART_LABEL, partTexts, type Part } from "@/lib/recording/rules";
+import { listRecordings, recordablePieces } from "@/lib/recording/service";
+import type { VideoGuion } from "@/lib/skills/schemas";
+import { storageConfigured } from "@/lib/storage";
 
 export const metadata: Metadata = { title: "Grabar" };
 
-// Fase 0: vista previa del estudio. La cámara, el teleprompter y la subida llegan en la Fase 5 (Grabación).
-const PARTS = ["Gancho", "Error 1", "Error 2 y 3", "Cierre"];
+const dayLabel = (iso: string) => `${DAY_NAMES[dowMon0(iso)]} ${Number(iso.slice(8, 10))}`;
 
-export default async function GrabarPage() {
-  await requireCreatorAccess();
+export default async function GrabarPage({ searchParams }: PageProps<"/grabar">) {
+  const { user } = await requireCreatorAccess();
+  const params = await searchParams;
+  const id = typeof params.pieza === "string" && z.string().uuid().safeParse(params.pieza).success ? params.pieza : null;
+  const piece = id ? await getPiece(user.id, id) : null;
+  const script = piece?.kind === "video" ? (parseScript("video", piece.script) as VideoGuion | null) : null;
+
+  if (!piece || !script) {
+    const pieces = await recordablePieces(user.id);
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-4">
+        <PageHeader dark eyebrow="Estudio" title="¿Qué vas a grabar?" />
+        {pieces.length === 0 ? (
+          <Card className="flex flex-col gap-2 bg-ink-800 text-blanco">
+            <p className="font-extrabold">Todavía no tienes videos en tu semana</p>
+            <p className="text-sm text-ink-300">Genera tu semana y aquí aparecerán tus videos con su guion para grabarlos.</p>
+            <Link href="/semana" className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
+              Ir a mi semana
+            </Link>
+          </Card>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {pieces.map((p) => (
+              <li key={p.id}>
+                <Link href={`/grabar?pieza=${p.id}`} className="flex items-center justify-between gap-3 rounded-card bg-ink-800 p-4 hover:bg-ink-700">
+                  <span>
+                    <span className="block text-xs text-ink-400">{dayLabel(p.day)}</span>
+                    <span className="block font-extrabold">{p.topic}</span>
+                  </span>
+                  <Chip tone={p.status === "grabado" ? "azul" : "neutral"}>{p.status === "grabado" ? "Grabado" : "Por grabar"}</Chip>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  const recs = await listRecordings(user.id, piece.id);
+  const done = recs.map((r) => ({ part: r.part as Part, id: r.id, seconds: r.seconds }));
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <PageHeader dark eyebrow="Guion 2 de 4 · Jueves" title="3 errores al empezar un huerto" />
+      <PageHeader dark eyebrow={`Video · ${dayLabel(piece.day)}`} title={piece.topic} />
+      {!storageConfigured() ? (
+        <Card className="bg-ink-800 text-blanco">
+          <p className="text-sm">El almacenamiento de videos todavía no está configurado, así que no se pueden subir grabaciones.</p>
+        </Card>
+      ) : (
+        <RecordingStudio pieceId={piece.id} texts={partTexts(script)} done={done} />
+      )}
 
-      <ol className="grid grid-cols-4 gap-1.5" aria-label="Partes del guion">
-        {PARTS.map((p, i) => (
-          <li key={p} className="flex flex-col gap-1.5">
-            <span className={cn("h-1 rounded-full", i === 0 ? "bg-naranja" : "bg-ink-700")} />
-            <span className={cn("text-[0.6875rem]", i === 0 ? "font-extrabold text-naranja" : "text-ink-400")}>{p}</span>
-          </li>
-        ))}
-      </ol>
-
-      <div className="overflow-hidden rounded-card bg-ink-800">
-        <p className="bg-negro/60 p-5 text-lg leading-snug font-extrabold">
-          Si tus plantas se te mueren, probablemente estás cometiendo <span className="text-ink-500">uno de estos 3 errores…</span>
-        </p>
-        <div className="grid h-[28dvh] min-h-40 w-full place-items-center lg:h-80">
-          <div className="aspect-[3/4] h-4/5 rounded-[50%] border-2 border-dashed border-ink-500" aria-hidden />
-        </div>
-        <p className="pb-4 text-center text-xs text-ink-400">Coloca tu cara dentro de la guía · Luz frente a ti</p>
-      </div>
-
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-ink-400">Velocidad</span>
-        <input type="range" min={1} max={5} defaultValue={3} className="flex-1 accent-blanco" aria-label="Velocidad del teleprompter" disabled />
-        <span className="font-extrabold">Media</span>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <button type="button" disabled className="h-11 rounded-full border border-ink-700 px-4 text-sm font-semibold text-ink-300">
-          Repetir parte
-        </button>
-        <button
-          type="button"
-          disabled
-          aria-label="Grabar"
-          className="size-20 rounded-full border-4 border-blanco bg-naranja shadow-[0_0_0_4px_rgb(254_104_7/0.25)]"
-        />
-        <button type="button" disabled className="h-11 rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
-          Siguiente
-        </button>
-      </div>
-      <p className="text-center text-xs text-ink-500">Vista previa · la grabación se activa en la Fase 5.</p>
+      {recs.length > 0 && (
+        <section className="flex flex-col gap-3" aria-label="Partes subidas">
+          <h2 className="font-extrabold">Partes subidas</h2>
+          {(["gancho", "cuerpo", "cierre"] as const)
+            .map((p) => recs.find((r) => r.part === p))
+            .filter((r): r is NonNullable<typeof r> => Boolean(r))
+            .map((r) => (
+              <div key={r.id} className="flex flex-col gap-2 rounded-card bg-ink-800 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">
+                    {PART_LABEL[r.part as Part]} · {r.seconds} s
+                  </p>
+                  <form action={deleteRecordingAction}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <button type="submit" className="tap rounded-full px-3 text-xs font-semibold text-ink-300 underline underline-offset-4">
+                      Borrar
+                    </button>
+                  </form>
+                </div>
+                <video src={`/api/grabaciones/${r.id}`} controls playsInline preload="metadata" className="aspect-3/4 max-h-72 w-full rounded-lg bg-negro object-cover" />
+              </div>
+            ))}
+        </section>
+      )}
+      <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
+        Ver el guion completo
+      </Link>
     </div>
   );
 }
