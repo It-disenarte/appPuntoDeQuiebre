@@ -643,3 +643,32 @@ export const recordings = pgTable(
   },
   (t) => [uniqueIndex("recordings_piece_part_idx").on(t.pieceId, t.part), index("recordings_user_idx").on(t.userId)],
 );
+
+/** Un carrusel de Instagram armado paso a paso (skill 8). Las imágenes viven en MinIO; aquí solo sus llaves. */
+export const carousels = pgTable(
+  "carousels",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id").references(() => contentPieces.id, { onDelete: "set null" }),
+    number: integer("number").notNull().default(1),
+    brief: jsonb("brief").$type<unknown>().notNull(),
+    /** Rondas de ideas ya mostradas: [{ items, note }] (no se borran al pedir otras). */
+    ideas: jsonb("ideas").$type<unknown>().notNull().default([]),
+    chosen: jsonb("chosen").$type<unknown>(),
+    interview: jsonb("interview").$type<unknown>(),
+    answers: jsonb("answers").$type<unknown>(),
+    content: jsonb("content").$type<unknown>(),
+    /** Intentos por slide ({ "3": 1 }) y veces que se rehízo todo. */
+    slideAttempts: jsonb("slide_attempts").$type<unknown>().notNull().default({}),
+    fullRedos: integer("full_redos").notNull().default(0),
+    /** { "3": { key, focalX, focalY } } */
+    images: jsonb("images").$type<unknown>().notNull().default({}),
+    background: text("background"),
+    mock: boolean("mock").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [index("carousels_user_idx").on(t.userId, t.createdAt)],
+);

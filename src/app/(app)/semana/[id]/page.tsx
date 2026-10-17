@@ -107,6 +107,11 @@ export default async function PiezaPage({ params }: PageProps<"/semana/[id]">) {
               Ir a grabar
             </ButtonLink>
           )}
+          {piece.kind === "carrusel" && (
+            <ButtonLink href={`/carruseles?pieza=${piece.id}`} size="sm">
+              Armar mi carrusel
+            </ButtonLink>
+          )}
           <form action={setStatusAction} className="inline">
             <input type="hidden" name="id" value={piece.id} />
             <input type="hidden" name="status" value={piece.status === "grabado" ? "pendiente" : "grabado"} />

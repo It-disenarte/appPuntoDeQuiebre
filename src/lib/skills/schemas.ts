@@ -164,12 +164,14 @@ export const historiasV2Output = z
             sticker: str.nullable().default(null),
             minutos: z.number().default(3),
             tema_enfoque: str.nullable().default(null),
+            alimenta_parrilla: z.boolean().default(false),
             alternativas: z.array(storyIdea).default([]),
           })
           .passthrough(),
       )
       .min(1)
       .max(7),
+    datos_a_verificar: strs.default([]),
   })
   .passthrough();
 export type HistoriasV2 = z.infer<typeof historiasV2Output>;

@@ -24,7 +24,8 @@ export const SKILLS = {
   kitVisual: { dir: "kit-visual/v1", version: "kit-visual-v1" },
   parrilla: { dir: "parrilla-guiones/v1", version: "parrilla-guiones-v1" },
   textos: { dir: "textos-publicacion/v2", version: "textos-publicacion-v2" },
-  historias: { dir: "ideas-historias/v2", version: "ideas-historias-v2" },
+  historias: { dir: "ideas-historias/v3", version: "ideas-historias-v3" },
+  carruseles: { dir: "carruseles/v2", version: "carruseles-v2" },
 } as const;
 type SkillKey = keyof typeof SKILLS;
 
@@ -120,6 +121,9 @@ export const runTextos = (userId: string, input: TextosInput) => run<TextosV2>(u
 
 /** Ideas de historias de la semana. */
 export const runHistorias = (userId: string, input: HistoriasInput) => run<HistoriasV2>(userId, "historias", input, historiasV2Output as ZodType<HistoriasV2>, () => mockHistorias(input));
+
+/** Carruseles (skill 8): cada modo (ideas, entrevista_ia, carrusel, slide) trae su esquema y su respuesta de prueba. */
+export const runCarrusel = <T,>(userId: string, input: unknown, schema: ZodType<T>, mock: () => unknown) => run<T>(userId, "carruseles", input, schema, mock);
 
 /** Una ronda del kit visual (modo "ronda"): devuelve las opciones sin filtrar; quien llama aplica las validaciones por código. */
 export async function runKitRound(userId: string, input: KitInput): Promise<SkillResult<{ options: PaletteOption[] | FontOption[] | TitleOption[] }>> {
