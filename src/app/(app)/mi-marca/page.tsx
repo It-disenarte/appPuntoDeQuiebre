@@ -100,6 +100,13 @@ export default async function MiMarcaPage() {
               </>
             )}
           </Card>
+          <Card className="flex flex-col gap-2">
+            <p className="font-extrabold">Perfil de Instagram</p>
+            <p className="text-sm text-ink-600">Nombre, biografía, destacadas con portadas y calificación de tu foto, listos para copiar.</p>
+            <ButtonLink href="/mi-marca/perfil" size="sm" variant="outline" className="self-start">
+              Optimizar mi perfil
+            </ButtonLink>
+          </Card>
         </div>
 
         <div className="flex flex-col gap-4">

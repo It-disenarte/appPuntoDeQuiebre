@@ -71,6 +71,13 @@
       "when": 1792249376933,
       "tag": "0009_fase8_carruseles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792435071575,
+      "tag": "0010_fase4_perfil",
+      "breakpoints": true
     }
   ]
 }

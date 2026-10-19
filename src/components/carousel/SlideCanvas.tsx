@@ -32,6 +32,13 @@ const ICONS: Record<string, LucideIcon> = {
 };
 const ICON_KEYS = new Set(Object.keys(ICONS));
 
+/** Ícono por nombre (los de la skill son de Tabler; aquí se resuelven a lucide y lo desconocido usa un destello). */
+export function NamedIcon({ name, size, color, strokeWidth = 1.8 }: { name: string | null; size: number; color?: string; strokeWidth?: number }) {
+  const key = (name ?? "").toLowerCase();
+  const I: LucideIcon = ICON_KEYS.has(key) ? ICONS[key]! : Sparkles;
+  return <I size={size} color={color} strokeWidth={strokeWidth} />;
+}
+
 function Highlighted({ text, word, kit, color }: { text: string; word: string | null; kit: CanvasKit; color: string }): ReactNode {
   const i = word ? text.toLowerCase().indexOf(word.toLowerCase()) : -1;
   if (!word || i < 0) return text;

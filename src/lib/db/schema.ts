@@ -672,3 +672,31 @@ export const carousels = pgTable(
   },
   (t) => [index("carousels_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Optimización del perfil de Instagram (skill 4) y calificación de la foto de perfil (skill 5). Una fila por creador. */
+export const profileOpt = pgTable(
+  "profile_opt",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Lo que el creador escribió de su perfil hoy (no se lee de Instagram hasta tener la API). */
+    current: jsonb("current").$type<unknown>(),
+    result: jsonb("result").$type<unknown>(),
+    /** Rondas extra de nombre y biografía: { nombre: [{ options, note }], biografia: [...] } */
+    extra: jsonb("extra").$type<unknown>().notNull().default({}),
+    votes: jsonb("votes").$type<unknown>().notNull().default({}),
+    /** Lo que eligió o editó el creador: { nombre, biografia } */
+    chosen: jsonb("chosen").$type<unknown>().notNull().default({}),
+    /** Partes que ya aplicó en Instagram: { nombre: true, ... } */
+    applied: jsonb("applied").$type<unknown>().notNull().default({}),
+    /** Veces que pidió otras opciones: { nombre: 1, biografia: 0 } */
+    refreshes: jsonb("refreshes").$type<unknown>().notNull().default({}),
+    /** Fotos calificadas, de la más vieja a la más nueva: [{ key, at, result, mock }] */
+    photos: jsonb("photos").$type<unknown>().notNull().default([]),
+    mock: boolean("mock").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("profile_opt_user_idx").on(t.userId)],
+);
