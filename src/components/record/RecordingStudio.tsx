@@ -3,11 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui";
-import { clampSpeed, estimateSeconds, megabytes, PART_LABEL, PARTS, SPEED_LABEL, SPEEDS, type Part } from "@/lib/recording/rules";
+import { clampSpeed, estimateSeconds, MAX_PART_BYTES, MAX_PART_SECONDS, megabytes, PART_LABEL, PARTS, SPEED_LABEL, SPEEDS, VIDEO_TYPES, type Part } from "@/lib/recording/rules";
 import { onMobileData, queueAll, queueAvailable, queueDelete, queuePut, uploadPart, type QueueItem } from "./upload-queue";
 
 type Done = { part: Part; id: string; seconds: number };
 type Phase = "apagada" | "lista" | "cuenta" | "grabando" | "revision";
+
+/** Tipo del archivo; algunos teléfonos no lo informan y hay que deducirlo de la extensión. */
+function videoMime(f: File): string | null {
+  const t = f.type.split(";")[0]!.trim().toLowerCase();
+  if (t in VIDEO_TYPES) return t;
+  const ext = f.name.split(".").pop()?.toLowerCase();
+  return ext === "mp4" || ext === "m4v" ? "video/mp4" : ext === "mov" ? "video/quicktime" : ext === "webm" ? "video/webm" : null;
+}
 
 const MIMES = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
 const pickMime = () => (typeof MediaRecorder === "undefined" ? "" : (MIMES.find((m) => MediaRecorder.isTypeSupported(m)) ?? ""));
@@ -45,7 +53,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     setError("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return setError("Este navegador no puede grabar video. Prueba con Chrome o Safari actualizado.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", aspectRatio: { ideal: 3 / 4 }, width: { ideal: 960 }, height: { ideal: 1280 } }, audio: { echoCancellation: true, noiseSuppression: true } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", aspectRatio: { ideal: 3 / 4 }, width: { ideal: 1080 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } }, audio: { echoCancellation: true, noiseSuppression: true } });
       streamRef.current = stream;
       // Si la cámara permite acercar, se deja sin zoom para ver todo el encuadre (best-effort: no todos los celulares lo ofrecen).
       const track = stream.getVideoTracks()[0];
@@ -83,7 +91,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     const stream = streamRef.current;
     if (!stream) return;
     const mime = pickMime();
-    const rec = new MediaRecorder(stream, { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: 2_500_000, audioBitsPerSecond: 128_000 });
+    const rec = new MediaRecorder(stream, { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 160_000 });
     chunksRef.current = [];
     rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
     rec.onstop = () => {
@@ -180,6 +188,30 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     };
   }, [flush, refreshQueue]);
 
+  /** Video hecho con la cámara del teléfono (o elegido de la galería): se revisa igual que una toma grabada aquí. */
+  async function pickNative(file: File | undefined) {
+    if (!file) return;
+    setError("");
+    const mime = videoMime(file);
+    if (!mime) return setError("Ese archivo no es un video compatible (MP4, MOV o WebM).");
+    if (file.size > MAX_PART_BYTES) return setError(`El video pesa demasiado (máximo ${Math.round(MAX_PART_BYTES / 1048576)} MB). Graba esta parte más corta.`);
+    const url = URL.createObjectURL(file);
+    const seconds = await new Promise<number>((resolve) => {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => resolve(Number.isFinite(v.duration) ? Math.round(v.duration) : 0);
+      v.onerror = () => resolve(0);
+      v.src = url;
+    });
+    if (seconds > MAX_PART_SECONDS) {
+      URL.revokeObjectURL(url);
+      return setError(`Cada parte puede durar máximo ${MAX_PART_SECONDS} segundos. Graba esta parte más corta.`);
+    }
+    // Si el navegador no pudo leer la duración (formatos como HEVC), se sube igual con un valor aproximado.
+    setTake({ url, blob: file, seconds: seconds || Math.round(estimateSeconds(text)), mime });
+    setPhase("revision");
+  }
+
   async function useTake() {
     if (!take) return;
     const item: QueueItem = { id: crypto.randomUUID(), pieceId, part, seconds: take.seconds, mime: take.mime, blob: take.blob, tries: 0, createdAt: Date.now() };
@@ -266,6 +298,23 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         </p>
       )}
 
+      {(phase === "apagada" || phase === "lista") && (
+        <div className="flex flex-col gap-2 rounded-xl bg-ink-800 p-3 text-sm">
+          <p className="font-semibold">¿Prefieres la cámara de tu teléfono?</p>
+          <p className="text-xs text-ink-300">Máxima calidad (4K, estabilización), pero no verás el teleprompter: léelo antes o ten el guion en otra pantalla. Graba solo la parte «{PART_LABEL[part]}».</p>
+          <div className="flex flex-wrap gap-2">
+            <label className="tap inline-flex cursor-pointer items-center rounded-full bg-blanco px-4 text-sm font-semibold text-negro">
+              <input type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+              Abrir la cámara del teléfono
+            </label>
+            <label className="tap inline-flex cursor-pointer items-center rounded-full border border-ink-600 px-4 text-sm font-semibold">
+              <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+              Elegir de mi galería
+            </label>
+          </div>
+        </div>
+      )}
+
       {phase !== "revision" && (
         <div className="flex items-center gap-3 text-sm">
           <label htmlFor="vel" className="text-ink-300">
@@ -279,7 +328,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       <div className="sticky bottom-24 z-20 flex items-center justify-between gap-3 rounded-full bg-negro/85 px-3 py-2 backdrop-blur">
         {phase === "revision" ? (
           <>
-            <button type="button" onClick={() => (setTake(null), setPhase("lista"))} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
+            <button type="button" onClick={() => (setTake(null), setPhase(streamRef.current ? "lista" : "apagada"))} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
               Repetir parte
             </button>
             <button type="button" onClick={useTake} className="tap rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
