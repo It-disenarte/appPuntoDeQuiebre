@@ -33,7 +33,7 @@ describe("racha semanal", () => {
 
 describe("alertas y métricas (lógica pura)", () => {
   const user = (id: string, createdAt: string, extra = {}) => ({ id, name: id, email: `${id}@x.com`, status: "active", createdAt: d(createdAt), lastLoginAt: null, ...extra });
-  const none = { intake: null, manual: null, kit: null, schedule: null, plan: null, recording: null, metrics: null };
+  const none: import("@/lib/admin/insights-core").Milestones = { intake: null, manual: null, kit: null, schedule: null, plan: null, recording: null, metrics: null };
   const sub = (status: string, createdAt = "2026-08-01") => ({ plan: "basico" as const, status, trialEnd: null, createdAt: d(createdAt), pastDueSince: status === "past_due" ? d("2026-10-10") : null });
 
   it("avisa de inactividad, alta atrasada, racha rota y pago en mora; ignora a quien no tiene acceso", async () => {
