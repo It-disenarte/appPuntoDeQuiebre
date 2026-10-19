@@ -46,9 +46,10 @@ export function extractJson(raw: string): unknown {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   const body = (fenced?.[1] ?? raw).trim();
   const start = body.indexOf("{");
+  if (start === -1) throw new Error("La respuesta no trae JSON");
   const end = body.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("La respuesta no trae JSON");
-  const text = body.slice(start, end + 1);
+  // Si la salida se cortó antes de cerrar el JSON, se intenta cerrar lo que llegó (el esquema decide si alcanza).
+  const text = end > start ? body.slice(start, end + 1) : body.slice(start);
   try {
     return JSON.parse(text);
   } catch {
@@ -57,9 +58,9 @@ export function extractJson(raw: string): unknown {
   }
 }
 
-type AnthropicResponse = { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+type AnthropicResponse = { content?: { type: string; text?: string }[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };
 
-async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string; inputTokens?: number; outputTokens?: number }> {
+async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string; inputTokens?: number; outputTokens?: number; stopReason?: string }> {
   const e = env();
   const system = await readFile(path.join(process.cwd(), "skills", SKILLS[key].dir, "skill.md"), "utf8");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -67,7 +68,7 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
     headers: { "x-api-key": e.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: e.SKILLS_MODEL,
-      max_tokens: 8000,
+      max_tokens: 16000,
       system,
       messages: [{ role: "user", content: `Entrada:\n${JSON.stringify(input)}\n\nResponde solo con el JSON de salida.` }],
     }),
@@ -79,7 +80,8 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
   }
   const data = (await res.json()) as AnthropicResponse;
   const raw = data.content?.filter((c) => c.type === "text").map((c) => c.text ?? "").join("") ?? "";
-  return { raw, inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens };
+  if (data.stop_reason === "max_tokens") console.error(`[skills] ${key}: la respuesta se cortó por límite de tokens (${data.usage?.output_tokens})`);
+  return { raw, inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens, stopReason: data.stop_reason };
 }
 
 async function run<T>(userId: string, key: SkillKey, input: unknown, schema: ZodType<T>, mock: () => unknown): Promise<SkillResult<T>> {
@@ -96,12 +98,12 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
       json = extractJson(res.raw);
     } catch {
       // Una sola repetición si el JSON vino roto y no se pudo reparar (salida cortada o mal formada).
-      console.error(`[skills] ${key}: JSON no válido, se repite la llamada una vez. Inicio: ${res.raw.slice(0, 120)}`);
+      console.error(`[skills] ${key}: JSON no válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres), se repite la llamada una vez. Final: ${res.raw.slice(-160)}`);
       res = await callClaude(key, input);
       try {
         json = extractJson(res.raw);
       } catch (err) {
-        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido. Inicio: ${res.raw.slice(0, 200)}`);
+        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres). Final: ${res.raw.slice(-160)}`);
         throw err;
       }
     }
