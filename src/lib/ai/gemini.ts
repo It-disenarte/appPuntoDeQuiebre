@@ -1,4 +1,5 @@
 import "server-only";
+import { jsonrepair } from "jsonrepair";
 import { env } from "@/lib/env";
 
 /**
@@ -98,5 +99,10 @@ export function parseJson(raw: string): unknown {
   const a = body.indexOf("{");
   const b = body.lastIndexOf("}");
   if (a === -1 || b === -1) throw new Error("La respuesta no trae JSON");
-  return JSON.parse(body.slice(a, b + 1));
+  const text = body.slice(a, b + 1);
+  try {
+    return JSON.parse(text);
+  } catch {
+    return JSON.parse(jsonrepair(text));
+  }
 }

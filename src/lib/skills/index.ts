@@ -1,5 +1,6 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
+import { jsonrepair } from "jsonrepair";
 import path from "node:path";
 import type { ZodType } from "zod";
 import { db } from "@/lib/db";
@@ -47,7 +48,13 @@ export function extractJson(raw: string): unknown {
   const start = body.indexOf("{");
   const end = body.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("La respuesta no trae JSON");
-  return JSON.parse(body.slice(start, end + 1));
+  const text = body.slice(start, end + 1);
+  try {
+    return JSON.parse(text);
+  } catch {
+    // El modelo a veces deja una coma o una comilla suelta; se repara sin gastar otra llamada.
+    return JSON.parse(jsonrepair(text));
+  }
 }
 
 type AnthropicResponse = { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
@@ -83,14 +90,22 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
     return { output, mock: true, skillVersion };
   }
   try {
-    const { raw, inputTokens, outputTokens } = await callClaude(key, input);
+    let res = await callClaude(key, input);
     let json: unknown;
     try {
-      json = extractJson(raw);
-    } catch (err) {
-      console.error(`[skills] ${key}: la respuesta no trae JSON válido. Inicio: ${raw.slice(0, 200)}`);
-      throw err;
+      json = extractJson(res.raw);
+    } catch {
+      // Una sola repetición si el JSON vino roto y no se pudo reparar (salida cortada o mal formada).
+      console.error(`[skills] ${key}: JSON no válido, se repite la llamada una vez. Inicio: ${res.raw.slice(0, 120)}`);
+      res = await callClaude(key, input);
+      try {
+        json = extractJson(res.raw);
+      } catch (err) {
+        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido. Inicio: ${res.raw.slice(0, 200)}`);
+        throw err;
+      }
     }
+    const { inputTokens, outputTokens } = res;
     const parsed = schema.safeParse(json);
     if (!parsed.success) {
       console.error(`[skills] ${key}: la salida no cumple el esquema:`, JSON.stringify(parsed.error.issues.slice(0, 6).map((i) => ({ ruta: i.path.join("."), mensaje: i.message }))));
