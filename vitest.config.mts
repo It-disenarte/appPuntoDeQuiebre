@@ -9,5 +9,6 @@ export default defineConfig({
       "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)),
     },
   },
-  test: { environment: "node", include: ["src/**/*.test.ts", "tests/**/*.test.ts"] },
+  // Muchos archivos levantan su propia base PGlite en paralelo: con 5 s de límite fallaban pruebas sanas bajo carga.
+  test: { environment: "node", include: ["src/**/*.test.ts", "tests/**/*.test.ts"], testTimeout: 30_000, hookTimeout: 30_000 },
 });
