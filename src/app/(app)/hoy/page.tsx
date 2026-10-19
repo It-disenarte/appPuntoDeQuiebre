@@ -25,9 +25,9 @@ export default async function HoyPage() {
   const story = stories.find((s) => s.day === today) ?? null;
   const storyView = story ? currentStory(story) : null;
 
-  // Racha de la semana (vista previa): un día cuenta si publicó una pieza o marcó su historia como hecha.
+  // Racha de la semana: un día cuenta si grabó o publicó una pieza, o marcó su historia como hecha. (La verificación por API de Instagram llega con la conexión.)
   const monday = mondayOf(today);
-  const doneDay = (iso: string) => pieces.some((p) => p.day === iso && p.status === "publicado") || stories.some((s) => s.day === iso && s.done);
+  const doneDay = (iso: string) => pieces.some((p) => p.day === iso && ["grabado", "programado", "publicado"].includes(p.status)) || stories.some((s) => s.day === iso && s.done);
   const week = DAY_CODES.map((_, i) => {
     const iso = addDays(monday, i);
     return { iso, d: DAY_SHORT[i]!.slice(0, 1), state: iso === today ? ("today" as const) : iso < today ? (doneDay(iso) ? ("done" as const) : ("missed" as const)) : ("future" as const) };

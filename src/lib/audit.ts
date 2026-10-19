@@ -20,6 +20,7 @@ export type AuditAction =
   | "grabacion.subida"
   | "admin.limits_updated"
   | "admin.prices_updated"
+  | "admin.community_updated"
   | "kit.approved"
   | "kit.reset"
   | "billing.checkout_started"

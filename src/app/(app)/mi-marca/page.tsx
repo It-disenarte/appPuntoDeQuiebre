@@ -1,7 +1,8 @@
 import { ChevronRight, LogOut } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button, ButtonLink, Card, Chip } from "@/components/ui";
+import { Button, buttonClass, ButtonLink, Card, Chip } from "@/components/ui";
+import { getCommunity, hasCommunity } from "@/lib/community";
 import { portalAction } from "@/lib/account/actions";
 import { logoutAction } from "@/lib/auth/actions";
 import { requireCreatorAccess } from "@/lib/auth/gates";
@@ -33,7 +34,7 @@ function initials(name: string) {
 export default async function MiMarcaPage() {
   const { user, access } = await requireCreatorAccess();
   const sub = access.subscription;
-  const [overview, manual] = await Promise.all([getOverview(user.id), getManual(user.id)]);
+  const [overview, manual, community] = await Promise.all([getOverview(user.id), getManual(user.id), getCommunity()]);
   const m = manual?.content;
   const settings = await getSettings(user.id);
   const paused = isPaused(settings?.pauseUntil);
@@ -100,6 +101,30 @@ export default async function MiMarcaPage() {
               </>
             )}
           </Card>
+          {hasCommunity(community) && (
+            <Card className="flex flex-col gap-2">
+              <p className="font-extrabold">Comunidad</p>
+              <p className="text-sm text-ink-600">Conoce a otros creadores, resuelve dudas y participa en las sesiones.</p>
+              {community.live && <p className="text-xs text-ink-600">Sesión en vivo{community.liveNote ? `: ${community.liveNote}` : ""}</p>}
+              <div className="flex flex-wrap gap-2">
+                {community.live && (
+                  <a href={community.live} target="_blank" rel="noopener noreferrer" className={buttonClass("outline", "sm")}>
+                    Sesión en vivo
+                  </a>
+                )}
+                {community.discord && (
+                  <a href={community.discord} target="_blank" rel="noopener noreferrer" className={buttonClass("outline", "sm")}>
+                    Discord
+                  </a>
+                )}
+                {community.whatsapp && (
+                  <a href={community.whatsapp} target="_blank" rel="noopener noreferrer" className={buttonClass("outline", "sm")}>
+                    WhatsApp
+                  </a>
+                )}
+              </div>
+            </Card>
+          )}
           <Card className="flex flex-col gap-2">
             <p className="font-extrabold">Tendencias</p>
             <p className="text-sm text-ink-600">Ideas listas para grabar con lo que está de moda, con fecha límite.</p>

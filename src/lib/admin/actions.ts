@@ -13,6 +13,7 @@ import { billingConfigured } from "@/lib/billing/stripe";
 import { db } from "@/lib/db";
 import { invoiceRequests, promoCodes, users } from "@/lib/db/schema";
 import { getClientIp } from "@/lib/request";
+import { saveCommunity } from "@/lib/community";
 import { saveLimits, savePrices } from "./limits";
 
 export type AdminState = { error?: string; ok?: boolean; tempPassword?: string; message?: string } | undefined;
@@ -217,4 +218,17 @@ export async function savePricesAction(_prev: AdminState, fd: FormData): Promise
   revalidatePath("/admin/limites");
   revalidatePath("/admin/metricas");
   return { ok: true, message: "Precios guardados." };
+}
+
+/* ───────────── Comunidad ───────────── */
+
+export async function saveCommunityAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const get = (k: string) => String(fd.get(k) ?? "");
+  const r = await saveCommunity({ live: get("live"), liveNote: get("liveNote").trim() || null, discord: get("discord"), whatsapp: get("whatsapp") }, admin.id);
+  if (!r.ok) return { error: r.error };
+  await audit({ action: "admin.community_updated", actorUserId: admin.id, ip: await getClientIp() });
+  revalidatePath("/admin/ajustes");
+  revalidatePath("/mi-marca");
+  return { ok: true, message: "Enlaces guardados." };
 }

@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth/dal";
 import { formatDate } from "@/lib/billing/labels";
 import { getSetting, SETTING_KEYS, type WelcomeVideo } from "@/lib/settings";
 import { storageConfigured } from "@/lib/storage";
+import { getCommunity } from "@/lib/community";
+import { CommunityForm } from "./CommunityForm";
 import { CreateAdminForm } from "./CreateAdminForm";
 import { VideoUploader } from "./VideoUploader";
 
@@ -12,7 +14,7 @@ export const metadata: Metadata = { title: "Ajustes" };
 
 export default async function AjustesPage() {
   await requireAdmin();
-  const [video, admins] = await Promise.all([getSetting<WelcomeVideo>(SETTING_KEYS.welcomeVideo), listAdmins()]);
+  const [video, admins, community] = await Promise.all([getSetting<WelcomeVideo>(SETTING_KEYS.welcomeVideo), listAdmins(), getCommunity()]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -35,6 +37,11 @@ export default async function AjustesPage() {
         ) : (
           <p className="rounded-xl bg-naranja-100 px-4 py-3 text-sm">Configura MinIO (variables S3_*) para poder subir el video.</p>
         )}
+      </Card>
+
+      <Card className="flex flex-col gap-4">
+        <h2 className="text-sm font-extrabold">Comunidad</h2>
+        <CommunityForm v={community} />
       </Card>
 
       <Card className="flex flex-col gap-4">
