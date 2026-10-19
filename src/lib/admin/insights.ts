@@ -55,7 +55,7 @@ export async function currentAlerts(now = new Date()) {
 
 /* ───────────── Costo de IA contra ingreso ───────────── */
 
-const GEMINI_SKILLS = new Set(["metricas-capturas", "calificador-foto", "analizador-video"]);
+const GEMINI_SKILLS = new Set(["metricas-capturas", "calificador-foto", "analizador-video", "coach-video"]);
 
 export type Usage = { calls: number; costUsd: number };
 

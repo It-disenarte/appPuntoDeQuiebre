@@ -700,3 +700,26 @@ export const profileOpt = pgTable(
   },
   (t) => [uniqueIndex("profile_opt_user_idx").on(t.userId)],
 );
+
+/** Revisión de El Lente (coach de video, skill 11) de un video grabado. numero 0 = el creador dijo "así lo publico". */
+export const coachReviews = pgTable(
+  "coach_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    numero: integer("numero").notNull(),
+    status: text("status", { enum: ["procesando", "lista", "error", "omitida"] }).notNull().default("procesando"),
+    result: jsonb("result").$type<unknown>(),
+    /** Calificación de cada mejora: { "0": { voto: "si" | "no", nota } } */
+    votes: jsonb("votes").$type<unknown>().notNull().default({}),
+    mock: boolean("mock").notNull().default(false),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("coach_reviews_piece_num_idx").on(t.pieceId, t.numero), index("coach_reviews_user_idx").on(t.userId, t.createdAt)],
+);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { z } from "zod";
+import { CoachSection } from "@/components/record/CoachSection";
 import { RecordingStudio } from "@/components/record/RecordingStudio";
 import { Card, Chip, PageHeader } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
@@ -92,6 +93,7 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
             ))}
         </section>
       )}
+      {done.length === 3 && <CoachSection userId={user.id} pieceId={piece.id} />}
       <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
         Ver el guion completo
       </Link>

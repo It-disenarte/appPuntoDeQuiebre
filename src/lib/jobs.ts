@@ -8,7 +8,7 @@ import { jobs } from "@/lib/db/schema";
  * `FOR UPDATE SKIP LOCKED`, así dos workers nunca toman el mismo. Un trabajo "corriendo" que lleva demasiado se considera
  * perdido (el worker murió) y vuelve a la fila hasta agotar sus intentos.
  */
-export type JobKind = "metricas.leer" | "analizador.correr";
+export type JobKind = "metricas.leer" | "analizador.correr" | "coach.revisar";
 
 export const STALE_MS = 15 * 60 * 1000;
 

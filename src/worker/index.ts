@@ -12,6 +12,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
+import { runReview } from "@/lib/coach/service";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
@@ -46,6 +47,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { period?: string };
     if (!job.userId || !p.period) throw new Error("Trabajo sin usuario o periodo");
     await runExtraction(job.userId, p.period);
+  },
+  "coach.revisar": async (job) => {
+    const p = job.payload as { reviewId?: string };
+    if (!job.userId || !p.reviewId) throw new Error("Trabajo sin usuario o revisión");
+    await runReview(job.userId, p.reviewId);
   },
   "analizador.correr": async (job) => {
     const p = job.payload as { runId?: string };
