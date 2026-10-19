@@ -120,6 +120,13 @@
       "when": 1792440787257,
       "tag": "0016_fase3_auditoria",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792441067349,
+      "tag": "0017_fase7_video_completo",
+      "breakpoints": true
     }
   ]
 }

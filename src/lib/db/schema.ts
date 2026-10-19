@@ -869,3 +869,24 @@ export const accountAudits = pgTable(
   },
   (t) => [uniqueIndex("account_audits_user_idx").on(t.userId)],
 );
+
+/** Video completo armado con las 3 partes grabadas (gancho, cuerpo y cierre), listo para descargar o publicar. */
+export const videoExports = pgTable(
+  "video_exports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["procesando", "lista", "error"] }).notNull().default("procesando"),
+    objectKey: text("object_key"),
+    bytes: integer("bytes"),
+    seconds: integer("seconds"),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("video_exports_piece_idx").on(t.pieceId)],
+);

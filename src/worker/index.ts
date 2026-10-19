@@ -13,6 +13,7 @@ import { PgBoss } from "pg-boss";
 import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
 import { runReview } from "@/lib/coach/service";
+import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
@@ -51,6 +52,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { period?: string };
     if (!job.userId || !p.period) throw new Error("Trabajo sin usuario o periodo");
     await runExtraction(job.userId, p.period);
+  },
+  "video.unir": async (job) => {
+    const p = job.payload as { pieceId?: string };
+    if (!job.userId || !p.pieceId) throw new Error("Trabajo sin usuario o pieza");
+    await runJoin(job.userId, p.pieceId);
   },
   "coach.revisar": async (job) => {
     const p = job.payload as { reviewId?: string };

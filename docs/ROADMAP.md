@@ -40,7 +40,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A16 | Guion completo y textos distintos por red (Instagram, TikTok, Facebook) con 3 ganchos | 6 | 🧪 | Abrir una pieza, escribir textos, elegir gancho, 👍 ✏️, copiar |
 | A17 | Idea de historia diaria (otra idea, voto, idea propia) | 6 | 🧪 | Usar las 7 tarjetas de la semana y la de Hoy |
 | A18 | Grabar: teleprompter, grabación por partes (gancho, cuerpo, cierre), repetir una parte, guía de encuadre | 7 | 🧪 | Probar en iPhone y Android: permisos, teleprompter, repetir parte, reproducir lo subido |
-| A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | 🧪 | Subir con WiFi, con datos móviles (Android avisa; iPhone no informa el tipo de red) y cortando el internet a media subida |
+| A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | 🧪 | Subir con WiFi, con datos móviles (Android avisa; iPhone no informa el tipo de red) y cortando el internet a media subida ; video completo con ffmpeg en el worker (probar con partes reales) |
 | A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | 🧪 | Estático (PNG 1080×1350) listo; animado (MP4) pendiente. Probar vista previa y exportación en iPhone/Android |
 | A21 | Publicar y programar en Instagram; descargar y copiar para TikTok y Facebook | 9 | ⬜ ⛔B1 | — |
 | A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |

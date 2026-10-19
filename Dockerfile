@@ -22,7 +22,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     MIGRATIONS_DIR=/app/drizzle
-RUN apk add --no-cache libc6-compat tini \
+# ffmpeg: une las partes grabadas en un solo video (y servirá para la edición automática).
+RUN apk add --no-cache libc6-compat tini ffmpeg \
  && addgroup -S -g 1001 nodejs \
  && adduser -S -u 1001 -G nodejs nextjs
 
