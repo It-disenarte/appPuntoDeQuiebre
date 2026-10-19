@@ -72,7 +72,7 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
       system,
       messages: [{ role: "user", content: `Entrada:\n${JSON.stringify(input)}\n\nResponde solo con el JSON de salida.` }],
     }),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(240_000),
   });
   if (!res.ok) {
     const detail = (await res.text().catch(() => "")).slice(0, 400);
