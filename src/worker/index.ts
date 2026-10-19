@@ -17,6 +17,11 @@ import { claimNext, completeJob, failJob, type ClaimedJob, type JobKind } from "
 import { runExtraction } from "@/lib/metrics/service";
 import { tickNotifications } from "@/lib/notify/service";
 
+// El worker comparte el código de la app, que valida TODAS las variables al primer uso. Aquí no cobra ni recibe peticiones:
+// APP_URL no hace falta y las llaves de Stripe se ignoran (un valor mal puesto no debe tumbar los trabajos).
+process.env.APP_URL ||= process.env.APP_URL_FALLBACK || "http://localhost:3000";
+for (const k of Object.keys(process.env)) if (k.startsWith("STRIPE_")) delete process.env[k];
+
 const url = process.env.DATABASE_URL;
 if (!url) {
   console.error("[worker] Falta DATABASE_URL");
