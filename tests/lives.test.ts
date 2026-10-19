@@ -28,7 +28,7 @@ describe("reglas de la semana de directos", () => {
     const { shapeWeek } = await import("@/lib/lives/schemas");
     const { getPlanDays } = await import("@/lib/lives/week");
     const days = getPlanDays(WEEK);
-    const out = { lives_sugeridos: 5, lives: [live("2026-10-19", "ancla"), live("2026-10-20", "ancla"), live("2026-10-21", "ancla"), live("2026-10-22", "ancla"), live("2026-10-25", "ancla")], comodines: [] };
+    const out = { mes: null, lives_sugeridos: 5, lives: [live("2026-10-19", "ancla"), live("2026-10-20", "ancla"), live("2026-10-21", "ancla"), live("2026-10-22", "ancla"), live("2026-10-25", "ancla")], comodines: [] };
     const r = shapeWeek(out, { weekDays: days, selectedDays: ["lunes", "martes", "miércoles", "jueves"], platform: "tiktok", beginner: false });
     expect(r.lives.map((l) => l.dia)).toEqual(["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"]); // el domingo no estaba elegido
     expect(r.lives.filter((l) => l.tipo === "ancla")).toHaveLength(3);
@@ -38,7 +38,7 @@ describe("reglas de la semana de directos", () => {
   it("quien quiere empezar hace 1 por semana y con guion", async () => {
     const { shapeWeek } = await import("@/lib/lives/schemas");
     const { getPlanDays } = await import("@/lib/lives/week");
-    const out = { lives_sugeridos: 2, lives: [live("2026-10-22", "libre"), live("2026-10-24", "ancla")], comodines: [] };
+    const out = { mes: null, lives_sugeridos: 2, lives: [live("2026-10-22", "libre"), live("2026-10-24", "ancla")], comodines: [] };
     const r = shapeWeek(out, { weekDays: getPlanDays(WEEK), selectedDays: ["jueves", "sábado"], platform: "tiktok", beginner: true });
     expect(r.lives).toHaveLength(1);
     expect(r.lives[0]!.tipo).toBe("ancla");

@@ -763,3 +763,49 @@ export const liveGuides = pgTable(
   },
   (t) => [index("live_guides_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Lista diaria de tendencias (compartida por todos los creadores). */
+export const trendLists = pgTable(
+  "trend_lists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    day: date("day").notNull(),
+    items: jsonb("items").$type<unknown>().notNull(),
+    /** "apify" = viene del actor configurado; "muestra" = lista de ejemplo mientras no hay actor. */
+    source: text("source", { enum: ["apify", "muestra"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("trend_lists_day_idx").on(t.day)],
+);
+
+/** Un uso de “Ver tendencias” de un creador (cuenta contra su límite semanal; los refresh no cuentan). */
+export const trendUses = pgTable(
+  "trend_uses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: date("week_start").notNull(),
+    /** Rondas de ideas: [{ ideas, note }] (no se borran al pedir otras). */
+    rounds: jsonb("rounds").$type<unknown>().notNull().default([]),
+    refreshes: integer("refreshes").notNull().default(0),
+    mock: boolean("mock").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [index("trend_uses_user_idx").on(t.userId, t.weekStart)],
+);
+
+/** Tendencias que el creador ya usó (no se le repiten). */
+export const trendsUsed = pgTable(
+  "trends_used",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    trendId: text("trend_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("trends_used_user_trend_idx").on(t.userId, t.trendId)],
+);

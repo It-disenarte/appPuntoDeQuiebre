@@ -46,6 +46,10 @@ const schema = z.object({
   GEMINI_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash"),
   // Reservadas para fases siguientes (hoy no se usan): analizador de competencia (5) e Instagram (3).
   APIFY_TOKEN: optional(z.string().min(10)),
+  // Actor de Apify que baja las tendencias de TikTok (Creative Center, México), p. ej. "usuario~nombre-del-actor". Sin él se usa una lista de ejemplo.
+  APIFY_TRENDS_ACTOR: optional(z.string().regex(/^[A-Za-z0-9_.-]+[~/][A-Za-z0-9_.-]+$/, "usa el formato usuario~actor")),
+  /** JSON con la entrada del actor (país, periodo…). Opcional. */
+  APIFY_TRENDS_INPUT: optional(z.string().max(2000)),
   META_APP_ID: optional(z.string().min(5)),
   META_APP_SECRET: optional(z.string().min(10)),
 

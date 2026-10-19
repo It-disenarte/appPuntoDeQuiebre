@@ -16,6 +16,7 @@ import { runReview } from "@/lib/coach/service";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
+import { refreshTrends } from "@/lib/trends/list";
 import { tickNotifications } from "@/lib/notify/service";
 
 // El worker comparte el código de la app, que valida TODAS las variables al primer uso. Aquí no cobra ni recibe peticiones:
@@ -39,6 +40,7 @@ export const QUEUES = {
   cleanup: "maintenance-cleanup",
   releaseReservations: "billing-release-reservations",
   notifyTick: "notify-tick",
+  trendsDaily: "trends-daily",
 } as const;
 
 /** Trabajos largos que encola la app (tabla `jobs`). Cada tipo tiene su propio ciclo para que uno lento no bloquee a los demás. */
@@ -149,6 +151,14 @@ async function main() {
   await boss.work(QUEUES.notifyTick, async () => {
     const r = await tickNotifications();
     if (r.sent > 0) console.log("[worker] avisos enviados", r);
+  });
+
+  // Tendencias de TikTok: la lista se baja 1 vez al día (6:00 a. m. de México) y es la misma para todos los creadores.
+  await boss.createQueue(QUEUES.trendsDaily);
+  await boss.schedule(QUEUES.trendsDaily, "0 6 * * *", null, { tz: "America/Mexico_City" });
+  await boss.work(QUEUES.trendsDaily, async () => {
+    const r = await refreshTrends();
+    console.log("[worker] tendencias actualizadas", r);
   });
 
   const stopJobs = { value: false };
