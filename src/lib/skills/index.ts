@@ -26,7 +26,7 @@ export const SKILLS = {
   parrilla: { dir: "parrilla-guiones/v1", version: "parrilla-guiones-v1" },
   textos: { dir: "textos-publicacion/v2", version: "textos-publicacion-v2" },
   historias: { dir: "ideas-historias/v3", version: "ideas-historias-v3" },
-  carruseles: { dir: "carruseles/v2", version: "carruseles-v2" },
+  carruseles: { dir: "carruseles/v3", version: "carruseles-v3" },
   perfil: { dir: "optimizacion-perfil/v1", version: "optimizacion-perfil-v1" },
   directos: { dir: "guia-lives/v2", version: "guia-lives-v2" },
   tendencias: { dir: "tendencias/v2", version: "tendencias-v2" },

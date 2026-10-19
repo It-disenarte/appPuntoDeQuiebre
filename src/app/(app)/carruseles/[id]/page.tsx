@@ -10,7 +10,7 @@ import { Button, Card, Chip, PageHeader } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { deleteCarouselAction, setBackgroundAction } from "@/lib/carousel/actions";
 import { canvasBgOf, canvasKitOf } from "@/lib/carousel/kit";
-import { attemptsLeft, type CarouselRow, getCarousel, imageWarnings, parseBrief, parseContent, parseIdeaRounds, parseImages, parseInterview, stepOf } from "@/lib/carousel/service";
+import { previousAnswers, attemptsLeft, type CarouselRow, getCarousel, imageWarnings, parseBrief, parseContent, parseIdeaRounds, parseImages, parseInterview, stepOf } from "@/lib/carousel/service";
 import { MAX_FULL_REDO, MAX_IDEA_REFRESH, type CarruselOut, type Idea } from "@/lib/carousel/schemas";
 import { getKit } from "@/lib/kit/service";
 
@@ -26,6 +26,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
   const step = stepOf(row);
   const content = parseContent(row.content);
   const chosen = row.chosen as Idea | null;
+  const previous = step === "entrevista" ? await previousAnswers(user.id, id) : null;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
@@ -55,7 +56,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
           <h2 className="text-lg font-extrabold">Cuéntanos cómo se verán tus imágenes</h2>
           {(() => {
             const iv = parseInterview(row.interview);
-            return iv ? <InterviewStep id={id} interview={iv} /> : <p className="text-sm text-alerta">No pudimos cargar las preguntas. Vuelve a elegir tu idea.</p>;
+            return iv ? <InterviewStep id={id} interview={iv} previous={previous} /> : <p className="text-sm text-alerta">No pudimos cargar las preguntas. Vuelve a elegir tu idea.</p>;
           })()}
         </Card>
       )}

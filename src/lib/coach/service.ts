@@ -95,7 +95,7 @@ export async function voteImprovement(userId: string, reviewId: string, index: n
 /* ───────────── Ejecución (corre en el worker) ───────────── */
 
 async function logCall(userId: string, mock: boolean, status: "ok" | "error") {
-  await db().insert(aiCalls).values({ userId, skill: "coach-video", skillVersion: "coach-video-v1", mock, status, costCents: 0 }).catch(() => undefined);
+  await db().insert(aiCalls).values({ userId, skill: "coach-video", skillVersion: "coach-video-v2", mock, status, costCents: 0 }).catch(() => undefined);
 }
 
 export async function runReview(userId: string, reviewId: string): Promise<void> {
@@ -119,13 +119,13 @@ export async function runReview(userId: string, reviewId: string): Promise<void>
         creador_id: userId,
         plan: plan?.plan ?? "basico",
         video: { url: "adjunto", duracion_s: recs.reduce((s, r) => s + r.seconds, 0), red_destino: ["instagram"], formato: "reel", nota: "El video llega en 3 archivos, en orden: gancho, cuerpo y cierre. Revísalos como un solo video." },
-        pieza: { dia: piece.day, pilar: piece.pillar, tema: piece.topic, guion: { gancho: script.gancho, desarrollo: script.cuerpo.join(" "), cierre_cta: script.cierre }, uso_teleprompter: true },
+        pieza: { dia: piece.day, pilar: piece.pillar, tema: piece.topic, guion: { gancho: script.gancho, desarrollo: script.cuerpo.join(" "), cierre_cta: script.cierre }, uso_teleprompter: false },
         brujula: { pilares: manual?.content.pilares.map((p) => p.nombre) ?? [], tono: manual?.content.tono ?? null, palabras_si: manual?.content.palabras_si ?? [] },
         perfil_voz: { muletillas_propias: (voice?.content.muletillas ?? []).map((m) => m.texto), ritmo: voice?.content.ritmo ?? "", energia: voice?.content.energia ?? "" },
         horario: { lugar: "", luz: "natural", momento: "tarde" },
         revision: { numero: review.numero, anterior: previous },
       };
-      const skill = await readFile(path.join(process.cwd(), "skills", "coach-video", "v1", "skill.md"), "utf8");
+      const skill = await readFile(path.join(process.cwd(), "skills", "coach-video", "v2", "skill.md"), "utf8");
       const parts: Parameters<typeof geminiGenerate>[0] = [{ text: `${skill}\n\nEntrada:\n${JSON.stringify(input)}\n\nResponde solo con el JSON de salida.` }];
       for (const r of recs) {
         const obj = await getObject(r.objectKey);

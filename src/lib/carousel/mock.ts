@@ -7,7 +7,7 @@ const words = (s: string, n: number) => s.split(/\s+/).slice(0, n).join(" ");
 export function mockIdeas(brief: Brief): IdeasOut {
   const t = clip(brief.tema, 60);
   return {
-    skill_version: "carruseles-v2",
+    skill_version: "carruseles-v3",
     tipo_recomendado: brief.tipo === "recomiendame" ? "lista" : null,
     porque_tipo: brief.tipo === "recomiendame" ? "Las listas se guardan y se comparten más." : null,
     ideas: [
@@ -20,7 +20,7 @@ export function mockIdeas(brief: Brief): IdeasOut {
 
 export function mockInterview(): InterviewOut {
   return {
-    skill_version: "carruseles-v2",
+    skill_version: "carruseles-v3",
     preguntas: [
       { id: "estilo", texto: "¿Con qué estilo te imaginas las imágenes?", opciones: ["Foto realista", "Ilustración plana", "Anime de los 90", "Acuarela", "3D tipo animación", "Collage", "Retro", "Minimalista con objetos"], recomendada: "Foto realista", porque: "Se ve profesional y cercana.", permite_inspo: true, elige_por_mi: true },
       { id: "ambiente", texto: "¿Qué sensación quieres que den?", opciones: ["Cálida", "Enérgica", "Tranquila", "Misteriosa", "Divertida"], multiple: true },
@@ -70,7 +70,7 @@ export function mockCarrusel(c: MockCtx): CarruselOut {
     mk(8, "cta", "cta", brief.objetivo === "seguidores" ? "Sígueme para más" : brief.objetivo === "leads" && brief.palabra_clave ? `Comenta ${brief.palabra_clave}` : brief.objetivo === "compartidos" ? "Compártelo con alguien" : "Guárdalo para después", { icono: brief.objetivo === "seguidores" ? "user-plus" : "bookmark", cuerpo: "Y cuéntame cuál vas a probar primero." }),
   ];
   return {
-    skill_version: "carruseles-v2",
+    skill_version: "carruseles-v3",
     titulo: c.titulo,
     tipo: brief.tipo,
     estructura_porque: "Abre con una promesa, da un punto por slide y cierra con la acción que pediste.",
@@ -95,5 +95,5 @@ export function mockCarrusel(c: MockCtx): CarruselOut {
 }
 
 export function mockSlide(current: Slide, nota: string): SlideOut {
-  return { skill_version: "carruseles-v2", slide: { ...current, titulo: clip(`${current.titulo} (otra versión)`, 80) }, que_cambie: `Probé otra redacción según tu nota: “${clip(nota, 60)}”.` };
+  return { skill_version: "carruseles-v3", slide: { ...current, titulo: clip(`${current.titulo} (otra versión)`, 80) }, que_cambie: `Probé otra redacción según tu nota: “${clip(nota, 60)}”.` };
 }

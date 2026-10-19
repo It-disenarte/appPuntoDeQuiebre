@@ -115,6 +115,19 @@ describe("carruseles (sin IA: respuestas de ejemplo)", () => {
     expect(holder.deleted.some((k) => k.includes(`carruseles/${userId}/${id}/`))).toBe(true);
   }, 30_000);
 
+  it("recuerda el estilo del carrusel anterior solo para esa persona", async () => {
+    const svc = await import("@/lib/carousel/service");
+    const created = await svc.createCarousel(userId, brief);
+    if (!created.ok) throw new Error("no se creó");
+    expect((await svc.chooseIdea(userId, created.id, { ideaId: "A" })).ok).toBe(true);
+    expect((await svc.saveAnswers(userId, created.id, { estilo: "Anime de los 90", narracion: "Una escena", herramienta: "chatgpt", aparece_creador: "mixta" })).ok).toBe(true);
+    const [other] = await pdb.insert(schema.users).values({ email: "otra3@correo.com", name: "O3", passwordHash: "x" }).returning();
+    expect(await svc.previousAnswers(other!.id, "x")).toBeNull(); // la línea visual no pasa a otra persona
+    const again = await svc.createCarousel(userId, brief);
+    if (!again.ok) throw new Error("no se creó");
+    expect(await svc.previousAnswers(userId, again.id)).toMatchObject({ estilo: "Anime de los 90", herramienta: "chatgpt", aparece_creador: "mixta" });
+  }, 30_000);
+
   it("otro usuario no ve ni toca un carrusel ajeno", async () => {
     const svc = await import("@/lib/carousel/service");
     const created = await svc.createCarousel(userId, brief);

@@ -4,7 +4,7 @@ import type { CoachOut } from "./schemas";
 export function mockReview(numero: number, hook: string): CoachOut {
   if (numero >= 2) {
     return {
-      skill_version: "coach-video-v1",
+      skill_version: "coach-video-v2",
       numero_revision: 2,
       veredicto: "listo",
       titular: "Esta toma ya está lista para salir",
@@ -16,7 +16,7 @@ export function mockReview(numero: number, hook: string): CoachOut {
     };
   }
   return {
-    skill_version: "coach-video-v1",
+    skill_version: "coach-video-v2",
     numero_revision: 1,
     veredicto: "otra_toma_opcional",
     titular: "Buena energía; el arranque puede ser más directo",

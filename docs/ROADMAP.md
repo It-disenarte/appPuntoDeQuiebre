@@ -41,7 +41,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A17 | Idea de historia diaria (otra idea, voto, idea propia) | 6 | 🧪 | Usar las 7 tarjetas de la semana y la de Hoy |
 | A18 | Grabar: teleprompter, grabación por partes (gancho, cuerpo, cierre), repetir una parte, guía de encuadre | 7 | 🧪 | Probar en iPhone y Android: permisos, teleprompter, repetir parte, reproducir lo subido |
 | A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | 🧪 | Subir con WiFi, con datos móviles (Android avisa; iPhone no informa el tipo de red) y cortando el internet a media subida ; video completo con ffmpeg en el worker (probar con partes reales) |
-| A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | 🧪 | Estático (PNG 1080×1350) listo; animado (MP4) pendiente. Probar vista previa y exportación en iPhone/Android |
+| A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | 🧪 | Estático (PNG 1080×1350) listo; animado (MP4) pendiente. Probar vista previa y exportación en iPhone/Android ; Animado gris en Básico con invitación a Pro; “Lo quiero en Canva” baja un PPTX editable (aproximación) |
 | A21 | Publicar y programar en Instagram; descargar y copiar para TikTok y Facebook | 9 | ⬜ ⛔B1 | — |
 | A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |
 | A23 | Comunidad: sesión en vivo, Discord, WhatsApp | 10 | ⬜ ⛔B5 | — |

@@ -324,3 +324,14 @@ export function imageWarnings(content: CarruselOut): string[] {
 
 export { usesImage };
 export type { Slide };
+
+/** Lo que el creador eligió en su carrusel anterior (estilo de imágenes, si sale él y herramienta): su línea visual es solo suya (regla 30b). */
+export async function previousAnswers(userId: string, exceptId: string): Promise<{ estilo: string; aparece_creador: string; herramienta: string } | null> {
+  const rows = await db().select({ id: carousels.id, answers: carousels.answers }).from(carousels).where(eq(carousels.userId, userId)).orderBy(desc(carousels.createdAt)).limit(10);
+  for (const r of rows) {
+    if (r.id === exceptId || !r.answers) continue;
+    const a = interviewAnswersSchema.safeParse(r.answers);
+    if (a.success) return { estilo: a.data.estilo, aparece_creador: a.data.aparece_creador, herramienta: a.data.herramienta };
+  }
+  return null;
+}

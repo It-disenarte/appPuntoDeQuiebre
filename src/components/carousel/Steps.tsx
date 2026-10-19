@@ -22,11 +22,13 @@ function Chips({ name, items, value, onChange }: { name: string; items: readonly
 
 /* ───────────── 1 · Brief ───────────── */
 
-export function BriefForm({ tema = "", pieza }: { tema?: string; pieza?: string }) {
+export function BriefForm({ tema = "", pieza, plan = "basico" }: { tema?: string; pieza?: string; plan?: "basico" | "pro" }) {
   const [state, action, pending] = useActionState<CarouselActionState, FormData>(createCarouselAction, undefined);
   const [tipo, setTipo] = useState("");
   const [objetivo, setObjetivo] = useState("");
   const [estilo, setEstilo] = useState("");
+  const [animado, setAnimado] = useState(false);
+  const [invite, setInvite] = useState(false);
   return (
     <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-5">
       <FormError message={state?.error} />
@@ -44,6 +46,30 @@ export function BriefForm({ tema = "", pieza }: { tema?: string; pieza?: string 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold">¿Cómo lo quieres ver?</legend>
         <Chips name="estilo_imagenes" items={IMAGE_STYLES} value={estilo} onChange={setEstilo} />
+      </fieldset>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-semibold">¿Lo quieres con movimiento?</legend>
+        <input type="hidden" name="animado" value={animado ? "1" : "0"} />
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => (setAnimado(false), setInvite(false))} aria-pressed={!animado} className={cn("tap inline-flex items-center rounded-xl border px-4 py-2 text-sm font-semibold", !animado ? "border-azul bg-azul-50" : "border-ink-300 bg-blanco")}>
+            Estático (PNG)
+          </button>
+          <button
+            type="button"
+            onClick={() => (plan === "pro" ? setAnimado(true) : setInvite(true))}
+            aria-pressed={animado}
+            aria-disabled={plan !== "pro"}
+            className={cn("tap inline-flex items-center rounded-xl border px-4 py-2 text-sm font-semibold", plan !== "pro" ? "border-ink-200 bg-ink-100 text-ink-400" : animado ? "border-azul bg-azul-50" : "border-ink-300 bg-blanco")}
+          >
+            Animado {plan !== "pro" && "· Pro"}
+          </button>
+        </div>
+        {invite && plan !== "pro" && (
+          <p role="status" className="rounded-lg bg-naranja-100 p-3 text-sm text-ink-900">
+            Los carruseles animados son del <strong>plan Pro</strong>. Puedes subir de plan desde <a href="/mi-marca" className="font-semibold underline underline-offset-4">Mi marca</a>; mientras tanto armamos tu carrusel estático y lo dejamos listo para animarse.
+          </p>
+        )}
+        {animado && plan === "pro" && <p className="text-xs text-ink-600">La animación en video se activa pronto. Hoy guardamos tu preferencia y descargas las imágenes estáticas.</p>}
       </fieldset>
       <Button type="submit" size="lg" disabled={pending || !tipo || !objetivo || !estilo} className="self-start">
         {pending ? "Pensando ideas…" : "Proponme ideas"}
@@ -111,16 +137,17 @@ export function IdeasStep({ id, rounds, canRefresh, recommended }: { id: string;
 
 /* ───────────── 3 · Entrevista de imágenes con IA ───────────── */
 
-export function InterviewStep({ id, interview }: { id: string; interview: InterviewOut }) {
+export function InterviewStep({ id, interview, previous }: { id: string; interview: InterviewOut; previous?: { estilo: string; aparece_creador: string; herramienta: string } | null }) {
   const [state, action, pending] = useActionState<CarouselActionState, FormData>(saveAnswersAction, undefined);
   const q = (qid: string) => interview.preguntas.find((p) => p.id === qid);
   const estilo = q("estilo");
-  const [est, setEst] = useState("elige_por_mi");
+  const [est, setEst] = useState(() => (previous?.estilo && [...(interview.preguntas.find((p) => p.id === "estilo")?.opciones ?? []), "elige_por_mi"].includes(previous.estilo) ? previous.estilo : "elige_por_mi"));
   return (
     <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-5">
       <FormError message={state?.error} />
       <input type="hidden" name="id" value={id} />
       <p className="text-sm text-ink-700">Nosotros <strong>no generamos las imágenes</strong>: te damos los prompts para que las crees en tu propia cuenta de Gemini o ChatGPT y las subas aquí.</p>
+      {previous && previous.estilo !== "elige_por_mi" && <p className="rounded-lg bg-azul-50 p-3 text-sm">La última vez elegiste <strong>{previous.estilo}</strong>. Ya lo dejamos marcado: cámbialo si quieres otra cosa. Tu línea visual es solo tuya y no se comparte con nadie más.</p>}
       {estilo && (
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-semibold">{estilo.texto}</legend>
@@ -157,7 +184,7 @@ export function InterviewStep({ id, interview }: { id: string; interview: Interv
           ["mixta", "Mixta: mi foto en la portada y yo de espaldas en las demás"],
         ].map(([v, l]) => (
           <label key={v} className="flex items-center gap-2 text-sm">
-            <input type="radio" name="aparece_creador" value={v} defaultChecked={v === "no"} /> {l}
+            <input type="radio" name="aparece_creador" value={v} defaultChecked={v === (previous?.aparece_creador ?? "no")} /> {l}
           </label>
         ))}
       </fieldset>
@@ -180,7 +207,7 @@ export function InterviewStep({ id, interview }: { id: string; interview: Interv
           ["no_se", "No sé, recomiéndame"],
         ].map(([v, l]) => (
           <label key={v} className="flex items-center gap-2 text-sm">
-            <input type="radio" name="herramienta" value={v} defaultChecked={v === "no_se"} /> {l}
+            <input type="radio" name="herramienta" value={v} defaultChecked={v === (previous?.herramienta ?? "no_se")} /> {l}
           </label>
         ))}
       </fieldset>

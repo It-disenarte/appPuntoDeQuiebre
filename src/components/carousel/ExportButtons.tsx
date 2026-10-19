@@ -4,6 +4,7 @@ import { toPng } from "html-to-image";
 import { zipSync } from "fflate";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui";
+import { buildPptx } from "./build-pptx";
 import { H, SlideCanvas, W } from "./SlideCanvas";
 
 type Item = Parameters<typeof SlideCanvas>[0];
@@ -51,6 +52,17 @@ export function ExportButtons({ items, name }: { items: Item[]; name: string }) 
     setBusy(false);
   }
 
+  async function canva() {
+    setBusy(true);
+    setError("");
+    try {
+      save(await buildPptx(items, name), `${slug(name)}.pptx`);
+    } catch {
+      setError("No pudimos crear el archivo editable. Intenta de nuevo.");
+    }
+    setBusy(false);
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -60,13 +72,16 @@ export function ExportButtons({ items, name }: { items: Item[]; name: string }) 
         <Button type="button" variant="outline" onClick={() => run("uno", 0)} disabled={busy}>
           Solo la portada
         </Button>
+        <Button type="button" variant="outline" onClick={canva} disabled={busy}>
+          Lo quiero en Canva (editable)
+        </Button>
       </div>
       {error && (
         <p role="alert" className="text-sm text-alerta">
           {error}
         </p>
       )}
-      <p className="text-xs text-ink-500">Salen en 1080 × 1350 (4:5), listas para subir a Instagram en orden.</p>
+      <p className="text-xs text-ink-500">Los PNG salen en 1080 × 1350 (4:5), listos para subir a Instagram en orden. “Lo quiero en Canva” baja un archivo PowerPoint con el texto editable: en Canva elige Crear un diseño → Importar archivo. Es una aproximación: revisa tipografías y detalles.</p>
       {/* Lienzos a tamaño real, fuera de la pantalla, solo para exportar. */}
       <div ref={stage} aria-hidden style={{ position: "fixed", left: -20000, top: 0, pointerEvents: "none" }}>
         {items.map((p) => (
