@@ -45,8 +45,12 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     setError("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return setError("Este navegador no puede grabar video. Prueba con Chrome o Safari actualizado.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 1280 } }, audio: { echoCancellation: true, noiseSuppression: true } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", aspectRatio: { ideal: 3 / 4 }, width: { ideal: 960 }, height: { ideal: 1280 } }, audio: { echoCancellation: true, noiseSuppression: true } });
       streamRef.current = stream;
+      // Si la cámara permite acercar, se deja sin zoom para ver todo el encuadre (best-effort: no todos los celulares lo ofrecen).
+      const track = stream.getVideoTracks()[0];
+      const zoom = (track?.getCapabilities?.() as { zoom?: { min: number } } | undefined)?.zoom;
+      if (track && zoom) await track.applyConstraints({ advanced: [{ zoom: zoom.min } as MediaTrackConstraintSet] }).catch(() => undefined);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
@@ -197,7 +201,8 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   const complete = PARTS.every((p) => doneParts.has(p));
 
   return (
-    <div className="flex flex-col gap-3">
+    // Sin selección de texto: al mantener pulsado, Chrome abría su buscador (“Tap to see search results”) en pleno estudio.
+    <div className="flex flex-col gap-3 select-none [-webkit-touch-callout:none]" onContextMenu={(e) => e.preventDefault()}>
       <ol className="grid grid-cols-3 gap-1.5" aria-label="Partes del guion">
         {PARTS.map((p) => (
           <li key={p}>

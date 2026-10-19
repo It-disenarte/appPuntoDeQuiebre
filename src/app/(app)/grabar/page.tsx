@@ -26,7 +26,7 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
   if (!piece || !script) {
     const pieces = await recordablePieces(user.id);
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
+      <div className="mx-auto flex max-w-xl flex-col gap-4 select-none [-webkit-touch-callout:none]">
         <PageHeader dark eyebrow="Estudio" title="¿Qué vas a grabar?" />
         {pieces.length === 0 ? (
           <Card className="flex flex-col gap-2 bg-ink-800 text-blanco">
@@ -58,7 +58,7 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
   const recs = await listRecordings(user.id, piece.id);
   const done = recs.map((r) => ({ part: r.part as Part, id: r.id, seconds: r.seconds }));
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="mx-auto flex max-w-xl flex-col gap-4 select-none [-webkit-touch-callout:none]">
       <PageHeader dark eyebrow={`Video · ${dayLabel(piece.day)}`} title={piece.topic} />
       {!storageConfigured() ? (
         <Card className="bg-ink-800 text-blanco">
