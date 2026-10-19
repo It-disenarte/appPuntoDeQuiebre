@@ -52,6 +52,8 @@ const schema = z.object({
   APIFY_TRENDS_INPUT: optional(z.string().max(2000)),
   META_APP_ID: optional(z.string().min(5)),
   META_APP_SECRET: optional(z.string().min(10)),
+  /** Llave para cifrar los tokens de Instagram en la base de datos: 32 bytes en base64 (openssl rand -base64 32). Sin ella no se puede conectar Instagram. */
+  TOKEN_ENC_KEY: optional(z.string().regex(/^[A-Za-z0-9+/]{43}=$/, "debe ser 32 bytes en base64 (openssl rand -base64 32)")),
 
   // Web Push. Opcional en Fase 0.
   VAPID_PUBLIC_KEY: optional(z.string()),

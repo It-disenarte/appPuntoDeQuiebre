@@ -809,3 +809,46 @@ export const trendsUsed = pgTable(
   },
   (t) => [uniqueIndex("trends_used_user_trend_idx").on(t.userId, t.trendId)],
 );
+
+/** Cuenta de Instagram conectada con el inicio de sesión oficial de Instagram. El token vive cifrado. */
+export const igConnections = pgTable(
+  "ig_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    igUserId: text("ig_user_id").notNull(),
+    username: text("username").notNull(),
+    name: text("name"),
+    accountType: text("account_type"),
+    tokenEnc: text("token_enc").notNull(),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }).notNull(),
+    scopes: text("scopes").notNull().default(""),
+    /** { followers, follows, mediaCount } de la última sincronización. */
+    profile: jsonb("profile").$type<unknown>().notNull().default({}),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("ig_connections_user_idx").on(t.userId), uniqueIndex("ig_connections_ig_idx").on(t.igUserId)],
+);
+
+/** Publicaciones recientes de la cuenta conectada con sus métricas. */
+export const igMedia = pgTable(
+  "ig_media",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    igMediaId: text("ig_media_id").notNull(),
+    mediaType: text("media_type").notNull(),
+    permalink: text("permalink"),
+    caption: text("caption"),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    metrics: jsonb("metrics").$type<unknown>().notNull().default({}),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ig_media_user_media_idx").on(t.userId, t.igMediaId), index("ig_media_user_posted_idx").on(t.userId, t.postedAt)],
+);

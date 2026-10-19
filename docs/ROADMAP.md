@@ -32,7 +32,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A8 | Perfil de voz | 2A | ✅ | Revisar que suene a la persona |
 | A9 | Horario de grabación (2 fijos + 1 de respaldo, consejos de luz, recordatorios) | 2A | ✅ | Responder con distintos días y luces |
 | A10 | Kit visual: 5 rondas + revelación con sus fotos | 2B | 🧪 / 🟡 | Subir fotos reales (MinIO + sharp) y correr con IA real |
-| A11 | Conectar Instagram (inicio de sesión oficial, desconectar cuando quiera) y guía de cuenta profesional | 3 | ⬜ ⛔B1 | — |
+| A11 | Conectar Instagram (inicio de sesión oficial, desconectar cuando quiera) y guía de cuenta profesional | 3 | 🟡 ⛔B1 | Código listo y probado con API simulada; falta crear la app de Meta (docs/instagram-setup.md) y probar con una cuenta evaluadora |
 | A12 | Auditoría de su cuenta y tarjetas "Así te vemos" | 3 | ⬜ ⛔B1 | — |
 | A13 | Optimización de perfil (capturas → nombre, bio por red, destacadas) y calificador de foto | 4 | ⬜ | — |
 | A14 | Analizador de competencia (1 vez cada 7 días, con contador) | 5 | 🧪 | Con APIFY_TOKEN y Gemini: correr sobre 2 cuentas reales; sin llaves corre con ejemplos |
@@ -73,7 +73,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | --- | --- | --- |
 | T1 | Worker (pg-boss): limpieza diaria y liberación de reservas | ✅ |
 | T2 | Skills de IA versionadas con Claude; transcripción con Gemini | ✅ (probadas en el VPS) |
-| T3 | Notificaciones Web Push (VAPID) y recordatorios | ⬜ |
+| T3 | Notificaciones Web Push (VAPID) y recordatorios | 🧪 |
 | T4 | Respaldo de la base de datos | ⬜ (lo activas en Easypanel) |
-| T5 | Cifrado de tokens de Instagram | ⬜ |
+| T5 | Cifrado de tokens de Instagram | ✅ (AES-256-GCM, `TOKEN_ENC_KEY`) |
 | T6 | Registro de costo de IA en pesos | ⬜ (hoy se guardan tokens) |

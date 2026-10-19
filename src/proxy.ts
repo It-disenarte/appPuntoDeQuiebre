@@ -7,7 +7,7 @@ import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/cookie";
  * 2. Comprobación OPTIMISTA de sesión: solo mira si existe la cookie. La validación real
  *    (BD, rol, estado) ocurre en src/lib/auth/dal.ts dentro de cada página y acción.
  */
-const PUBLIC_PATHS = ["/login", "/registro", "/terminos", "/privacidad", "/offline", "/api/health", "/api/stripe/webhook"];
+const PUBLIC_PATHS = ["/login", "/registro", "/terminos", "/privacidad", "/offline", "/api/health", "/api/stripe/webhook", "/api/instagram/deauthorize", "/api/instagram/delete"];
 
 export function buildCsp(nonce: string, isDev: boolean): string {
   return [

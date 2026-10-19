@@ -16,6 +16,7 @@ import { runReview } from "@/lib/coach/service";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
+import { refreshExpiringTokens, syncAll } from "@/lib/instagram/service";
 import { refreshTrends } from "@/lib/trends/list";
 import { tickNotifications } from "@/lib/notify/service";
 
@@ -41,6 +42,7 @@ export const QUEUES = {
   releaseReservations: "billing-release-reservations",
   notifyTick: "notify-tick",
   trendsDaily: "trends-daily",
+  instagramDaily: "instagram-daily",
 } as const;
 
 /** Trabajos largos que encola la app (tabla `jobs`). Cada tipo tiene su propio ciclo para que uno lento no bloquee a los demás. */
@@ -159,6 +161,15 @@ async function main() {
   await boss.work(QUEUES.trendsDaily, async () => {
     const r = await refreshTrends();
     console.log("[worker] tendencias actualizadas", r);
+  });
+
+  // Instagram: cada día se renuevan los permisos que vencen pronto y se actualizan los datos de las cuentas conectadas.
+  await boss.createQueue(QUEUES.instagramDaily);
+  await boss.schedule(QUEUES.instagramDaily, "30 5 * * *", null, { tz: "America/Mexico_City" });
+  await boss.work(QUEUES.instagramDaily, async () => {
+    const tokens = await refreshExpiringTokens();
+    const sync = await syncAll();
+    console.log("[worker] instagram", { tokens, sync });
   });
 
   const stopJobs = { value: false };

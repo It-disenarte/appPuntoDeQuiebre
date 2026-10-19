@@ -140,6 +140,13 @@ export default async function MiMarcaPage() {
             </ButtonLink>
           </Card>
           <Card className="flex flex-col gap-2">
+            <p className="font-extrabold">Mi Instagram</p>
+            <p className="text-sm text-ink-600">Conecta tu cuenta con el acceso oficial de Instagram (solo lectura) para ver tu progreso sin capturas.</p>
+            <ButtonLink href="/mi-marca/instagram" size="sm" variant="outline" className="self-start">
+              Conectar o ver mi Instagram
+            </ButtonLink>
+          </Card>
+          <Card className="flex flex-col gap-2">
             <p className="font-extrabold">Perfil de Instagram</p>
             <p className="text-sm text-ink-600">Nombre, biografía, destacadas con portadas y calificación de tu foto, listos para copiar.</p>
             <ButtonLink href="/mi-marca/perfil" size="sm" variant="outline" className="self-start">
