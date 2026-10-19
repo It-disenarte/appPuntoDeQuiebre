@@ -13,6 +13,7 @@ import { billingConfigured } from "@/lib/billing/stripe";
 import { db } from "@/lib/db";
 import { invoiceRequests, promoCodes, users } from "@/lib/db/schema";
 import { getClientIp } from "@/lib/request";
+import { saveLimits, savePrices } from "./limits";
 
 export type AdminState = { error?: string; ok?: boolean; tempPassword?: string; message?: string } | undefined;
 
@@ -187,4 +188,33 @@ export async function updateInvoiceRequestAction(fd: FormData): Promise<void> {
     .where(and(eq(invoiceRequests.id, id.data), ne(invoiceRequests.status, status)));
   await audit({ action: "admin.invoice_request_updated", actorUserId: admin.id, ip: await getClientIp(), meta: { id: id.data, status } });
   revalidatePath("/admin/facturas");
+}
+
+/* ───────────── Límites y precios (M10) ───────────── */
+
+const num = (fd: FormData, k: string) => {
+  const raw = String(fd.get(k) ?? "").trim().replace(",", ".");
+  return raw === "" ? NaN : Number(raw);
+};
+
+export async function saveLimitsAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const r = await saveLimits(
+    { analyzerIntervalDays: num(fd, "analyzerIntervalDays"), analyzerTopK: num(fd, "analyzerTopK"), coachMonthlyBasico: num(fd, "coachMonthlyBasico"), coachMonthlyPro: num(fd, "coachMonthlyPro"), editsMonthlyPro: num(fd, "editsMonthlyPro"), trendsWeeklyBasico: num(fd, "trendsWeeklyBasico"), trendsWeeklyPro: num(fd, "trendsWeeklyPro") },
+    admin.id,
+  );
+  if (!r.ok) return { error: r.error };
+  await audit({ action: "admin.limits_updated", actorUserId: admin.id, ip: await getClientIp() });
+  revalidatePath("/admin/limites");
+  return { ok: true, message: "Límites guardados." };
+}
+
+export async function savePricesAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const r = await savePrices({ claudeInUsdPerM: num(fd, "claudeInUsdPerM"), claudeOutUsdPerM: num(fd, "claudeOutUsdPerM"), geminiCallUsd: num(fd, "geminiCallUsd"), apifyRunUsd: num(fd, "apifyRunUsd"), usdMxn: num(fd, "usdMxn") }, admin.id);
+  if (!r.ok) return { error: r.error };
+  await audit({ action: "admin.prices_updated", actorUserId: admin.id, ip: await getClientIp() });
+  revalidatePath("/admin/limites");
+  revalidatePath("/admin/metricas");
+  return { ok: true, message: "Precios guardados." };
 }

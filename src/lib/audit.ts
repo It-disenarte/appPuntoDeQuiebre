@@ -18,6 +18,8 @@ export type AuditAction =
   | "brujula.manual_downloaded"
   | "plan.generated"
   | "grabacion.subida"
+  | "admin.limits_updated"
+  | "admin.prices_updated"
   | "kit.approved"
   | "kit.reset"
   | "billing.checkout_started"

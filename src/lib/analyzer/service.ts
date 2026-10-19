@@ -7,6 +7,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import sharp from "sharp";
 import { claudeConfigured, claudeText } from "@/lib/ai/claude";
 import { geminiConfigured, geminiGenerate, geminiUploadFile, parseJson } from "@/lib/ai/gemini";
+import { getLimits } from "@/lib/admin/limits";
 import { getIntake, getManual } from "@/lib/brujula/service";
 import { db } from "@/lib/db";
 import { aiCalls, analyzedVideos, analyzerRuns, competitors } from "@/lib/db/schema";
@@ -15,7 +16,7 @@ import { sendToUser } from "@/lib/push";
 import { deleteObject, putObjectStream, storageConfigured } from "@/lib/storage";
 import { apifyConfigured, scrapeReels, type ScrapedReel } from "./apify";
 import { downloadLimited, MAX_THUMB_BYTES, MAX_VIDEO_BYTES } from "./media";
-import { conceptsSchema, DEFAULT_PARAMS, MAX_COMPETITORS, normalizeUsername, paramsSchema, progressSchema, RUN_INTERVAL_DAYS, videoAnalysisSchema, type Concepts, type Progress, type RunParams, type VideoAnalysis } from "./schemas";
+import { conceptsSchema, DEFAULT_PARAMS, MAX_COMPETITORS, normalizeUsername, paramsSchema, progressSchema, videoAnalysisSchema, type Concepts, type Progress, type RunParams, type VideoAnalysis } from "./schemas";
 
 export type Competitor = typeof competitors.$inferSelect;
 export type Run = typeof analyzerRuns.$inferSelect;
@@ -88,7 +89,8 @@ export async function nextAllowedAt(userId: string, now = new Date()): Promise<D
     .orderBy(desc(analyzerRuns.createdAt))
     .limit(1);
   if (!r) return null;
-  const next = new Date(r.createdAt.getTime() + RUN_INTERVAL_DAYS * DAY_MS);
+  const interval = (await getLimits()).analyzerIntervalDays;
+  const next = new Date(r.createdAt.getTime() + interval * DAY_MS);
   return next > now ? next : null;
 }
 
@@ -97,9 +99,10 @@ export async function startRun(userId: string, rawParams: Partial<RunParams> = {
   if (!list.length) return { ok: false, error: "Agrega al menos una cuenta para estudiar." };
   const active = await latestRun(userId);
   if (active && ["en_cola", "corriendo"].includes(active.status)) return { ok: false, error: "Ya hay un análisis en curso." };
+  const limits = await getLimits();
   const wait = await nextAllowedAt(userId);
-  if (wait) return { ok: false, error: `Puedes correr el análisis una vez por semana. Vuelve a intentarlo el ${wait.toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" })}.` };
-  const params = paramsSchema.parse({ ...DEFAULT_PARAMS, ...rawParams });
+  if (wait) return { ok: false, error: `Puedes correr el análisis ${limits.analyzerIntervalDays === 7 ? "una vez por semana" : `una vez cada ${limits.analyzerIntervalDays} días`}. Vuelve a intentarlo el ${wait.toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" })}.` };
+  const params = paramsSchema.parse({ ...DEFAULT_PARAMS, topK: limits.analyzerTopK, ...rawParams });
   const mock = !(apifyConfigured() && geminiConfigured());
   const [run] = await db()
     .insert(analyzerRuns)

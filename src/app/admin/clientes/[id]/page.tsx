@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Card, Chip, PageHeader } from "@/components/ui";
+import { daysAgo, loadFacts, MILESTONES, phaseLabel, incomeSince, usageSince } from "@/lib/admin/insights";
+import { getPrices } from "@/lib/admin/limits";
 import { getClient } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/auth/dal";
 import { ACCESS_LABEL, ACCESS_TONE, formatDate, subscriptionSummary } from "@/lib/billing/labels";
@@ -30,6 +32,14 @@ export default async function ClientePage({ params }: PageProps<"/admin/clientes
   if (!data) notFound();
   const { user, sub, commitment, access } = data;
   const age = user.birthDate ? ageFromBirthDate(user.birthDate) : null;
+  const [facts] = user.role === "creator" ? await loadFacts(id) : [];
+  const monthAgo = daysAgo(30);
+  const prices = await getPrices();
+  const [usage, income] = await Promise.all([usageSince(monthAgo, id, prices), incomeSince(monthAgo, id)]);
+  const use = usage.get(id);
+  const costMxn = (use?.costUsd ?? 0) * prices.usdMxn;
+  const incomeMxn = (income.get(id) ?? 0) / 100;
+  const money = (n: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }).format(n);
 
   return (
     <div className="flex flex-col gap-5">
@@ -72,6 +82,37 @@ export default async function ClientePage({ params }: PageProps<"/admin/clientes
           )}
         </Card>
       </div>
+
+      {facts && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <h2 className="text-sm font-extrabold">Progreso en la app</h2>
+            <p className="mt-1 text-sm font-semibold">{phaseLabel(facts)}</p>
+            <ul className="mt-2 flex flex-col gap-1 text-sm">
+              {MILESTONES.map((m) => (
+                <li key={m.id} className={facts.milestones[m.id] ? "text-ink-900" : "text-ink-400"}>
+                  {facts.milestones[m.id] ? "✓" : "○"} {m.label}
+                  {facts.milestones[m.id] ? <span className="text-xs text-ink-500"> · {formatDate(facts.milestones[m.id]!)}</span> : null}
+                </li>
+              ))}
+            </ul>
+            <dl className="mt-3 divide-y divide-ink-200">
+              <Row label="Racha">{facts.streakWeeks} {facts.streakWeeks === 1 ? "semana" : "semanas"}</Row>
+              <Row label="Última actividad">{facts.lastActivity ? formatDate(facts.lastActivity) : "Nunca"}</Row>
+            </dl>
+          </Card>
+          <Card>
+            <h2 className="text-sm font-extrabold">Uso de IA (últimos 30 días)</h2>
+            <dl className="mt-2 divide-y divide-ink-200">
+              <Row label="Llamadas reales">{use?.calls ?? 0}</Row>
+              <Row label="Costo estimado">{money(costMxn)}</Row>
+              <Row label="Ingreso cobrado">{money(incomeMxn)}</Row>
+              <Row label="Costo / ingreso">{incomeMxn > 0 ? `${Math.round((costMxn / incomeMxn) * 100)} %` : "—"}</Row>
+            </dl>
+            <p className="mt-2 text-xs text-ink-500">Estimado con los precios de Límites y costos; no es la factura real.</p>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-0">

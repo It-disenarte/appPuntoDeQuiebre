@@ -60,11 +60,11 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | M5 | Códigos de mes gratis o descuento (planes, usos, vigencia) y conversión | 1 | ✅ | Crear uno con fechas y usarlo |
 | M6 | Solicitudes de factura: marcar emitida o rechazar | 1 | ✅ | Pedir una desde un creador |
 | M7 | Video de bienvenida | 1 | ✅ | Subir y reproducir |
-| M8 | Ficha con fase actual, avance del alta, racha y última actividad | 2–10 | ⬜ | — |
-| M9 | Uso de límites y **costo de IA contra ingreso** por cliente | 7 | ⬜ | — |
-| M10 | Límites configurables sin tocar código (coach, ediciones, analizador) | 7 | ⬜ | — |
-| M11 | Métricas del negocio: tiempo por fase, % que termina cada fase, conversión de prueba a pago, permanencia al mes 2 y 3 | 7 | ⬜ | — |
-| M12 | Alertas de abandono: rachas rotas y usuarios inactivos | 7 | ⬜ | — |
+| M8 | Ficha con fase actual, avance del alta, racha y última actividad | 2–10 | 🧪 | Abrir la ficha de un creador: fase, avance, racha y última actividad (la racha es por semanas con grabación o pieza hecha; la automática por API llega con Instagram) |
+| M9 | Uso de límites y **costo de IA contra ingreso** por cliente | 7 | 🧪 | Ficha del cliente y /admin/metricas; el costo es ESTIMADO con precios editables |
+| M10 | Límites configurables sin tocar código (coach, ediciones, analizador) | 7 | 🧪 | /admin/limites: el intervalo y los videos del analizador ya se aplican; coach, ediciones y tendencias quedan guardados para cuando existan |
+| M11 | Métricas del negocio: tiempo por fase, % que termina cada fase, conversión de prueba a pago, permanencia al mes 2 y 3 | 7 | 🧪 | /admin/metricas con datos reales de clientes |
+| M12 | Alertas de abandono: rachas rotas y usuarios inactivos | 7 | 🧪 | /admin/alertas; no envía correos ni avisos, solo lista |
 | M13 | Bitácora de auditoría | 0 | ✅ | Revisar tras acciones |
 
 ## C. Piezas técnicas transversales

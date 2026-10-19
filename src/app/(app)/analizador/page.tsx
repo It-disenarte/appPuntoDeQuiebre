@@ -4,7 +4,7 @@ import { AddCompetitorForm, StartRunForm } from "@/components/analyzer/Forms";
 import { Poller } from "@/components/metrics/Poller";
 import { Button, Card, Chip, PageHeader } from "@/components/ui";
 import { removeCompetitorAction, toggleStarAction } from "@/lib/analyzer/actions";
-import { RUN_INTERVAL_DAYS } from "@/lib/analyzer/schemas";
+import { getLimits } from "@/lib/admin/limits";
 import { latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { formatCount } from "@/lib/metrics/schemas";
@@ -16,6 +16,7 @@ const dateEs = (d: Date) => d.toLocaleDateString("es-MX", { day: "numeric", mont
 export default async function AnalizadorPage() {
   const { user } = await requireCreatorAccess();
   const [comps, run, wait] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id)]);
+  const intervalDays = (await getLimits()).analyzerIntervalDays;
   const running = run && ["en_cola", "corriendo"].includes(run.status);
   const lastDone = run?.status === "lista" ? run : null;
   const videos = await listVideos(user.id, lastDone?.id);
@@ -28,7 +29,7 @@ export default async function AnalizadorPage() {
       <PageHeader eyebrow="Inspiración" title="Analizador de competencia" />
       <Card className="flex flex-col gap-2">
         <p className="text-sm text-ink-700">Elige las cuentas que admiras. Buscamos sus reels más vistos del último mes, los desarmamos (gancho, retención y recompensa) y te proponemos <strong>ideas nuevas con tu voz</strong>. No copiamos nada: tomamos la estructura.</p>
-        <p className="text-xs text-ink-500">Puedes correrlo una vez cada {RUN_INTERVAL_DAYS} días.</p>
+        <p className="text-xs text-ink-500">Puedes correrlo una vez cada {intervalDays} días.</p>
       </Card>
 
       <Card className="flex flex-col gap-3">

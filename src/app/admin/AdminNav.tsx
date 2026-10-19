@@ -10,10 +10,11 @@ const SECTIONS = [
   { label: "Suscripciones", href: "/admin/suscripciones" },
   { label: "Códigos", href: "/admin/codigos" },
   { label: "Facturas", href: "/admin/facturas" },
+  { label: "Métricas", href: "/admin/metricas" },
+  { label: "Alertas", href: "/admin/alertas" },
+  { label: "Límites y costos", href: "/admin/limites" },
   { label: "Ajustes", href: "/admin/ajustes" },
 ] as const;
-
-const UPCOMING = [{ label: "Métricas del negocio", phase: 7 }] as const;
 
 export function AdminNav() {
   const pathname = usePathname();
@@ -32,12 +33,6 @@ export function AdminNav() {
         >
           {s.label}
         </Link>
-      ))}
-      {UPCOMING.map((s) => (
-        <span key={s.label} className="flex shrink-0 items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-500" aria-disabled>
-          {s.label}
-          <span className="text-[0.625rem] font-semibold uppercase">Fase {s.phase}</span>
-        </span>
       ))}
     </nav>
   );
