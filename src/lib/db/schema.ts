@@ -723,3 +723,43 @@ export const coachReviews = pgTable(
   },
   (t) => [uniqueIndex("coach_reviews_piece_num_idx").on(t.pieceId, t.numero), index("coach_reviews_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Respuestas del creador sobre sus directos (skill 15) y la recomendación que se le dio. Una fila por creador. */
+export const liveProfile = pgTable(
+  "live_profile",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    situacion: text("situacion", { enum: ["hace", "quiere_hacer", "no_quiere"] }),
+    plataformas: jsonb("plataformas").$type<unknown>().notNull().default([]),
+    dias: jsonb("dias").$type<unknown>().notNull().default([]),
+    hora: text("hora"),
+    frecuencia: text("frecuencia"),
+    compromiso: text("compromiso"),
+    recomendacion: jsonb("recomendacion").$type<unknown>(),
+    /** Veces seguidas que dijo "Ahora no" al aviso mensual; con 3 ya no se le muestra. */
+    avisosNoSeguidos: integer("avisos_no_seguidos").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("live_profile_user_idx").on(t.userId)],
+);
+
+/** Guía de directos de una semana (o una de apoyo). `done` marca los directos que ya hizo ({ "2026-10-20": true }). */
+export const liveGuides = pgTable(
+  "live_guides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["semanal", "apoyo"] }).notNull(),
+    weekStart: date("week_start"),
+    result: jsonb("result").$type<unknown>().notNull(),
+    done: jsonb("done").$type<unknown>().notNull().default({}),
+    mock: boolean("mock").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [index("live_guides_user_idx").on(t.userId, t.createdAt)],
+);

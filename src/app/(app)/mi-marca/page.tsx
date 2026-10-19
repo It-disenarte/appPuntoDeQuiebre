@@ -101,6 +101,13 @@ export default async function MiMarcaPage() {
             )}
           </Card>
           <Card className="flex flex-col gap-2">
+            <p className="font-extrabold">Directos</p>
+            <p className="text-sm text-ink-600">Temas, guías y momentos para clip si haces (o quieres hacer) transmisiones en vivo.</p>
+            <ButtonLink href="/directos" size="sm" variant="outline" className="self-start">
+              Ver mis directos
+            </ButtonLink>
+          </Card>
+          <Card className="flex flex-col gap-2">
             <p className="font-extrabold">Perfil de Instagram</p>
             <p className="text-sm text-ink-600">Nombre, biografía, destacadas con portadas y calificación de tu foto, listos para copiar.</p>
             <ButtonLink href="/mi-marca/perfil" size="sm" variant="outline" className="self-start">
