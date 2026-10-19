@@ -99,6 +99,16 @@ export default async function InstagramPage({ searchParams }: PageProps<"/mi-mar
             </div>
           </Card>
 
+          <Card className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-extrabold">Así te vemos</p>
+              <p className="text-sm text-ink-600">Revisamos tu cuenta y te mostramos lo que vemos para que nos digas si acertamos.</p>
+            </div>
+            <ButtonLink href="/mi-marca/auditoria" size="sm" variant="outline">
+              Ver mi auditoría
+            </ButtonLink>
+          </Card>
+
           <section className="flex flex-col gap-2" aria-label="Publicaciones recientes">
             <h2 className="font-extrabold">Tus publicaciones recientes</h2>
             {media.length === 0 && <p className="text-sm text-ink-600">Todavía no hay publicaciones leídas. Toca “Actualizar ahora”.</p>}

@@ -33,7 +33,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A9 | Horario de grabación (2 fijos + 1 de respaldo, consejos de luz, recordatorios) | 2A | ✅ | Responder con distintos días y luces |
 | A10 | Kit visual: 5 rondas + revelación con sus fotos | 2B | 🧪 / 🟡 | Subir fotos reales (MinIO + sharp) y correr con IA real |
 | A11 | Conectar Instagram (inicio de sesión oficial, desconectar cuando quiera) y guía de cuenta profesional | 3 | 🟡 ⛔B1 | Código listo y probado con API simulada; falta crear la app de Meta (docs/instagram-setup.md) y probar con una cuenta evaluadora |
-| A12 | Auditoría de su cuenta y tarjetas "Así te vemos" | 3 | ⬜ ⛔B1 | — |
+| A12 | Auditoría de su cuenta y tarjetas "Así te vemos" | 3 | 🟡 ⛔B1 | Código listo (modo sin contenido con menos de 9 publicaciones); falta probar con una cuenta real. No analiza miniaturas ni colores todavía |
 | A13 | Optimización de perfil (capturas → nombre, bio por red, destacadas) y calificador de foto | 4 | ⬜ | — |
 | A14 | Analizador de competencia (1 vez cada 7 días, con contador) | 5 | 🧪 | Con APIFY_TOKEN y Gemini: correr sobre 2 cuentas reales; sin llaves corre con ejemplos |
 | A15 | Parrilla semanal (4 videos + 3 carruseles en Básico; 5 + 2 en Pro) con categoría, probado/prueba y tarjeta de prueba | 6 | 🧪 | Generar la semana en Básico y en Pro; revisar mezcla y variante |

@@ -852,3 +852,20 @@ export const igMedia = pgTable(
   },
   (t) => [uniqueIndex("ig_media_user_media_idx").on(t.userId, t.igMediaId), index("ig_media_user_posted_idx").on(t.userId, t.postedAt)],
 );
+
+/** Auditoría inicial de la cuenta conectada (skill 0) y las respuestas del creador a sus tarjetas "Así te vemos". */
+export const accountAudits = pgTable(
+  "account_audits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    result: jsonb("result").$type<unknown>().notNull(),
+    /** { t1: { voto: "si" | "no" | "ajustar", nota } } */
+    votes: jsonb("votes").$type<unknown>().notNull().default({}),
+    mock: boolean("mock").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("account_audits_user_idx").on(t.userId)],
+);

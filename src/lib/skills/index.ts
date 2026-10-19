@@ -30,6 +30,7 @@ export const SKILLS = {
   perfil: { dir: "optimizacion-perfil/v1", version: "optimizacion-perfil-v1" },
   directos: { dir: "guia-lives/v2", version: "guia-lives-v2" },
   tendencias: { dir: "tendencias/v2", version: "tendencias-v2" },
+  auditoria: { dir: "auditoria/v1", version: "auditoria-v1" },
 } as const;
 type SkillKey = keyof typeof SKILLS;
 
@@ -153,6 +154,9 @@ export const runDirectos = <T,>(userId: string, input: unknown, schema: ZodType<
 
 /** Tendencias (skill 12). */
 export const runTendencias = <T,>(userId: string, input: unknown, schema: ZodType<T>, mock: () => unknown) => run<T>(userId, "tendencias", input, schema, mock);
+
+/** Auditoría inicial de la cuenta (skill 0). */
+export const runAuditoria = <T,>(userId: string, input: unknown, schema: ZodType<T>, mock: () => unknown) => run<T>(userId, "auditoria", input, schema, mock);
 
 /** Una ronda del kit visual (modo "ronda"): devuelve las opciones sin filtrar; quien llama aplica las validaciones por código. */
 export async function runKitRound(userId: string, input: KitInput): Promise<SkillResult<{ options: PaletteOption[] | FontOption[] | TitleOption[] }>> {
