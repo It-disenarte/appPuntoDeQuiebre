@@ -594,7 +594,7 @@ export const analyzerRuns = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
-  (t) => [index("analyzer_runs_user_idx").on(t.userId, t.createdAt)],
+  (t) => [index("analyzer_runs_user_idx").on(t.userId, t.createdAt), uniqueIndex("analyzer_runs_one_active_idx").on(t.userId).where(sql`${t.status} in ('en_cola', 'corriendo')`)],
 );
 
 /** Cada video de la competencia ya analizado, con los conceptos nuevos adaptados al creador. */

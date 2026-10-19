@@ -48,7 +48,7 @@ export const ideasOutput = z
     skill_version: str.optional(),
     tipo_recomendado: strN,
     porque_tipo: strN,
-    ideas: z.array(z.object({ id: str, angulo: str.default(""), titulo: str, promesa: str.default("") }).passthrough()).min(1).max(3),
+    ideas: z.array(z.object({ id: str, angulo: str.default(""), titulo: str, promesa: str.default("") }).passthrough()).min(1).transform((a) => a.slice(0, 3)),
   })
   .passthrough();
 export type IdeasOut = z.infer<typeof ideasOutput>;
@@ -77,7 +77,7 @@ export const interviewOutput = z
           .passthrough(),
       )
       .min(1)
-      .max(10),
+      .transform((a) => a.slice(0, 10)),
   })
   .passthrough();
 export type InterviewOut = z.infer<typeof interviewOutput>;
@@ -150,7 +150,7 @@ export const carruselOutput = z
     tipo: str.default(""),
     estructura_porque: str.default(""),
     estilo_detectado: strN,
-    slides: z.array(slideSchema).min(3).max(12),
+    slides: z.array(slideSchema).min(3).transform((a) => a.slice(0, 12)),
     animacion: z.object({ duracion_s: z.number().default(6), hilo_comun: strN, porque: strN }).passthrough().default({ duracion_s: 6, hilo_comun: null, porque: null }),
     fondo_slides_texto: z
       .object({

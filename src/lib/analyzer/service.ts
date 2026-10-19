@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, ne } from "drizzle-orm";
 import sharp from "sharp";
 import { claudeConfigured, claudeText } from "@/lib/ai/claude";
 import { geminiConfigured, geminiGenerate, geminiUploadFile, parseJson } from "@/lib/ai/gemini";
@@ -97,6 +97,8 @@ export async function nextAllowedAt(userId: string, now = new Date()): Promise<D
 export async function startRun(userId: string, rawParams: Partial<RunParams> = {}): Promise<{ ok: true; runId: string } | { ok: false; error: string }> {
   const list = await listCompetitors(userId);
   if (!list.length) return { ok: false, error: "Agrega al menos una cuenta para estudiar." };
+  // Una corrida que lleva horas “activa” se dio por perdida (el worker murió): se libera para no bloquear al creador.
+  await db().update(analyzerRuns).set({ status: "error", error: "Se interrumpió. Intenta de nuevo.", finishedAt: new Date() }).where(and(eq(analyzerRuns.userId, userId), inArray(analyzerRuns.status, ["en_cola", "corriendo"]), lt(analyzerRuns.createdAt, new Date(Date.now() - 2 * 60 * 60 * 1000))));
   const active = await latestRun(userId);
   if (active && ["en_cola", "corriendo"].includes(active.status)) return { ok: false, error: "Ya hay un análisis en curso." };
   const limits = await getLimits();
@@ -104,10 +106,17 @@ export async function startRun(userId: string, rawParams: Partial<RunParams> = {
   if (wait) return { ok: false, error: `Puedes correr el análisis ${limits.analyzerIntervalDays === 7 ? "una vez por semana" : `una vez cada ${limits.analyzerIntervalDays} días`}. Vuelve a intentarlo el ${wait.toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" })}.` };
   const params = paramsSchema.parse({ ...DEFAULT_PARAMS, topK: limits.analyzerTopK, ...rawParams });
   const mock = !(apifyConfigured() && geminiConfigured());
-  const [run] = await db()
-    .insert(analyzerRuns)
-    .values({ userId, params, mock, progress: { phase: "preparando", accountsTotal: list.length, accountsDone: 0, videosTotal: 0, videosDone: 0, errors: [], note: "" } })
-    .returning({ id: analyzerRuns.id });
+  let run: { id: string } | undefined;
+  try {
+    [run] = await db()
+      .insert(analyzerRuns)
+      .values({ userId, params, mock, progress: { phase: "preparando", accountsTotal: list.length, accountsDone: 0, videosTotal: 0, videosDone: 0, errors: [], note: "" } })
+      .returning({ id: analyzerRuns.id });
+  } catch (e) {
+    // Un índice único impide dos corridas activas a la vez (dos toques seguidos al botón).
+    if ((e as { code?: string; cause?: { code?: string } }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505") return { ok: false, error: "Ya hay un análisis en curso." };
+    throw e;
+  }
   await enqueue("analizador.correr", userId, { runId: run!.id });
   return { ok: true, runId: run!.id };
 }

@@ -13,7 +13,7 @@ import { PgBoss } from "pg-boss";
 import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
 import { runAnalyzer } from "@/lib/analyzer/service";
-import { claimNext, completeJob, failJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
+import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
 import { tickNotifications } from "@/lib/notify/service";
 
@@ -63,6 +63,7 @@ async function jobLoop(kind: JobKind, everyMs: number, stop: { value: boolean })
         continue;
       }
       const handler = JOB_HANDLERS[job.kind];
+      const beat = setInterval(() => void touchJob(job.id).catch(() => undefined), 60_000);
       try {
         if (!handler) throw new Error(`Sin manejador para ${job.kind}`);
         await handler(job);
@@ -70,6 +71,8 @@ async function jobLoop(kind: JobKind, everyMs: number, stop: { value: boolean })
       } catch (err) {
         console.error(`[worker] el trabajo ${job.kind} falló`, err instanceof Error ? err.message : err);
         await failJob(job.id, err instanceof Error ? err.message : "Error desconocido");
+      } finally {
+        clearInterval(beat);
       }
     } catch (err) {
       console.error("[worker] error en el ciclo de trabajos", err instanceof Error ? err.message : err);

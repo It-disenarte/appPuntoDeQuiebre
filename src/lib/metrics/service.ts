@@ -107,11 +107,15 @@ export async function readShotBytes(userId: string, period: string, index: numbe
   return obj ? { body: obj.body, size: obj.contentLength ?? 0 } : null;
 }
 
+/** Una lectura que lleva más de 20 minutos “procesando” se dio por perdida (el worker se detuvo): se puede reintentar. */
+export const isStuck = (r: Report, now = Date.now()) => r.status === "procesando" && now - r.updatedAt.getTime() > 20 * 60 * 1000;
+
 /** Manda las capturas a leer (trabajo en segundo plano). */
 export async function submitReport(userId: string, period: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const report = await getReport(userId, period);
   if (!report || keysOf(report).length === 0) return { ok: false, error: "Sube al menos una captura." };
-  if (!["captura", "error"].includes(report.status)) return { ok: false, error: "Este informe ya está en proceso." };
+  const stuck = report.status === "procesando" && isStuck(report);
+  if (!["captura", "error"].includes(report.status) && !stuck) return { ok: false, error: "Este informe ya está en proceso." };
   await db().update(metricReports).set({ status: "procesando", error: null }).where(eq(metricReports.id, report.id));
   await enqueue("metricas.leer", userId, { period });
   return { ok: true };

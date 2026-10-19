@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "analyzer_runs_one_active_idx" ON "analyzer_runs" USING btree ("user_id") WHERE "analyzer_runs"."status" in ('en_cola', 'corriendo');

@@ -16,7 +16,8 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     // Estilos en línea: los usan next/font y atributos style de React. Un nonce no cubre atributos.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "font-src 'self'",
+    // data: porque al exportar los PNG (carruseles y portadas) el navegador incrusta las tipografías como datos.
+    "font-src 'self' data:",
     "connect-src 'self'",
     "media-src 'self' blob:",
     "worker-src 'self'",

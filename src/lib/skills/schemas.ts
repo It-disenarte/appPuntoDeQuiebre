@@ -126,7 +126,7 @@ export const parrillaV1Output = z
           .passthrough(),
       )
       .min(1)
-      .max(10),
+      .transform((a) => a.slice(0, 10)),
   })
   .passthrough();
 export type ParrillaV1 = z.infer<typeof parrillaV1Output>;

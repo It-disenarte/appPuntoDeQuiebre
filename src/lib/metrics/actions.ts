@@ -68,3 +68,12 @@ export async function resetReportAction(fd: FormData): Promise<void> {
   revalidatePath("/progreso/metricas");
   redirect(back(period));
 }
+
+/** Reintenta una lectura que se quedó atorada. */
+export async function retryReportAction(fd: FormData): Promise<void> {
+  const { user } = await requireCreatorAccess();
+  const period = str(fd, "periodo");
+  if (isValidPeriod(period) && (await rateLimit(`metricas-leer:user:${user.id}`, 6, HOUR))) await submitReport(user.id, period);
+  revalidatePath("/progreso/metricas");
+  redirect(back(period));
+}

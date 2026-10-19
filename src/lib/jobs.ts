@@ -56,3 +56,6 @@ export async function failJob(id: string, message: string, retry = true): Promis
     .set({ status: again ? "pendiente" : "error", lockedAt: null, error: message.slice(0, 500), runAfter: new Date(Date.now() + (again ? 60_000 : 0)) })
     .where(eq(jobs.id, id));
 }
+
+/** Latido: un trabajo largo renueva su marca para que no se le dé por perdido mientras sigue corriendo. */
+export const touchJob = (id: string) => db().update(jobs).set({ lockedAt: new Date() }).where(and(eq(jobs.id, id), eq(jobs.status, "corriendo")));

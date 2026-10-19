@@ -40,11 +40,11 @@ export const profileOutput = z
   .object({
     skill_version: str.optional(),
     diagnostico: z.array(z.object({ parte: str, estado: z.enum(["bien", "mejorar", "falta"]).catch("mejorar"), por_que: str.default("") }).passthrough()).default([]),
-    nombre: z.object({ opciones: z.array(str).min(1).max(8), palabra_clave: str.default("") }).passthrough(),
-    biografia: z.object({ opciones: z.array(z.object({ texto: str, caracteres: z.number().optional() }).passthrough()).min(1).max(8), nota: str.optional() }).passthrough(),
+    nombre: z.object({ opciones: z.array(str).min(1).transform((a) => a.slice(0, 8)), palabra_clave: str.default("") }).passthrough(),
+    biografia: z.object({ opciones: z.array(z.object({ texto: str, caracteres: z.number().optional() }).passthrough()).min(1).transform((a) => a.slice(0, 12)), nota: str.optional() }).passthrough(),
     enlace: z.object({ recomendacion: str.default(""), por_que: str.default("") }).passthrough().default({ recomendacion: "", por_que: "" }),
     categoria: str.default(""),
-    destacadas: z.array(highlight).max(7).default([]),
+    destacadas: z.array(highlight).transform((a) => a.slice(0, 7)).default([]),
     orden_de_cambios: z.array(str).default([]),
   })
   .passthrough();

@@ -7,8 +7,8 @@ import { ReportView } from "@/components/metrics/ReportView";
 import { ShotUploader } from "@/components/metrics/ShotUploader";
 import { WhereToFind } from "@/components/metrics/WhereToFind";
 import { requireCreatorAccess } from "@/lib/auth/gates";
-import { resetReportAction } from "@/lib/metrics/actions";
-import { getReport, isValidPeriod, parseConfirmed, parseExplanation, parseExtracted, periodOptions } from "@/lib/metrics/service";
+import { resetReportAction, retryReportAction } from "@/lib/metrics/actions";
+import { getReport, isStuck, isValidPeriod, parseConfirmed, parseExplanation, parseExtracted, periodOptions } from "@/lib/metrics/service";
 
 export const metadata: Metadata = { title: "Mis métricas" };
 
@@ -68,6 +68,15 @@ export default async function MetricasPage({ searchParams }: PageProps<"/progres
         <Card className="flex flex-col gap-2">
           <p className="font-extrabold">Leyendo tus capturas…</p>
           <p className="text-sm text-ink-700">Tarda un minuto o menos. Puedes salir de esta pantalla: te avisamos cuando esté listo.</p>
+          {report && isStuck(report) && (
+            <form action={retryReportAction} className="flex flex-col gap-2">
+              <p className="text-sm font-semibold text-alerta">Está tardando más de lo normal.</p>
+              <input type="hidden" name="periodo" value={period} />
+              <Button type="submit" size="sm" variant="outline" className="self-start">
+                Reintentar
+              </Button>
+            </form>
+          )}
         </Card>
       )}
 
