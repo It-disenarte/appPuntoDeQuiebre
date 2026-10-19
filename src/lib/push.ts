@@ -45,7 +45,8 @@ export async function removeSubscription(userId: string, endpoint: string): Prom
 
 export const countSubscriptions = async (userId: string) => (await db().select({ id: pushSubscriptions.id }).from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId))).length;
 
-export type PushPayload = { title: string; body: string; url: string; tag?: string };
+/** `actionTitle`: texto de un botón dentro de la notificación (al tocarlo abre la misma pantalla `url`). */
+export type PushPayload = { title: string; body: string; url: string; tag?: string; actionTitle?: string };
 
 /** Manda la notificación a todos los dispositivos del usuario. Devuelve cuántos la recibieron. */
 export async function sendToUser(userId: string, payload: PushPayload): Promise<{ sent: number; failed: number }> {

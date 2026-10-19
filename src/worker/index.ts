@@ -12,6 +12,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
+import { recordError } from "@/lib/errors";
 import { runReview } from "@/lib/coach/service";
 import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
@@ -87,6 +88,7 @@ async function jobLoop(kind: JobKind, everyMs: number, stop: { value: boolean })
       } catch (err) {
         console.error(`[worker] el trabajo ${job.kind} falló`, err instanceof Error ? err.message : err);
         await failJob(job.id, err instanceof Error ? err.message : "Error desconocido");
+        await recordError({ source: "trabajo", message: `${job.kind}: ${err instanceof Error ? err.message : "Error desconocido"}` });
       } finally {
         clearInterval(beat);
       }

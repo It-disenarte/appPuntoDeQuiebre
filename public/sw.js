@@ -53,6 +53,8 @@ self.addEventListener("push", (event) => {
       badge: "/icons/maskable-192.png",
       lang: "es-MX",
       tag: typeof data.tag === "string" ? data.tag : undefined,
+      // Botón dentro de la notificación (p. ej. “Subir mis capturas”): al tocarlo abre la misma pantalla.
+      actions: typeof data.actionTitle === "string" ? [{ action: "abrir", title: data.actionTitle.slice(0, 40) }] : [],
       data: { url },
     }),
   );

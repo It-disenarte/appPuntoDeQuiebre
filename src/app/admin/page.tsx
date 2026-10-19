@@ -5,6 +5,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { auditLog, sessions, users } from "@/lib/db/schema";
+import { errorSummary } from "@/lib/errors";
 
 export const metadata: Metadata = { title: "Administrador" };
 
@@ -66,9 +67,16 @@ export default async function AdminHome() {
     { label: "Sesiones activas", value: active?.n ?? 0 },
   ];
 
+  const errors = await errorSummary().catch(() => ({ open: 0, repeating: 0 }));
   return (
     <div className="flex flex-col gap-6">
       <PageHeader eyebrow="Panel de administrador" title="Resumen" />
+      {errors.open > 0 && (
+        <a href="/admin/errores" role="alert" className={`rounded-card p-4 text-sm font-semibold ${errors.repeating > 0 ? "bg-alerta-100 text-alerta" : "bg-naranja-100 text-ink-900"}`}>
+          {errors.repeating > 0 ? `⚠ ${errors.repeating} ${errors.repeating === 1 ? "error se repite" : "errores se repiten"} ahora mismo. ` : ""}
+          Hay {errors.open} {errors.open === 1 ? "error sin atender" : "errores sin atender"} en las últimas 24 horas. Ver detalle →
+        </a>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {tiles.map((t) => (
           <Card key={t.label}>

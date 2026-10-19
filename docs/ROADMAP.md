@@ -64,7 +64,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | M9 | Uso de límites y **costo de IA contra ingreso** por cliente | 7 | 🧪 | Ficha del cliente y /admin/metricas; el costo es ESTIMADO con precios editables |
 | M10 | Límites configurables sin tocar código (coach, ediciones, analizador) | 7 | 🧪 | /admin/limites: el intervalo y los videos del analizador ya se aplican; coach, ediciones y tendencias quedan guardados para cuando existan |
 | M11 | Métricas del negocio: tiempo por fase, % que termina cada fase, conversión de prueba a pago, permanencia al mes 2 y 3 | 7 | 🧪 | /admin/metricas con datos reales de clientes |
-| M12 | Alertas de abandono: rachas rotas y usuarios inactivos | 7 | 🧪 | /admin/alertas; no envía correos ni avisos, solo lista |
+| M12 | Alertas de abandono: rachas rotas y usuarios inactivos | 7 | 🧪 | /admin/alertas; no envía correos ni avisos, solo lista ; /admin/errores: errores del sistema con contador y aviso en el resumen y el menú |
 | M13 | Bitácora de auditoría | 0 | ✅ | Revisar tras acciones |
 
 ## C. Piezas técnicas transversales

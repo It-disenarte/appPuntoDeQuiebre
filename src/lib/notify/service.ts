@@ -27,7 +27,7 @@ export async function tickNotifications(now = new Date(), limit = 300): Promise<
       for (const n of dueNotifications(ctx)) {
         const inserted = await db().insert(notifications).values({ userId: u.id, kind: n.kind, refKey: n.refKey, title: n.title, body: n.body, url: n.url }).onConflictDoNothing().returning({ id: notifications.id });
         if (inserted.length === 0) continue;
-        const r = await sendToUser(u.id, { title: n.title, body: n.body, url: n.url, tag: `${n.kind}-${n.refKey}` });
+        const r = await sendToUser(u.id, { title: n.title, body: n.body, url: n.url, tag: `${n.kind}-${n.refKey}`, ...(n.actionTitle ? { actionTitle: n.actionTitle } : {}) });
         await db().update(notifications).set({ status: r.sent > 0 ? "enviada" : "fallida" }).where(eq(notifications.id, inserted[0]!.id));
         sent += r.sent > 0 ? 1 : 0;
       }

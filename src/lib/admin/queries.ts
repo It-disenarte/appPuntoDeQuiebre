@@ -25,13 +25,15 @@ export function onboardingStage(hasSubscription: boolean, hasCommitment: boolean
   return "Brújula";
 }
 
-export async function listClients(opts: { q?: string; plan?: "basico" | "pro"; status?: StatusFilter; page: number }) {
+export async function listClients(opts: { q?: string; plan?: "basico" | "pro"; status?: StatusFilter; account?: "activa" | "desactivada"; page: number }) {
   const conds: SQL[] = [eq(users.role, "creator")];
   if (opts.q) {
     const term = `%${likeEscape(opts.q)}%`;
     conds.push(or(ilike(users.name, term), ilike(users.email, term))!);
   }
   if (opts.plan) conds.push(eq(subscriptions.plan, opts.plan));
+  if (opts.account === "desactivada") conds.push(eq(users.status, "disabled"));
+  if (opts.account === "activa") conds.push(eq(users.status, "active"));
   if (opts.status === "sin") conds.push(isNull(subscriptions.id));
   else if (opts.status) conds.push(inArray(subscriptions.status, [...STATUS_FILTERS[opts.status]]));
   const where = and(...conds);

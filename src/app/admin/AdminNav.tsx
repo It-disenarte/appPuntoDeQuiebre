@@ -12,11 +12,12 @@ const SECTIONS = [
   { label: "Facturas", href: "/admin/facturas" },
   { label: "Métricas", href: "/admin/metricas" },
   { label: "Alertas", href: "/admin/alertas" },
+  { label: "Errores", href: "/admin/errores" },
   { label: "Límites y costos", href: "/admin/limites" },
   { label: "Ajustes", href: "/admin/ajustes" },
 ] as const;
 
-export function AdminNav() {
+export function AdminNav({ errors }: { errors: { open: number; repeating: number } }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`));
   return (
@@ -32,6 +33,11 @@ export function AdminNav() {
           )}
         >
           {s.label}
+          {s.href === "/admin/errores" && errors.open > 0 && (
+            <span className={cn("ml-2 rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold", errors.repeating > 0 ? "bg-alerta text-blanco" : "bg-naranja text-negro")} aria-label={`${errors.open} errores sin atender`}>
+              {errors.open}
+            </span>
+          )}
         </Link>
       ))}
     </nav>

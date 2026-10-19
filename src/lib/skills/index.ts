@@ -1,5 +1,6 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
+import { recordError } from "@/lib/errors";
 import { jsonrepair } from "jsonrepair";
 import path from "node:path";
 import type { ZodType } from "zod";
@@ -122,6 +123,7 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
   } catch (err) {
     console.error(`[skills] ${key} falló:`, err instanceof Error ? err.message : err);
     await logCall(userId, key, { mock: false, status: "error" });
+    await recordError({ source: "ia", message: `${key}: ${err instanceof Error ? err.message : "falló"}` });
     throw err;
   }
 }

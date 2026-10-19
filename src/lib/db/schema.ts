@@ -890,3 +890,23 @@ export const videoExports = pgTable(
   },
   (t) => [uniqueIndex("video_exports_piece_idx").on(t.pieceId)],
 );
+
+/** Errores del sistema agrupados por firma (mismo error repetido = un renglón con su contador). Los ve el administrador. */
+export const appErrors = pgTable(
+  "app_errors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    source: text("source", { enum: ["pagina", "trabajo", "ia", "webhook"] }).notNull(),
+    signature: text("signature").notNull(),
+    message: text("message").notNull(),
+    path: text("path"),
+    /** Cuántas veces ha pasado desde que se registró (o desde que se marcó como atendido). */
+    count: integer("count").notNull().default(1),
+    /** Veces dentro de la última hora, para detectar errores que se repiten. */
+    recentCount: integer("recent_count").notNull().default(1),
+    resolved: boolean("resolved").notNull().default(false),
+    firstAt: timestamp("first_at", { withTimezone: true }).notNull().defaultNow(),
+    lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("app_errors_signature_idx").on(t.signature), index("app_errors_last_idx").on(t.lastAt)],
+);

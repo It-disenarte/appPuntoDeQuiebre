@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { invoiceRequests, promoCodes, users } from "@/lib/db/schema";
 import { getClientIp } from "@/lib/request";
 import { saveCommunity } from "@/lib/community";
+import { resolveAll, resolveError } from "@/lib/errors";
 import { deleteDisabledUser } from "./delete-user";
 import { saveLimits, savePrices } from "./limits";
 
@@ -248,4 +249,20 @@ export async function deleteUserAction(_prev: AdminState, fd: FormData): Promise
   await audit({ action: "admin.user_deleted", actorUserId: admin.id, ip: await getClientIp(), meta: { email: r.email, name: r.name, archivos: r.files } });
   revalidatePath("/admin/clientes");
   redirect("/admin/clientes");
+}
+
+/* ───────────── Errores del sistema ───────────── */
+
+export async function resolveErrorAction(fd: FormData): Promise<void> {
+  await requireAdmin();
+  const id = uuid.safeParse(fd.get("id"));
+  if (id.success) await resolveError(id.data);
+  revalidatePath("/admin/errores");
+  revalidatePath("/admin");
+}
+export async function resolveAllErrorsAction(): Promise<void> {
+  await requireAdmin();
+  await resolveAll();
+  revalidatePath("/admin/errores");
+  revalidatePath("/admin");
 }

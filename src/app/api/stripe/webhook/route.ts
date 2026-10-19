@@ -1,4 +1,5 @@
 import { handleWebhook } from "@/lib/billing/service";
+import { recordError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,8 @@ export async function POST(request: Request) {
     const result = await handleWebhook(raw, request.headers.get("stripe-signature"));
     if (result === "firma-invalida") return new Response("Firma inválida", { status: 400 });
     return Response.json({ received: true });
-  } catch {
+  } catch (err) {
+    await recordError({ source: "webhook", message: `stripe: ${err instanceof Error ? err.message : "error"}` });
     return new Response("Error", { status: 500 });
   }
 }

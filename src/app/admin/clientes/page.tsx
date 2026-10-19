@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
+import { daysAgo, incomeSince, usageSince } from "@/lib/admin/insights";
+import { getPrices } from "@/lib/admin/limits";
 import { listClients, PAGE_SIZE, STATUS_FILTERS, type StatusFilter } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/auth/dal";
 import { ACCESS_LABEL, ACCESS_TONE, formatDate } from "@/lib/billing/labels";
@@ -16,11 +18,15 @@ export default async function ClientesPage({ searchParams }: PageProps<"/admin/c
   const q = typeof p.q === "string" ? p.q.trim().slice(0, 80) : "";
   const plan = isPlanId(p.plan) ? p.plan : undefined;
   const status = typeof p.estado === "string" && (p.estado in STATUS_FILTERS || p.estado === "sin") ? (p.estado as StatusFilter) : undefined;
+  const account = p.cuenta === "desactivada" || p.cuenta === "activa" ? p.cuenta : undefined;
   const page = Math.max(1, Math.min(1000, Number(p.pagina) || 1));
-  const { rows, total } = await listClients({ q: q || undefined, plan, status, page });
+  const { rows, total } = await listClients({ q: q || undefined, plan, status, account, page });
+  const prices = await getPrices();
+  const [usage, income] = await Promise.all([usageSince(daysAgo(30), undefined, prices), incomeSince(daysAgo(30))]);
+  const mxn = (n: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }).format(n);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const link = (n: number) => {
-    const sp = new URLSearchParams({ ...(q && { q }), ...(plan && { plan }), ...(status && { estado: status }), pagina: String(n) });
+    const sp = new URLSearchParams({ ...(q && { q }), ...(plan && { plan }), ...(status && { estado: status }), ...(account && { cuenta: account }), pagina: String(n) });
     return `/admin/clientes?${sp}`;
   };
 
@@ -28,7 +34,7 @@ export default async function ClientesPage({ searchParams }: PageProps<"/admin/c
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow={`${total} ${total === 1 ? "cliente" : "clientes"}`} title="Clientes" />
 
-      <form className="grid grid-cols-1 gap-3 rounded-card bg-blanco p-4 shadow-card md:grid-cols-[1fr_auto_auto_auto]" role="search">
+      <form className="grid grid-cols-1 gap-3 rounded-card bg-blanco p-4 shadow-card md:grid-cols-[1fr_auto_auto_auto_auto]" role="search">
         <input name="q" defaultValue={q} placeholder="Buscar por nombre o correo" aria-label="Buscar" className="h-11 rounded-xl border border-ink-300 px-4" />
         <select name="plan" defaultValue={plan ?? ""} aria-label="Plan" className="h-11 rounded-xl border border-ink-300 px-3">
           <option value="">Todos los planes</option>
@@ -43,6 +49,11 @@ export default async function ClientesPage({ searchParams }: PageProps<"/admin/c
             </option>
           ))}
         </select>
+        <select name="cuenta" defaultValue={account ?? ""} aria-label="Estado de la cuenta" className="h-11 rounded-xl border border-ink-300 px-3">
+          <option value="">Activas y desactivadas</option>
+          <option value="activa">Solo activas</option>
+          <option value="desactivada">Solo desactivadas</option>
+        </select>
         <button type="submit" className="tap h-11 rounded-full bg-azul px-5 font-semibold text-blanco">
           Filtrar
         </button>
@@ -50,13 +61,14 @@ export default async function ClientesPage({ searchParams }: PageProps<"/admin/c
 
       <Card className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-left text-sm">
+          <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="text-xs text-ink-500">
               <tr>
                 <th className="px-5 py-3 font-semibold">Cliente</th>
                 <th className="px-5 py-3 font-semibold">Plan</th>
                 <th className="px-5 py-3 font-semibold">Pago</th>
                 <th className="px-5 py-3 font-semibold">Fase</th>
+                <th className="px-5 py-3 font-semibold" title="Costo estimado de IA y Apify en los últimos 30 días">Costo IA (30 d)</th>
                 <th className="px-5 py-3 font-semibold">Último acceso</th>
               </tr>
             </thead>
@@ -75,12 +87,22 @@ export default async function ClientesPage({ searchParams }: PageProps<"/admin/c
                     <Chip tone={ACCESS_TONE[r.access]}>{ACCESS_LABEL[r.access]}</Chip>
                   </td>
                   <td className="px-5 py-3 text-ink-600">{r.stage}</td>
+                  {(() => {
+                    const cost = (usage.get(r.id)?.costUsd ?? 0) * prices.usdMxn;
+                    const paid = (income.get(r.id) ?? 0) / 100;
+                    const high = paid > 0 && cost > paid * 0.5;
+                    return (
+                      <td className={`px-5 py-3 whitespace-nowrap ${high ? "font-semibold text-alerta" : "text-ink-600"}`} title={paid > 0 ? `Pagó ${mxn(paid)} en 30 días` : "Sin pagos en 30 días"}>
+                        {mxn(cost)}
+                      </td>
+                    );
+                  })()}
                   <td className="px-5 py-3 whitespace-nowrap text-ink-600">{r.lastLoginAt ? formatDate(r.lastLoginAt) : "Nunca"}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-ink-500">
+                  <td colSpan={6} className="px-5 py-8 text-center text-ink-500">
                     No hay clientes con esos filtros.
                   </td>
                 </tr>

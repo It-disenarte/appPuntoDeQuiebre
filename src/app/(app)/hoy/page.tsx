@@ -8,6 +8,8 @@ import { getOverview, getSchedule } from "@/lib/brujula/service";
 import { blockRange, dayLabel } from "@/lib/brujula/schedule";
 import { addDays, CATEGORY_LABEL, DAY_CODES, DAY_SHORT, dowMon0, mondayOf, todayIso } from "@/lib/plan/rules";
 import { currentStory, getCurrentPlan } from "@/lib/plan/service";
+import { listReports, periodOptions } from "@/lib/metrics/service";
+import { monthName } from "@/lib/notify/rules";
 
 export const metadata: Metadata = { title: "Hoy" };
 
@@ -17,6 +19,9 @@ export default async function HoyPage() {
   const today = todayIso();
   const [overview, data, schedule] = await Promise.all([getOverview(user.id), getCurrentPlan(user.id, today), getSchedule(user.id)]);
   const nextStep = overview.next;
+  // Recordatorio mensual: si todavía no entrega las métricas del mes pasado, un botón lleva directo a subir las capturas.
+  const metricPeriod = periodOptions(today)[0]!.period;
+  const metricsPending = !(await listReports(user.id)).some((r) => r.period === metricPeriod && r.status === "lista");
 
   const pieces = data?.pieces ?? [];
   const stories = data?.stories ?? [];
@@ -61,6 +66,17 @@ export default async function HoyPage() {
           </span>
         }
       />
+      {metricsPending && !nextStep && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
+          <div>
+            <p className="font-extrabold">Pásame tus métricas de {monthName(metricPeriod)}</p>
+            <p className="text-sm text-ink-600">Unas capturas de las estadísticas de tu Instagram y te explico cómo te fue. Te digo dónde encontrarlas.</p>
+          </div>
+          <ButtonLink href={`/progreso/metricas?mes=${metricPeriod}`} size="sm">
+            Subir mis capturas
+          </ButtonLink>
+        </Card>
+      )}
       {nextStep && (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
           <div>

@@ -127,6 +127,13 @@
       "when": 1792441067349,
       "tag": "0017_fase7_video_completo",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792451844347,
+      "tag": "0018_errores_sistema",
+      "breakpoints": true
     }
   ]
 }

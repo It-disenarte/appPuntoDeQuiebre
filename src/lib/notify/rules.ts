@@ -2,7 +2,7 @@
 // manda lo que "ya toca"; la tabla `notifications` (única por usuario, tipo y referencia) evita mandar dos veces lo mismo.
 import { addDays, dowMon0, DAY_CODES, TZ } from "@/lib/plan/rules";
 
-export type DueNotification = { kind: string; refKey: string; title: string; body: string; url: string };
+export type DueNotification = { kind: string; refKey: string; title: string; body: string; url: string; actionTitle?: string };
 
 export type NotifyContext = {
   now: Date;
@@ -93,7 +93,7 @@ export function dueNotifications(ctx: NotifyContext): DueNotification[] {
   if (today.slice(8, 10) === "01" && inWindow(nowMin, 10 * 60)) {
     const period = previousPeriod(today);
     if (!ctx.metricPeriods.includes(period)) {
-      out.push({ kind: "metricas_mensual", refKey: period, title: `Pásame tus métricas de ${monthName(period)}`, body: "Toma unas capturas de tu perfil y te explico cómo te fue. Te digo dónde buscarlas.", url: "/progreso/metricas" });
+      out.push({ kind: "metricas_mensual", refKey: period, title: `Pásame tus métricas de ${monthName(period)}`, body: "Toma unas capturas de las estadísticas de tu Instagram y te explico cómo te fue. Te digo dónde buscarlas.", url: "/progreso/metricas", actionTitle: "Subir mis capturas" });
     }
   }
 
