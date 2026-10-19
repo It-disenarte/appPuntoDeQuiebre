@@ -225,9 +225,9 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
 
       <div className="relative overflow-hidden rounded-card bg-ink-800">
         {phase === "revision" && take ? (
-          <video src={take.url} controls playsInline className="aspect-3/4 max-h-[70dvh] w-full bg-negro object-cover" />
+          <video src={take.url} controls playsInline className="mx-auto aspect-3/4 h-[42dvh] w-auto max-w-full bg-negro object-cover" />
         ) : (
-          <div className="relative aspect-3/4 max-h-[70dvh] w-full bg-negro">
+          <div className="relative mx-auto aspect-3/4 h-[42dvh] w-auto max-w-full bg-negro">
             <video ref={videoRef} muted playsInline className="size-full -scale-x-100 object-cover" />
             {phase === "apagada" && (
               <div className="absolute inset-0 grid place-items-center p-6 text-center">
@@ -276,7 +276,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="sticky bottom-24 z-20 flex items-center justify-between gap-3 rounded-full bg-negro/85 px-3 py-2 backdrop-blur">
         {phase === "revision" ? (
           <>
             <button type="button" onClick={() => (setTake(null), setPhase("lista"))} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
