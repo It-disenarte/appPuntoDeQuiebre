@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Card, FormError, FormSuccess } from "@/components/ui";
-import { resetPasswordAction, revokeSessionsAction, setUserStatusAction, type AdminState } from "@/lib/admin/actions";
+import { Button, Card, Field, FormError, FormSuccess } from "@/components/ui";
+import { deleteUserAction, resetPasswordAction, revokeSessionsAction, setUserStatusAction, type AdminState } from "@/lib/admin/actions";
 
 export function TempPasswordNotice({ password }: { password: string }) {
   return (
@@ -14,10 +14,11 @@ export function TempPasswordNotice({ password }: { password: string }) {
   );
 }
 
-export function ClientActions({ userId, disabled }: { userId: string; disabled: boolean }) {
+export function ClientActions({ userId, disabled, email }: { userId: string; disabled: boolean; email: string }) {
   const [reset, resetAction, resetting] = useActionState<AdminState, FormData>(resetPasswordAction, undefined);
   const [status, statusAction, changing] = useActionState<AdminState, FormData>(setUserStatusAction, undefined);
   const [revoke, revokeAction, revoking] = useActionState<AdminState, FormData>(revokeSessionsAction, undefined);
+  const [del, delAction, deleting] = useActionState<AdminState, FormData>(deleteUserAction, undefined);
 
   return (
     <Card className="flex flex-col gap-4">
@@ -57,6 +58,25 @@ export function ClientActions({ userId, disabled }: { userId: string; disabled: 
         </form>
       </div>
       <p className="text-xs text-ink-500">Desactivar no cancela la suscripción en Stripe: hazlo desde “Ver en Stripe” si corresponde.</p>
+
+      {disabled && (
+        <form
+          action={delAction}
+          onSubmit={(e) => {
+            if (!confirm("Esto elimina para siempre la cuenta y todos sus datos y archivos. No se puede deshacer. ¿Continuar?")) e.preventDefault();
+          }}
+          className="flex flex-col gap-3 rounded-xl border border-alerta/40 bg-alerta-100/40 p-4"
+        >
+          <h3 className="text-sm font-extrabold text-alerta">Eliminar definitivamente</h3>
+          <p className="text-xs text-ink-700">Borra su perfil, marca, grabaciones, carruseles, fotos, métricas, pagos y solicitudes de factura de nuestra base y sus archivos. En Stripe se conservan sus pagos. La bitácora guarda que lo hiciste.</p>
+          <FormError message={del?.error} />
+          <input type="hidden" name="userId" value={userId} />
+          <Field label={`Para confirmar escribe su correo: ${email}`} name="confirmEmail" type="email" autoComplete="off" required />
+          <Button type="submit" variant="danger" disabled={deleting} className="self-start">
+            {deleting ? "Eliminando…" : "Eliminar cuenta y datos"}
+          </Button>
+        </form>
+      )}
     </Card>
   );
 }

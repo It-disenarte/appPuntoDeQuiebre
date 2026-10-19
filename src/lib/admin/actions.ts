@@ -2,6 +2,7 @@
 
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -14,6 +15,7 @@ import { db } from "@/lib/db";
 import { invoiceRequests, promoCodes, users } from "@/lib/db/schema";
 import { getClientIp } from "@/lib/request";
 import { saveCommunity } from "@/lib/community";
+import { deleteDisabledUser } from "./delete-user";
 import { saveLimits, savePrices } from "./limits";
 
 export type AdminState = { error?: string; ok?: boolean; tempPassword?: string; message?: string } | undefined;
@@ -231,4 +233,19 @@ export async function saveCommunityAction(_prev: AdminState, fd: FormData): Prom
   revalidatePath("/admin/ajustes");
   revalidatePath("/mi-marca");
   return { ok: true, message: "Enlaces guardados." };
+}
+
+/* ───────────── Eliminar cuentas desactivadas ───────────── */
+
+export async function deleteUserAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const id = uuid.safeParse(fd.get("userId"));
+  if (!id.success) return { error: "Usuario inválido." };
+  if (id.data === admin.id) return { error: "No puedes eliminar tu propia cuenta." };
+  const r = await deleteDisabledUser(id.data, String(fd.get("confirmEmail") ?? ""));
+  if (!r.ok) return { error: r.error };
+  // La bitácora conserva quién lo hizo y el correo eliminado (el vínculo al usuario ya no existe).
+  await audit({ action: "admin.user_deleted", actorUserId: admin.id, ip: await getClientIp(), meta: { email: r.email, name: r.name, archivos: r.files } });
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes");
 }

@@ -21,6 +21,7 @@ export type AuditAction =
   | "admin.limits_updated"
   | "admin.prices_updated"
   | "admin.community_updated"
+  | "admin.user_deleted"
   | "kit.approved"
   | "kit.reset"
   | "billing.checkout_started"
