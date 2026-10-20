@@ -29,6 +29,7 @@ describe("asistente de inicio", () => {
       for (const s of t.steps) {
         expect(s.title.length).toBeLessThanOrEqual(30);
         expect(s.text.length).toBeLessThanOrEqual(120);
+        if (s.click) expect(s.target && s.path).toBeTruthy(); // un paso de “toca aquí” necesita su elemento y su pantalla
       }
     }
     for (const p of ["/hoy", "/semana", "/grabar", "/progreso", "/mi-marca", "/carruseles", "/directos", "/tendencias", "/analizador"]) {

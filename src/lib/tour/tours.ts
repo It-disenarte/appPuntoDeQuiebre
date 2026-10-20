@@ -1,7 +1,8 @@
 // Guías del asistente de inicio. Cada paso señala un elemento marcado con data-tour="…" (si no está en pantalla, se salta).
-// Sin `target`, el paso sale centrado. Textos cortos: qué es y qué hacer.
+// Sin `target`, el paso sale centrado. Textos cortos: qué es y qué hacer. Los pasos con `click` llevan a la persona a tocar de verdad.
 
-export type TourStep = { target?: string; title: string; text: string };
+/** `click`: el paso pide tocar el elemento real y avanza al tocarlo. `path`: pantalla en la que ocurre (se espera a llegar a ella). */
+export type TourStep = { target?: string; title: string; text: string; click?: boolean; path?: string };
 export type Tour = { id: string; label: string; steps: TourStep[] };
 
 export const TOURS: Tour[] = [
@@ -9,12 +10,12 @@ export const TOURS: Tour[] = [
     id: "inicio",
     label: "Cómo moverte por la app",
     steps: [
-      { title: "Te enseño la app", text: "Son 5 pasos rápidos. Puedes saltarlos y volver a verlos cuando quieras con el botón ?." },
-      { target: "nav-hoy", title: "Hoy", text: "Lo que toca hacer hoy: tu tarea, tu historia y tu próxima grabación." },
-      { target: "nav-semana", title: "Semana", text: "Tu parrilla: los videos y carruseles de la semana, cada uno con su guion." },
-      { target: "nav-grabar", title: "Grabar", text: "Tu estudio. Lees el guion en el teleprompter y grabas desde el celular." },
-      { target: "nav-progreso", title: "Progreso", text: "Tus métricas explicadas fácil, y el analizador de competencia." },
-      { target: "nav-mi-marca", title: "Mi marca", text: "Tu perfil, tu voz, tu horario, tus avisos y tu plan." },
+      { title: "Te enseño la app", text: "Vamos a recorrerla juntos tocando cada pestaña. Son 5 toques y puedes saltarlo cuando quieras." },
+      { target: "nav-semana", click: true, path: "/hoy", title: "Toca Semana", text: "Tu parrilla: los videos y carruseles de la semana, cada uno con su guion." },
+      { target: "nav-grabar", click: true, path: "/semana", title: "Toca Grabar", text: "Tu estudio. Lees el guion en el teleprompter y grabas desde el celular." },
+      { target: "nav-progreso", click: true, path: "/grabar", title: "Toca Progreso", text: "Tus métricas explicadas fácil, y el analizador de competencia." },
+      { target: "nav-mi-marca", click: true, path: "/progreso", title: "Toca Mi marca", text: "Tu perfil, tu voz, tu horario, tus avisos y tu plan." },
+      { target: "nav-hoy", click: true, path: "/mi-marca", title: "Vuelve a Hoy", text: "Tu punto de partida cada día. Toca Hoy para empezar." },
     ],
   },
   {
@@ -27,7 +28,7 @@ export const TOURS: Tour[] = [
       { target: "racha", title: "Tu semana", text: "Un círculo por día. Naranja es cumplido; el azul es hoy." },
       { target: "tarea", title: "Tarea de hoy", text: "Lo que publicas hoy. Toca “Ver guion y textos” para ver qué decir." },
       { target: "historia", title: "Historia del día", text: "Una idea rápida para tus historias. Márcala cuando la publiques." },
-      { target: "sesion", title: "Próxima grabación", text: "Cuándo grabas y cuántos guiones tienes listos. “Ir al estudio” abre la cámara." },
+      { target: "ir-estudio", click: true, path: "/hoy", title: "Ve al estudio", text: "Aquí ves cuándo grabas y abres la cámara. Toca “Ir al estudio”." },
     ],
   },
   {
@@ -37,8 +38,8 @@ export const TOURS: Tour[] = [
       { target: "pagina", title: "Tu parrilla", text: "Los videos y carruseles que publicas esta semana, uno por día." },
       { target: "generar", title: "Genera tu semana", text: "Toca el botón y la IA escribe tus guiones con tu voz. Tarda un par de minutos." },
       { target: "mezcla", title: "La mezcla", text: "Cuánto es viral, de nicho y de conversión. Se ajusta sola según tu etapa." },
-      { target: "piezas", title: "Tus publicaciones", text: "Toca una para ver su guion, sus textos y marcarla como publicada." },
       { target: "historias", title: "Historias", text: "Una idea por día. Úsala tal cual o cámbiala por una propia." },
+      { target: "piezas", click: true, path: "/semana", title: "Abre una publicación", text: "Toca una para ver su guion y sus textos, y marcarla como publicada." },
     ],
   },
   {
@@ -46,7 +47,7 @@ export const TOURS: Tour[] = [
     label: "Grabar",
     steps: [
       { target: "pagina", title: "Tu estudio", text: "Aquí eliges qué video grabar." },
-      { target: "videos", title: "Videos por grabar", text: "Toca uno para abrir su guion y la cámara. “Grabado” ya está listo." },
+      { target: "videos", click: true, path: "/grabar", title: "Elige un video", text: "Toca uno para abrir su guion y la cámara. “Grabado” ya está listo." },
     ],
   },
   {
@@ -63,7 +64,7 @@ export const TOURS: Tour[] = [
     steps: [
       { target: "pagina", title: "Tu progreso", text: "Tus números comparados contigo, sin tecnicismos." },
       { target: "informe", title: "Tu informe", text: "Sube capturas de tus estadísticas de Instagram y te explico cada número." },
-      { target: "analizador", title: "Analizador", text: "Descubre por qué funcionan los reels de las cuentas que admiras." },
+      { target: "analizador", click: true, path: "/progreso", title: "Abre el analizador", text: "Descubre por qué funcionan los reels de las cuentas que admiras. Tócalo." },
     ],
   },
   {
@@ -73,9 +74,9 @@ export const TOURS: Tour[] = [
       { target: "pagina", title: "Mi marca", text: "Todo lo que te hace único: tu marca, tu voz, tu horario y tu cuenta." },
       { target: "plan", title: "Tu plan", text: "Tu suscripción y tus facturas." },
       { target: "brujula", title: "Brújula de marca", text: "Tu nicho, tus pilares y tu frase. Todo lo demás parte de aquí." },
-      { target: "atajos", title: "Más herramientas", text: "Tendencias, directos, Instagram y tu perfil. Cada una explica lo que hace." },
       { target: "avisos", title: "Avisos", text: "Te recordamos cuándo grabar y publicar. Enciéndelos para no olvidarte." },
       { target: "lista", title: "Tus pasos", text: "Los pasos de tu marca. Los marcados “Listo” ya los terminaste." },
+      { target: "atajos", click: true, path: "/mi-marca", title: "Prueba Tendencias", text: "Ideas con lo que está de moda. Toca “Ver tendencias”." },
     ],
   },
   {

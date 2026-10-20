@@ -67,12 +67,12 @@ export default async function ProgresoPage() {
         </Card>
       )}
 
-      <Card data-tour="analizador" className="flex flex-wrap items-center justify-between gap-3">
+      <Card className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-extrabold">Analizador de competencia</p>
           <p className="text-sm text-ink-600">Descubre por qué funcionan los reels de las cuentas que admiras y llévate ideas con tu voz.</p>
         </div>
-        <ButtonLink href="/analizador" variant="outline" size="sm">
+        <ButtonLink data-tour="analizador" href="/analizador" variant="outline" size="sm">
           Abrir
         </ButtonLink>
       </Card>

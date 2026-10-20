@@ -176,7 +176,7 @@ export default async function HoyPage() {
                 </Link>
               </>
             )}
-            <ButtonLink href="/grabar" variant="dark" className="mt-4">
+            <ButtonLink data-tour="ir-estudio" href="/grabar" variant="dark" className="mt-4">
               Ir al estudio
             </ButtonLink>
           </Card>

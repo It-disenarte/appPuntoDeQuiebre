@@ -126,10 +126,10 @@ export default async function MiMarcaPage() {
               </div>
             </Card>
           )}
-          <Card data-tour="atajos" className="flex flex-col gap-2">
+          <Card className="flex flex-col gap-2">
             <p className="font-extrabold">Tendencias</p>
             <p className="text-sm text-ink-600">Ideas listas para grabar con lo que está de moda, con fecha límite.</p>
-            <ButtonLink href="/tendencias" size="sm" variant="outline" className="self-start">
+            <ButtonLink data-tour="atajos" href="/tendencias" size="sm" variant="outline" className="self-start">
               Ver tendencias
             </ButtonLink>
           </Card>
