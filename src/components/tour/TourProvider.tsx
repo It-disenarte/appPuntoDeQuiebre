@@ -169,7 +169,7 @@ export function TourProvider({ seen }: { seen: string[] }) {
     else cardStyle = { left: "50%", bottom: 16, transform: "translateX(-50%)" };
   }
 
-  const shade = "absolute bg-negro/65";
+  const shade = "pointer-events-auto absolute bg-negro/65";
   const clickThrough = Boolean(step?.click && box);
 
   return (
@@ -186,7 +186,7 @@ export function TourProvider({ seen }: { seen: string[] }) {
       )}
 
       {active && step && ready && (
-        <div className="fixed inset-0 z-[100]" role="dialog" aria-modal={!clickThrough} aria-label="Guía de la app">
+        <div className={`fixed inset-0 z-[100] ${clickThrough ? "pointer-events-none" : ""}`} role="dialog" aria-modal={!clickThrough} aria-label="Guía de la app">
           {clickThrough && box ? (
             <>
               {/* Cuatro paneles dejan un hueco por donde sí pasa el toque. */}
@@ -201,7 +201,7 @@ export function TourProvider({ seen }: { seen: string[] }) {
           ) : (
             <div className="absolute inset-0 bg-negro/65" />
           )}
-          <div ref={cardRef} tabIndex={-1} className="absolute w-[min(22rem,calc(100vw-2rem))] rounded-card bg-blanco p-4 text-ink-900 shadow-card outline-none" style={cardStyle}>
+          <div ref={cardRef} tabIndex={-1} className="pointer-events-auto absolute w-[min(22rem,calc(100vw-2rem))] rounded-card bg-blanco p-4 text-ink-900 shadow-card outline-none" style={cardStyle}>
             <p className="text-xs font-semibold text-ink-500">
               {i + 1} de {active.steps.length}
             </p>
