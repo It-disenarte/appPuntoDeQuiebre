@@ -33,6 +33,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --from=builder --chown=nextjs:nodejs /app/skills ./skills
+# Tipografías TTF del kit para ffmpeg (subtítulos y títulos de la edición de video).
+COPY --from=builder --chown=nextjs:nodejs /app/assets ./assets
 # argon2 es nativo: se copia completo (incluye el binario para Alpine/musl).
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@node-rs ./node_modules/@node-rs
 # sharp (fotos del kit visual) también es nativo: se copia con su binario para Alpine y sus dependencias.

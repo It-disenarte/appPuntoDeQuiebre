@@ -46,7 +46,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |
 | A23 | Comunidad: sesión en vivo, Discord, WhatsApp | 10 | ⬜ ⛔B5 | — |
 | A24 | Progreso: métricas en lenguaje sencillo, comparadas contra sí mismo, hallazgos como hipótesis | 11 | 🧪 | Por capturas mensuales (sin API de Meta); probar con capturas reales |
-| A25 | Coach de video, tendencias, edición automática (solo Pro) | V2 | ⬜ ⛔B4 ⛔B5 | — |
+| A25 | Coach de video, tendencias, edición automática (solo Pro) | V2 | 🟡 | Coach (🧪), tendencias (🧪) y edición automática a cámara con ffmpeg (🧪) construidos; faltan modo mixto y receta CapCut de la edición, y probar con IA y videos reales |
 | A26 | Instalar como app en el teléfono (PWA), modo sin conexión básico | 0 | ✅ | Instalar en iPhone y Android |
 
 ## B. Lo que hace el administrador

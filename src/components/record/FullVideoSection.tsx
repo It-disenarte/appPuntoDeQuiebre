@@ -55,7 +55,7 @@ export async function FullVideoSection({ userId, pieceId }: { userId: string; pi
             {outdated && join("Volver a armarlo", "ghost")}
           </div>
           <p className="text-xs text-ink-300">
-            Súbelo desde tu celular a Instagram, TikTok o Facebook. Los textos de cada red (con hashtags) los copias en{" "}
+            Los videos se conservan 30 días: descárgalo antes. Súbelo desde tu celular a Instagram, TikTok o Facebook. Los textos de cada red (con hashtags) los copias en{" "}
             <Link href={`/semana/${pieceId}`} className="font-semibold text-azul-100 underline underline-offset-4">
               tu pieza
             </Link>

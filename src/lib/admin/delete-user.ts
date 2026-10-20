@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { analyzedVideos, carousels, kitPhotos, metricReports, profileOpt, recordings, subscriptions, users, videoExports } from "@/lib/db/schema";
+import { analyzedVideos, carousels, kitPhotos, metricReports, profileOpt, recordings, subscriptions, users, videoEdits, videoExports } from "@/lib/db/schema";
 import { deleteObject, storageConfigured } from "@/lib/storage";
 
 /** Suscripciones que todavía cobran o pueden cobrar: no se puede borrar a alguien con una de estas (primero se cancela en Stripe). */
@@ -12,7 +12,7 @@ export type DeleteResult = { ok: true; email: string; name: string; files: numbe
 /** Todas las llaves de archivos (MinIO) que pertenecen a un usuario. */
 export async function collectFileKeys(userId: string): Promise<string[]> {
   const d = db();
-  const [recs, exps, kit, metrics, cars, prof, thumbs] = await Promise.all([
+  const [recs, exps, kit, metrics, cars, prof, thumbs, edits] = await Promise.all([
     d.select({ k: recordings.objectKey }).from(recordings).where(eq(recordings.userId, userId)),
     d.select({ k: videoExports.objectKey }).from(videoExports).where(eq(videoExports.userId, userId)),
     d.select({ k: kitPhotos.storageKey }).from(kitPhotos).where(eq(kitPhotos.userId, userId)),
@@ -20,6 +20,7 @@ export async function collectFileKeys(userId: string): Promise<string[]> {
     d.select({ images: carousels.images }).from(carousels).where(eq(carousels.userId, userId)),
     d.select({ photos: profileOpt.photos }).from(profileOpt).where(eq(profileOpt.userId, userId)),
     d.select({ k: analyzedVideos.thumbnailKey }).from(analyzedVideos).where(eq(analyzedVideos.userId, userId)),
+    d.select({ o: videoEdits.outputKey, c: videoEdits.coverKey }).from(videoEdits).where(eq(videoEdits.userId, userId)),
   ]);
   const keys = new Set<string>();
   const add = (k: unknown) => typeof k === "string" && k && keys.add(k);
@@ -27,6 +28,7 @@ export async function collectFileKeys(userId: string): Promise<string[]> {
   exps.forEach((r) => add(r.k));
   kit.forEach((r) => add(r.k));
   thumbs.forEach((r) => add(r.k));
+  edits.forEach((r) => (add(r.o), add(r.c)));
   metrics.forEach((r) => (Array.isArray(r.keys) ? r.keys : []).forEach(add));
   cars.forEach((r) => Object.values((r.images && typeof r.images === "object" ? r.images : {}) as Record<string, { key?: string }>).forEach((i) => add(i?.key)));
   prof.forEach((r) => (Array.isArray(r.photos) ? r.photos : []).forEach((p) => add((p as { key?: string })?.key)));

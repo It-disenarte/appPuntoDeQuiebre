@@ -639,6 +639,8 @@ export const recordings = pgTable(
     contentType: text("content_type").notNull(),
     bytes: integer("bytes").notNull(),
     seconds: integer("seconds").notNull(),
+    /** Cuándo se borró el archivo por antigüedad (política de 30 días). La parte sigue contando como grabada. */
+    purgedAt: timestamp("purged_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [uniqueIndex("recordings_piece_part_idx").on(t.pieceId, t.part), index("recordings_user_idx").on(t.userId)],
@@ -909,4 +911,33 @@ export const appErrors = pgTable(
     lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("app_errors_signature_idx").on(t.signature), index("app_errors_last_idx").on(t.lastAt)],
+);
+
+/** Edición automática de un video (skill 13, modo "a cámara"): plan de la IA, cambios del creador y archivos resultantes. */
+export const videoEdits = pgTable(
+  "video_edits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["planeando", "revision", "renderizando", "lista", "error"] }).notNull().default("planeando"),
+    plan: jsonb("plan").$type<unknown>(),
+    words: jsonb("words").$type<unknown>(),
+    overrides: jsonb("overrides").$type<unknown>().notNull().default({}),
+    /** Duración del video original, en segundos. */
+    duration: integer("duration"),
+    adjustments: integer("adjustments").notNull().default(0),
+    adjustNote: text("adjust_note"),
+    outputKey: text("output_key"),
+    coverKey: text("cover_key"),
+    outputSeconds: integer("output_seconds"),
+    mock: boolean("mock").notNull().default(false),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("video_edits_piece_idx").on(t.pieceId), index("video_edits_user_idx").on(t.userId, t.createdAt)],
 );

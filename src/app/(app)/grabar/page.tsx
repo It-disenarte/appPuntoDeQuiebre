@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { z } from "zod";
+import { EditSection } from "@/components/record/EditSection";
 import { FullVideoSection } from "@/components/record/FullVideoSection";
 import { CoachSection } from "@/components/record/CoachSection";
 import { RecordingStudio } from "@/components/record/RecordingStudio";
@@ -89,12 +90,13 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
                     </button>
                   </form>
                 </div>
-                <video src={`/api/grabaciones/${r.id}`} controls playsInline preload="metadata" className="aspect-3/4 max-h-72 w-full rounded-lg bg-negro object-cover" />
+                {r.purgedAt ? <p className="text-xs text-ink-300">Este archivo se borró por antigüedad (se conservan 30 días).</p> : <video src={`/api/grabaciones/${r.id}`} controls playsInline preload="metadata" className="aspect-3/4 max-h-72 w-full rounded-lg bg-negro object-cover" />}
               </div>
             ))}
         </section>
       )}
       {done.length === 3 && <FullVideoSection userId={user.id} pieceId={piece.id} />}
+      {done.length === 3 && <EditSection userId={user.id} pieceId={piece.id} />}
       {done.length === 3 && <CoachSection userId={user.id} pieceId={piece.id} />}
       <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
         Ver el guion completo

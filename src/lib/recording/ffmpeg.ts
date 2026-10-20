@@ -27,6 +27,8 @@ export function joinArgs(inputs: string[], output: string): string[] {
     "[v]",
     "-map",
     "[a]",
+    "-threads",
+    "1",
     "-c:v",
     "libx264",
     "-preset",
@@ -48,7 +50,9 @@ export function joinArgs(inputs: string[], output: string): string[] {
 /** Corre ffmpeg sin shell (los argumentos van como lista, no como texto) y con tope de tiempo. */
 export function runFfmpeg(args: string[], timeoutMs = 10 * 60 * 1000): Promise<void> {
   return new Promise((resolve, reject) => {
-    const p = spawn("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
+    // En Linux corre con prioridad baja (nice) para no quitarle procesador a las demás apps del servidor.
+    const lowPriority = process.platform === "linux";
+    const p = lowPriority ? spawn("nice", ["-n", "10", process.env.FFMPEG_BIN || "ffmpeg", ...args], { stdio: ["ignore", "ignore", "pipe"] }) : spawn(process.env.FFMPEG_BIN || "ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
     let err = "";
     p.stderr.on("data", (d: Buffer) => {
       if (err.length < 2000) err += d.toString();
@@ -65,6 +69,25 @@ export function runFfmpeg(args: string[], timeoutMs = 10 * 60 * 1000): Promise<v
       clearTimeout(t);
       if (code === 0) resolve();
       else reject(new Error(`ffmpeg terminó con error ${code}: ${err.slice(-300)}`));
+    });
+  });
+}
+
+/** Duración (s) y ancho (px) de un video, con ffprobe (viene con ffmpeg). */
+export function probeVideo(file: string): Promise<{ duration: number; width: number }> {
+  return new Promise((resolve, reject) => {
+    const p = spawn(process.env.FFPROBE_BIN || "ffprobe", ["-v", "error", "-print_format", "json", "-show_entries", "format=duration:stream=width,codec_type", file], { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    p.stdout.on("data", (d: Buffer) => (out += d.toString()));
+    p.on("error", (e) => reject(new Error(`No se pudo ejecutar ffprobe: ${e.message}`)));
+    p.on("close", (code) => {
+      if (code !== 0) return reject(new Error("ffprobe no pudo leer el video"));
+      try {
+        const j = JSON.parse(out) as { format?: { duration?: string }; streams?: { codec_type?: string; width?: number }[] };
+        resolve({ duration: Number(j.format?.duration ?? 0) || 0, width: j.streams?.find((s) => s.codec_type === "video")?.width ?? 0 });
+      } catch {
+        reject(new Error("ffprobe devolvió algo ilegible"));
+      }
     });
   });
 }

@@ -14,6 +14,8 @@ import postgres from "postgres";
 import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
 import { recordError } from "@/lib/errors";
 import { runReview } from "@/lib/coach/service";
+import { purgeOldVideos } from "@/lib/recording/retention";
+import { runPlan, runRender } from "@/lib/edit/service";
 import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
@@ -54,6 +56,16 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     if (!job.userId || !p.period) throw new Error("Trabajo sin usuario o periodo");
     await runExtraction(job.userId, p.period);
   },
+  "edicion.planear": async (job) => {
+    const p = job.payload as { editId?: string };
+    if (!job.userId || !p.editId) throw new Error("Trabajo sin usuario o edición");
+    await runPlan(job.userId, p.editId);
+  },
+  "edicion.renderizar": async (job) => {
+    const p = job.payload as { editId?: string };
+    if (!job.userId || !p.editId) throw new Error("Trabajo sin usuario o edición");
+    await runRender(job.userId, p.editId);
+  },
   "video.unir": async (job) => {
     const p = job.payload as { pieceId?: string };
     if (!job.userId || !p.pieceId) throw new Error("Trabajo sin usuario o pieza");
@@ -71,10 +83,13 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
   },
 };
 
-async function jobLoop(kind: JobKind, everyMs: number, stop: { value: boolean }) {
+/** Trabajos de video (unir, planear y renderizar ediciones): comparten UN solo ciclo para que corra uno a la vez y no saturen el servidor. */
+const HEAVY: JobKind[] = ["video.unir", "edicion.planear", "edicion.renderizar"];
+
+async function jobLoop(kinds: JobKind[], everyMs: number, stop: { value: boolean }) {
   while (!stop.value) {
     try {
-      const job = await claimNext([kind]);
+      const job = await claimNext(kinds);
       if (!job) {
         await new Promise((r) => setTimeout(r, everyMs));
         continue;
@@ -117,6 +132,8 @@ async function cleanup() {
   const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length, rateEvents: rates.length };
   await db.insert(auditLog).values({ action: "worker.cleanup", meta });
   console.log("[worker] limpieza", meta);
+  const videos = await purgeOldVideos();
+  if (videos.parts + videos.exports + videos.edits > 0) console.log("[worker] videos borrados por antigüedad", videos);
 }
 
 /** Reservas de más de 2 h sin completarse: el checkout de Stripe expira a los 31 min. */
@@ -181,8 +198,9 @@ async function main() {
   });
 
   const stopJobs = { value: false };
-  void jobLoop("metricas.leer", 4000, stopJobs);
-  for (const kind of Object.keys(JOB_HANDLERS)) if (kind !== "metricas.leer") void jobLoop(kind as JobKind, 5000, stopJobs);
+  void jobLoop(["metricas.leer"], 4000, stopJobs);
+  void jobLoop(HEAVY, 4000, stopJobs);
+  for (const kind of Object.keys(JOB_HANDLERS)) if (kind !== "metricas.leer" && !HEAVY.includes(kind as JobKind)) void jobLoop([kind as JobKind], 5000, stopJobs);
 
   console.log("[worker] listo");
 

@@ -134,6 +134,20 @@
       "when": 1792451844347,
       "tag": "0018_errores_sistema",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792453456163,
+      "tag": "0019_fase13_edicion",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792453714137,
+      "tag": "0020_retencion_videos",
+      "breakpoints": true
     }
   ]
 }

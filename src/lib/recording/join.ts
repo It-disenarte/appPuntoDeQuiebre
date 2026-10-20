@@ -39,6 +39,7 @@ export async function requestJoin(userId: string, pieceId: string): Promise<Resu
   if (!piece || piece.kind !== "video") return { ok: false, error: "Esa pieza no existe." };
   const recs = await listRecordings(userId, pieceId);
   if (!progress(recs.map((r) => r.part as Part)).complete) return { ok: false, error: "Primero sube las 3 partes de tu video." };
+  if (recs.some((r) => r.purgedAt)) return { ok: false, error: "Tus grabaciones tienen más de 30 días y ya se borraron. Graba de nuevo esta pieza." };
   const cur = await getExport(userId, pieceId);
   if (cur?.status === "procesando" && Date.now() - cur.updatedAt.getTime() < 20 * 60 * 1000) return { ok: false, error: "Ya estamos armando tu video." };
   if (cur) await db().update(videoExports).set({ status: "procesando", error: null }).where(eq(videoExports.id, cur.id));
