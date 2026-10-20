@@ -85,7 +85,7 @@ export async function saveQuickAction(_prev: BrujulaState, fd: FormData): Promis
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tus elecciones.", fields: raw };
   await saveQuick(user.id, parsed.data);
   // Con la historia completa, la brújula se empieza a armar sola (en segundo plano).
-  if (intakeProgress((await getIntake(user.id))!).ready && (await rateLimit(`manual-ia:user:${user.id}`, 6, HOUR))) {
+  if (intakeProgress((await getIntake(user.id))!).ready && (await rateLimit(`manual-ia2:user:${user.id}`, 6, HOUR))) {
     await queueManual(user.id);
   }
   redirect("/mi-marca/manual");
@@ -98,7 +98,7 @@ export async function generateManualAction(): Promise<void> {
   const intake = await getIntake(user.id);
   if (!intake || !intakeProgress(intake).ready) redirect("/mi-marca/historia");
   // La skill cuesta por llamada cuando es IA real: máximo 6 por hora.
-  if (!(await rateLimit(`manual-ia:user:${user.id}`, 6, HOUR))) redirect("/mi-marca/manual?limite=1");
+  if (!(await rateLimit(`manual-ia2:user:${user.id}`, 6, HOUR))) redirect("/mi-marca/manual?limite=1");
   if ((await queueManual(user.id)) === "encolado") await audit({ action: "brujula.manual_requested", actorUserId: user.id, ip: await getClientIp() });
   redirect("/mi-marca/manual");
 }
