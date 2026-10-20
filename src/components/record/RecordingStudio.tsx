@@ -65,7 +65,6 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   });
 
   const [micNote, setMicNote] = useState("");
-  const [reading, setReading] = useState(false);
   const [activeMic, setActiveMic] = useState("");
   const micCount = useRef(0);
   const phaseRef = useRef<Phase>(phase);
@@ -378,6 +377,27 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         ))}
       </ol>
 
+      {(phase === "apagada" || phase === "lista") && (
+        <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
+          <div>
+            <p className="font-extrabold">Recomendado: cámara de tu teléfono con teleprompter flotante</p>
+            <p className="mt-1 text-xs text-ink-300">Máxima calidad (4K y estabilización), usa tu micrófono externo y ves el guion encima de la cámara. Graba la parte «{PART_LABEL[part]}» (cámbiala arriba).</p>
+          </div>
+          <ScriptReader key={part} floatingOnly text={text} onClose={() => undefined} />
+          <label className="tap inline-flex cursor-pointer items-center self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
+            <input type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+            2. Abrir la cámara del teléfono
+          </label>
+          <p className="text-xs text-ink-300">En la cámara empieza a grabar, toca ▶ en la ventana flotante y lee. Al terminar vuelve aquí: el video se sube solo.</p>
+          <label className="tap inline-flex cursor-pointer items-center self-start text-xs font-semibold underline underline-offset-4">
+            <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+            O elegir un video de mi galería
+          </label>
+        </div>
+      )}
+
+      {(phase === "apagada" || phase === "lista") && <p className="text-center text-xs text-ink-400">— o grábate dentro de la app (usa el micrófono del teléfono) —</p>}
+
       <div className="relative overflow-hidden rounded-card bg-ink-800">
         {phase === "revision" && take ? (
           <video src={take.url} controls playsInline style={{ aspectRatio: aspect }} className="mx-auto h-[52dvh] w-auto max-w-full bg-negro object-contain" />
@@ -471,27 +491,6 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         <p role="alert" className="rounded-xl bg-alerta/15 p-3 text-sm text-blanco">
           {error}
         </p>
-      )}
-
-      {(phase === "apagada" || phase === "lista") && (
-        <div className="flex flex-col gap-2 rounded-xl bg-ink-800 p-3 text-sm">
-          <p className="font-semibold">¿Prefieres la cámara de tu teléfono?</p>
-          <p className="text-xs text-ink-300">Máxima calidad (4K, estabilización) y usa tu micrófono externo, pero no verás el teleprompter dentro de la cámara. Graba solo la parte «{PART_LABEL[part]}».</p>
-          <div className="flex flex-wrap gap-2">
-            <label className="tap inline-flex cursor-pointer items-center rounded-full bg-blanco px-4 text-sm font-semibold text-negro">
-              <input type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-              Abrir la cámara del teléfono
-            </label>
-            <label className="tap inline-flex cursor-pointer items-center rounded-full border border-ink-600 px-4 text-sm font-semibold">
-              <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-              Elegir de mi galería
-            </label>
-            <button type="button" onClick={() => setReading((r) => !r)} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
-              {reading ? "Ocultar el guion" : "Leer el guion de esta parte"}
-            </button>
-          </div>
-          {reading && <ScriptReader text={text} onClose={() => setReading(false)} />}
-        </div>
       )}
 
       {phase !== "revision" && (

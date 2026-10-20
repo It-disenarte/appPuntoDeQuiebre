@@ -81,7 +81,7 @@ function draw(ctx: CanvasRenderingContext2D, lines: string[], progress: number, 
  * ventana flotante (Picture-in-Picture) que se queda encima de otras apps; mantiene la pantalla encendida y avanza a tu ritmo.
  * El estado vive en refs (no en el ciclo de React) para que la ventana flotante siga respondiendo con la app en segundo plano.
  */
-export function ScriptReader({ text, onClose }: { text: string; onClose: () => void }) {
+export function ScriptReader({ text, onClose, floatingOnly = false }: { text: string; onClose: () => void; floatingOnly?: boolean }) {
   const [speed, setSpeed] = useState(3);
   const [running, setRunningState] = useState(false);
   const [started, setStarted] = useState(false);
@@ -258,11 +258,43 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
         /* sin controles de medios */
       }
       readyRef.current = true;
-      setNote("Listo. Abre tu cámara o grabadora, empieza a grabar y toca ▶ en la ventana flotante.");
+      setNote("Listo. Ahora abre la cámara del teléfono, empieza a grabar y toca ▶ en la ventana flotante.");
     } catch {
       closePip();
       setNote("Tu teléfono no dejó abrir la ventana flotante. Prueba con Chrome actualizado o usa el teleprompter en pantalla completa.");
     }
+  }
+
+  if (floatingOnly) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3 text-sm">
+          <label htmlFor="rd-vel" className="text-ink-300">
+            Velocidad
+          </label>
+          <input id="rd-vel" type="range" min={1} max={5} value={speed} onChange={(e) => setSpeed(clampSpeed(Number(e.target.value)))} className="flex-1 accent-blanco" disabled={pip} />
+          <span className="w-24 text-right font-extrabold">{SPEED_LABEL[speed - 1]}</span>
+        </div>
+        {supportsPip ? (
+          pip ? (
+            <button type="button" onClick={closePip} className="tap self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
+              Cerrar el teleprompter flotante
+            </button>
+          ) : (
+            <button type="button" onClick={() => void openPip()} className="tap self-start rounded-full bg-naranja px-5 text-sm font-semibold text-negro">
+              1. Abrir el teleprompter flotante
+            </button>
+          )
+        ) : (
+          <p className="text-xs text-ink-300">Tu navegador no permite la ventana flotante. Usa Chrome actualizado en Android.</p>
+        )}
+        {note && (
+          <p role="status" className="text-xs font-semibold text-naranja">
+            {note}
+          </p>
+        )}
+      </div>
+    );
   }
 
   return (
