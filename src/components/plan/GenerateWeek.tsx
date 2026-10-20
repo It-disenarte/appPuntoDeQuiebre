@@ -11,7 +11,18 @@ import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 export function GenerateWeek({ week, topics, label }: { week: string; topics: string[]; label: string }) {
   const [state, action, pending] = useActionState<PlanActionState, FormData>(generatePlanAction, undefined);
   const [picked, setPicked] = useState<string[]>([]);
+  const [custom, setCustom] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
   const toggle = (t: string) => setPicked((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : cur.length < 3 ? [...cur, t] : cur));
+  // “Otro tema”: se agrega con su botón (o con Enter) como una opción más; Enter ya no manda todo el formulario.
+  const addCustom = () => {
+    const t = draft.trim().slice(0, 40);
+    if (!t || picked.length >= 3) return;
+    if (!topics.includes(t) && !custom.includes(t)) setCustom((c) => [...c, t]);
+    setPicked((cur) => (cur.includes(t) ? cur : [...cur, t]));
+    setDraft("");
+  };
+  const all = [...topics, ...custom];
 
   return (
     <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-5">
@@ -20,7 +31,7 @@ export function GenerateWeek({ week, topics, label }: { week: string; topics: st
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold text-ink-800">¿De qué quieres que hablen tus historias esta semana? (de 1 a 3, opcional)</legend>
         <div className="flex flex-wrap gap-2">
-          {topics.map((t) => {
+          {all.map((t) => {
             const on = picked.includes(t);
             return (
               <label key={t} className={cn("tap inline-flex cursor-pointer items-center rounded-full border px-4 text-sm font-semibold select-none", on ? "border-azul bg-azul text-blanco" : "border-ink-300 bg-blanco text-ink-800 hover:bg-ink-100", !on && picked.length >= 3 && "opacity-50")}>
@@ -30,7 +41,25 @@ export function GenerateWeek({ week, topics, label }: { week: string; topics: st
             );
           })}
         </div>
-        <Field label="Otro tema (opcional)" name="otro" maxLength={40} />
+        <div className="flex items-end gap-2">
+          <Field
+            label="Otro tema (opcional)"
+            id="otro-tema"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+            maxLength={40}
+            className="min-w-0 flex-1"
+          />
+          <Button type="button" variant="outline" onClick={addCustom} disabled={!draft.trim() || picked.length >= 3}>
+            Agregar
+          </Button>
+        </div>
       </fieldset>
       <details className="rounded-xl bg-ink-100 p-3">
         <summary className="cursor-pointer text-sm font-semibold">¿Algún tipo de historia que no quieras ver? (se apaga 4 semanas)</summary>

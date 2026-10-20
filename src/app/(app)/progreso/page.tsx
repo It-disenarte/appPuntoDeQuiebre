@@ -4,7 +4,7 @@ import { ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
 import { Spark } from "@/components/metrics/Charts";
 import { ReportView } from "@/components/metrics/ReportView";
 import { requireCreatorAccess } from "@/lib/auth/gates";
-import { listReports, parseConfirmed, parseExplanation, periodOptions } from "@/lib/metrics/service";
+import { hadActivityIn, listReports, parseConfirmed, parseExplanation, periodOptions } from "@/lib/metrics/service";
 import { monthName } from "@/lib/notify/rules";
 
 export const metadata: Metadata = { title: "Progreso" };
@@ -16,7 +16,8 @@ export default async function ProgresoPage() {
   const explanation = latest ? parseExplanation(latest.explanation) : null;
   const confirmed = latest ? parseConfirmed(latest.confirmed) : null;
   const pending = periodOptions()[0]!;
-  const doneThisMonth = reports.some((r) => r.period === pending.period);
+  // Solo se pide el informe del mes pasado si ya grabó o publicó algo en ese mes.
+  const doneThisMonth = reports.some((r) => r.period === pending.period) || !(await hadActivityIn(user.id, pending.period));
 
   const series = reports
     .map((r) => ({ label: monthName(r.period), value: Number(parseConfirmed(r.confirmed)?.cuenta.vistas ?? NaN) }))

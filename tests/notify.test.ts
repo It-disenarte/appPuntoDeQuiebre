@@ -81,6 +81,7 @@ describe("otros avisos", () => {
     expect(m.url).toBe("/progreso/metricas");
     expect(kinds({ now: at("2026-11-01T10:15"), metricPeriods: ["2026-10"] })).not.toContain("metricas_mensual");
     expect(kinds({ now: at("2026-11-02T10:15") })).not.toContain("metricas_mensual");
+    expect(kinds({ now: at("2026-11-01T10:15"), metricsEligible: false })).not.toContain("metricas_mensual"); // aún no publicaba nada el mes pasado
   });
   it("un aviso amable si a los 10 días no termina la brújula", () => {
     const late = { accountCreatedAt: new Date("2026-10-08T00:00:00Z"), manualApproved: false, now: at("2026-10-20T11:05") };

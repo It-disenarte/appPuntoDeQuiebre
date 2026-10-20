@@ -6,7 +6,8 @@ import { creatorSettings, metricReports, notifications, pushSubscriptions, users
 import { currentStory, getCurrentPlan } from "@/lib/plan/service";
 import { addDays, todayIso } from "@/lib/plan/rules";
 import { pushConfigured, sendToUser } from "@/lib/push";
-import { dueNotifications, localParts, type NotifyContext } from "./rules";
+import { hadActivityIn } from "@/lib/metrics/service";
+import { dueNotifications, localParts, previousPeriod, type NotifyContext } from "./rules";
 
 /**
  * Revisa a los usuarios con avisos activados y manda lo que ya toca. Se llama desde el worker cada 5 minutos.
@@ -58,6 +59,7 @@ async function buildContext(userId: string, name: string, createdAt: Date, now: 
     pieces: (plan?.pieces ?? []).map((p) => ({ id: p.id, day: p.day, publishTime: p.publishTime, topic: p.topic, kind: p.kind, status: p.status })),
     storyToday: story && view && !view.own ? { id: story.id, done: story.done, tipo: view.tipo } : null,
     metricPeriods: reports.map((r) => r.period),
+    metricsEligible: await hadActivityIn(userId, previousPeriod(today)),
     pausedUntil: settings[0]?.pauseUntil ?? null,
     enabled: settings[0]?.notificationsEnabled ?? true,
   };

@@ -8,7 +8,7 @@ import { getOverview, getSchedule } from "@/lib/brujula/service";
 import { blockRange, dayLabel } from "@/lib/brujula/schedule";
 import { addDays, CATEGORY_LABEL, DAY_CODES, DAY_SHORT, dowMon0, mondayOf, todayIso } from "@/lib/plan/rules";
 import { currentStory, getCurrentPlan } from "@/lib/plan/service";
-import { listReports, periodOptions } from "@/lib/metrics/service";
+import { hadActivityIn, listReports, periodOptions } from "@/lib/metrics/service";
 import { monthName } from "@/lib/notify/rules";
 
 export const metadata: Metadata = { title: "Hoy" };
@@ -21,7 +21,7 @@ export default async function HoyPage() {
   const nextStep = overview.next;
   // Recordatorio mensual: si todavía no entrega las métricas del mes pasado, un botón lleva directo a subir las capturas.
   const metricPeriod = periodOptions(today)[0]!.period;
-  const metricsPending = !(await listReports(user.id)).some((r) => r.period === metricPeriod && r.status === "lista");
+  const metricsPending = !(await listReports(user.id)).some((r) => r.period === metricPeriod && r.status === "lista") && (await hadActivityIn(user.id, metricPeriod));
 
   const pieces = data?.pieces ?? [];
   const stories = data?.stories ?? [];

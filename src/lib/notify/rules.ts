@@ -18,6 +18,8 @@ export type NotifyContext = {
   storyToday: { id: string; done: boolean; tipo: string } | null;
   /** Meses (AAAA-MM) con informe de métricas ya enviado. */
   metricPeriods: string[];
+  /** ¿Ya grabó o publicó algo el mes pasado? Si no, no hay métricas que pedir (por defecto sí). */
+  metricsEligible?: boolean;
   pausedUntil: string | null;
   enabled: boolean;
 };
@@ -92,7 +94,7 @@ export function dueNotifications(ctx: NotifyContext): DueNotification[] {
   // 4) Métricas: el día 1 de cada mes a las 10:00, pedir las capturas del mes anterior.
   if (today.slice(8, 10) === "01" && inWindow(nowMin, 10 * 60)) {
     const period = previousPeriod(today);
-    if (!ctx.metricPeriods.includes(period)) {
+    if (ctx.metricsEligible !== false && !ctx.metricPeriods.includes(period)) {
       out.push({ kind: "metricas_mensual", refKey: period, title: `Pásame tus métricas de ${monthName(period)}`, body: "Toma unas capturas de las estadísticas de tu Instagram y te explico cómo te fue. Te digo dónde buscarlas.", url: "/progreso/metricas", actionTitle: "Subir mis capturas" });
     }
   }

@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt } from "drizzle-orm";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getManual } from "@/lib/brujula/service";
@@ -29,6 +29,24 @@ export function periodOptions(today = todayIso()): { period: string; label: stri
   const third = previousPeriod(`${second}-01`);
   return [first, second, third].map((p) => ({ period: p, label: `${monthName(p)} ${p.slice(0, 4)}` }));
 }
+/** Primer día del mes siguiente a un periodo "AAAA-MM". */
+const nextMonthStart = (period: string) => {
+  const [y, m] = period.split("-").map(Number) as [number, number];
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+};
+
+/**
+ * ¿Tiene sentido pedirle las métricas de ese mes? Solo si ya empezó: grabó, programó o publicó algo en ese mes.
+ * (Quien apenas se registra no tiene qué medir, así que el recordatorio empieza el mes siguiente a su primera publicación.)
+ */
+export async function hadActivityIn(userId: string, period: string): Promise<boolean> {
+  const [row] = await db()
+    .select({ n: count() })
+    .from(contentPieces)
+    .where(and(eq(contentPieces.userId, userId), gte(contentPieces.day, `${period}-01`), lt(contentPieces.day, nextMonthStart(period)), inArray(contentPieces.status, ["grabado", "programado", "publicado"])));
+  return (row?.n ?? 0) > 0;
+}
+
 export const isValidPeriod = (p: string, today = todayIso()) => periodOptions(today).some((o) => o.period === p);
 
 /* ───────────── Lectura ───────────── */
