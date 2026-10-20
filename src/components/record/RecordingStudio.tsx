@@ -440,6 +440,11 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
           <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Si conectas un micrófono externo, elígelo aquí.</p>
           <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa «Abrir la cámara del teléfono», que sí lo detecta.</p>
           {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
+          {mics.length > 0 && !mics.some((m) => /usb|dji|wireless|bluetooth|extern/i.test(m.label)) && (
+            <p role="status" className="rounded-lg bg-naranja-100 p-2 text-xs font-semibold text-ink-900">
+              El teléfono no le está pasando tu micrófono USB al navegador (solo ve los internos). Para grabar con él usa «Abrir la cámara del teléfono» (abajo): la cámara nativa sí lo reconoce.
+            </p>
+          )}
           <p className="text-xs text-ink-300">
             En uso: <strong className="text-blanco">{activeMic || "micrófono predeterminado"}</strong>
           </p>

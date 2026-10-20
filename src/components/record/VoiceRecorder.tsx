@@ -243,7 +243,11 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
             <input type="file" accept="audio/*,.m4a,.mp3,.aac,.ogg,.webm" className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
             Subir un audio que ya tengo
           </label>
-          <p className="text-xs text-ink-300">Hasta {VO_MAX_SECONDS / 60} minutos. Te pediremos permiso para usar el micrófono.</p>
+          <label className="tap inline-flex cursor-pointer items-center self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
+            <input type="file" accept="audio/*" capture className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
+            Grabar con la grabadora del teléfono
+          </label>
+          <p className="text-xs text-ink-300">Hasta {VO_MAX_SECONDS / 60} minutos. «Grabar mi voz» usa el micrófono del navegador; la grabadora del teléfono sirve si usas un micrófono USB o inalámbrico.</p>
         </div>
       )}
 
@@ -289,6 +293,11 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
             <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Con un micrófono externo, elígelo aquí.</p>
             <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa una app de grabadora de voz y sube el audio.</p>
           {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
+          {mics.length > 0 && !mics.some((m) => /usb|dji|wireless|bluetooth|extern/i.test(m.label)) && (
+            <p role="status" className="rounded-lg bg-naranja-100 p-2 text-xs font-semibold text-ink-900">
+              El teléfono no le está pasando tu micrófono USB al navegador (solo ve los internos). Usa «Grabar con la grabadora del teléfono»: la grabadora del sistema sí lo reconoce.
+            </p>
+          )}
           <p className="text-xs text-ink-300">
             En uso: <strong className="text-blanco">{activeMic || "micrófono predeterminado"}</strong>
           </p>
