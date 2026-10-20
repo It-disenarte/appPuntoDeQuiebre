@@ -5,8 +5,8 @@ import { clampSpeed, estimateSeconds, SPEED_LABEL, SPEEDS } from "@/lib/recordin
 
 const CW = 360;
 const CH = 640;
-const FONT = '800 38px "Archivo", system-ui, sans-serif';
-const LINE_H = 48;
+const FONT = '800 50px "Archivo", system-ui, sans-serif';
+const LINE_H = 62;
 
 /** Parte el texto en líneas que caben en el ancho del lienzo (respeta los saltos de párrafo). */
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -54,12 +54,24 @@ function draw(ctx: CanvasRenderingContext2D, lines: string[], progress: number, 
     ctx.fillText(String(count), CW / 2, CH / 2 + 56);
     ctx.textAlign = "start";
   } else if (!running) {
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, CH - 90, CW, 90);
+    // Quieto: un ▶ grande y claro (el reproductor de la ventana también lo trae).
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "#FE6807";
+    ctx.beginPath();
+    ctx.arc(CW / 2, CH / 2 - 20, 70, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.moveTo(CW / 2 - 22, CH / 2 - 62);
+    ctx.lineTo(CW / 2 - 22, CH / 2 + 22);
+    ctx.lineTo(CW / 2 + 38, CH / 2 - 20);
+    ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = "#fff";
-    ctx.font = "800 26px system-ui, sans-serif";
+    ctx.font = "800 28px system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(progress > 0 && progress < 1 ? "Toca ▶ para continuar" : progress >= 1 ? "Fin del guion" : "Toca ▶ para empezar", CW / 2, CH - 36);
+    ctx.fillText(progress >= 1 ? "Fin del guion" : progress > 0 ? "Toca ▶ para continuar" : "Toca ▶ para empezar", CW / 2, CH / 2 + 110);
     ctx.textAlign = "start";
   }
 }
@@ -67,10 +79,11 @@ function draw(ctx: CanvasRenderingContext2D, lines: string[], progress: number, 
 /**
  * Teleprompter SIN grabar: sirve para leer el guion mientras se graba con otro aparato o con la cámara nativa. Se puede abrir en una
  * ventana flotante (Picture-in-Picture) que se queda encima de otras apps; mantiene la pantalla encendida y avanza a tu ritmo.
+ * El estado vive en refs (no en el ciclo de React) para que la ventana flotante siga respondiendo con la app en segundo plano.
  */
 export function ScriptReader({ text, onClose }: { text: string; onClose: () => void }) {
   const [speed, setSpeed] = useState(3);
-  const [running, setRunning] = useState(false);
+  const [running, setRunningState] = useState(false);
   const [started, setStarted] = useState(false);
   const [count, setCount] = useState(0);
   const [pip, setPip] = useState(false);
@@ -80,26 +93,52 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
   const countdown = useRef(0);
   const speedRef = useRef(speed);
   const runningRef = useRef(false);
+  const pipRef = useRef(false);
+  const readyRef = useRef(false); // la ventana ya está lista y sus eventos de play/pausa son del usuario
+  const programmatic = useRef(0); // play/pausa que hace la propia app (no deben interpretarse como toques del usuario)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const linesRef = useRef<string[]>([]);
-  const pipRef = useRef(false);
+  const textRef = useRef(text);
   const supportsPip = typeof document !== "undefined" && Boolean(document.pictureInPictureEnabled) && typeof HTMLCanvasElement !== "undefined" && "captureStream" in HTMLCanvasElement.prototype;
 
   useEffect(() => {
     speedRef.current = speed;
-  }, [speed]);
-  useEffect(() => {
-    runningRef.current = running;
-  }, [running]);
-  useEffect(() => {
-    pipRef.current = pip;
-  }, [pip]);
+    textRef.current = text;
+  }, [speed, text]);
 
   const paint = useCallback(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (ctx) draw(ctx, linesRef.current, progress.current, Math.ceil(countdown.current), runningRef.current);
   }, []);
+
+  /** Única puerta para arrancar o detener: mantiene al día el estado, la ventana flotante y su reproductor. */
+  const setRun = useCallback(
+    (value: boolean) => {
+      runningRef.current = value;
+      setRunningState(value);
+      const v = videoRef.current;
+      if (v && readyRef.current) {
+        programmatic.current += 1;
+        const done = () => setTimeout(() => (programmatic.current = Math.max(0, programmatic.current - 1)), 400);
+        if (value) v.play().catch(() => undefined).finally(done);
+        else {
+          v.pause();
+          done();
+        }
+      }
+      paint();
+    },
+    [paint],
+  );
+
+  const begin = useCallback(() => {
+    if (progress.current >= 1) progress.current = 0;
+    if (progress.current <= 0) countdown.current = 3;
+    setCount(Math.ceil(countdown.current));
+    setStarted(true);
+    setRun(true);
+  }, [setRun]);
 
   // La pantalla no se apaga mientras se lee (si el navegador lo permite).
   useEffect(() => {
@@ -109,77 +148,64 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
     return () => void lock?.release().catch(() => undefined);
   }, []);
 
-  // Reloj: cuenta regresiva y desplazamiento. Corre en un Worker para que no se detenga con la app en segundo plano.
+  // Reloj: siempre encendido mientras el lector está abierto. Va en un Worker para que no se frene con la app en segundo plano.
   useEffect(() => {
-    if (!running) return;
     let last = performance.now();
     let shown = -1;
     const tick = () => {
       const now = performance.now();
       const dt = Math.min(0.25, (now - last) / 1000);
       last = now;
-      if (countdown.current > 0) {
-        countdown.current = Math.max(0, countdown.current - dt);
-        const c = Math.ceil(countdown.current);
-        if (c !== shown) {
-          shown = c;
-          setCount(c);
+      if (runningRef.current) {
+        if (countdown.current > 0) {
+          countdown.current = Math.max(0, countdown.current - dt);
+          const c = Math.ceil(countdown.current);
+          if (c !== shown) {
+            shown = c;
+            setCount(c);
+          }
+        } else {
+          const expected = Math.max(3, estimateSeconds(textRef.current) * (2.5 / SPEEDS[speedRef.current - 1]!));
+          progress.current = Math.min(1, progress.current + dt / expected);
+          const el = boxRef.current;
+          if (el) el.scrollTop = progress.current * (el.scrollHeight - el.clientHeight);
+          if (progress.current >= 1) setRun(false);
         }
-      } else {
-        const expected = Math.max(3, estimateSeconds(text) * (2.5 / SPEEDS[speedRef.current - 1]!));
-        progress.current = Math.min(1, progress.current + dt / expected);
-        const el = boxRef.current;
-        if (el) el.scrollTop = progress.current * (el.scrollHeight - el.clientHeight);
-        if (progress.current >= 1) setRunning(false);
       }
       if (pipRef.current) paint();
     };
     let worker: Worker | null = null;
     let timer: ReturnType<typeof setInterval> | undefined;
+    const fallback = () => {
+      worker?.terminate();
+      worker = null;
+      if (!timer) timer = setInterval(tick, 40);
+    };
     try {
       worker = new Worker("/ticker-worker.js");
       worker.onmessage = tick;
+      worker.onerror = fallback;
     } catch {
-      timer = setInterval(tick, 40);
+      fallback();
     }
     return () => {
       worker?.terminate();
       if (timer) clearInterval(timer);
     };
-  }, [running, text, paint]);
-
-  // Cuando se pausa o termina, se repinta una vez (para que la ventana flotante muestre el estado).
-  useEffect(() => {
-    if (!running && pip) paint();
-  }, [running, pip, paint]);
-
-  // La ventana flotante: play y pausa del reproductor controlan el teleprompter.
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !pip) return;
-    if (running && v.paused) void v.play().catch(() => undefined);
-    if (!running && !v.paused) v.pause();
-  }, [running, pip]);
-
-  const begin = useCallback(() => {
-    if (progress.current >= 1) progress.current = 0;
-    if (progress.current <= 0) countdown.current = 3;
-    setCount(Math.ceil(countdown.current));
-    setStarted(true);
-    setRunning(true);
-  }, []);
+  }, [paint, setRun]);
 
   function restart() {
     progress.current = 0;
     countdown.current = 0;
     setCount(0);
     setStarted(false);
-    setRunning(false);
+    setRun(false);
     if (boxRef.current) boxRef.current.scrollTop = 0;
-    paint();
   }
 
   const closePip = useCallback(() => {
+    readyRef.current = false;
+    pipRef.current = false;
     const v = videoRef.current;
     if (v) {
       v.pause();
@@ -200,8 +226,9 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
       canvas.width = CW;
       canvas.height = CH;
       canvasRef.current = canvas;
-      const ctx = canvas.getContext("2d")!;
-      linesRef.current = wrap(ctx, text || "Esta pieza no tiene guion.", CW - 48);
+      linesRef.current = wrap(canvas.getContext("2d")!, text || "Esta pieza no tiene guion.", CW - 48);
+      runningRef.current = false;
+      setRunningState(false);
       paint();
       const video = document.createElement("video");
       video.muted = true;
@@ -210,13 +237,27 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
       document.body.appendChild(video);
       video.srcObject = canvas.captureStream(30);
       videoRef.current = video;
-      video.onplay = () => !runningRef.current && begin();
-      video.onpause = () => runningRef.current && setRunning(false);
-      video.addEventListener("leavepictureinpicture", () => closePip());
       await video.play();
       await video.requestPictureInPicture();
-      video.pause(); // la ventana queda lista; se empieza con el ▶ de la ventana (cuando ya estés grabando)
+      video.pause(); // la ventana queda quieta, con su botón ▶: se empieza cuando ya estés grabando
+      pipRef.current = true;
       setPip(true);
+      paint();
+      // Los toques de ▶ y ⏸ de la ventana controlan el texto. Se conectan hasta ahora para no confundirlos con el play/pausa de arriba.
+      video.onplay = () => {
+        if (programmatic.current === 0 && !runningRef.current) begin();
+      };
+      video.onpause = () => {
+        if (programmatic.current === 0 && runningRef.current) setRun(false);
+      };
+      video.addEventListener("leavepictureinpicture", () => closePip());
+      try {
+        navigator.mediaSession?.setActionHandler("play", () => begin());
+        navigator.mediaSession?.setActionHandler("pause", () => setRun(false));
+      } catch {
+        /* sin controles de medios */
+      }
+      readyRef.current = true;
       setNote("Listo. Abre tu cámara o grabadora, empieza a grabar y toca ▶ en la ventana flotante.");
     } catch {
       closePip();
@@ -247,7 +288,7 @@ export function ScriptReader({ text, onClose }: { text: string; onClose: () => v
           <button type="button" onClick={restart} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
             Reiniciar
           </button>
-          <button type="button" onClick={() => (running ? setRunning(false) : begin())} className="tap rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
+          <button type="button" onClick={() => (running ? setRun(false) : begin())} className="tap rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
             {running ? "Pausar" : started ? "Continuar" : "Empezar"}
           </button>
         </div>
