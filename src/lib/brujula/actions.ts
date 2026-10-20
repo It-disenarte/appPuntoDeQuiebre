@@ -9,7 +9,7 @@ import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
 import { SECTION_IDS } from "@/lib/skills/schemas";
 import { getStep, MAX_STEP_CHARS, quickSchema, SELL_VALUES, STORY_CHOICE_VALUES, wordCount } from "./content";
-import { acceptSchedule, generateManual, getIntake, intakeProgress, saveQuick, saveScheduleAnswers, saveSell, saveStep, skipSell, voteSection } from "./service";
+import { acceptSchedule, getIntake, intakeProgress, queueManual, saveQuick, saveScheduleAnswers, saveSell, saveStep, skipSell, voteSection } from "./service";
 import { scheduleAnswersSchema, DAYS } from "./schedule";
 
 export type BrujulaState = { error?: string; followUp?: string; fields?: Record<string, string | string[]> } | undefined;
@@ -84,24 +84,22 @@ export async function saveQuickAction(_prev: BrujulaState, fd: FormData): Promis
   const parsed = quickSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tus elecciones.", fields: raw };
   await saveQuick(user.id, parsed.data);
-  redirect("/mi-marca/manual?generar=1");
+  // Con la historia completa, la brújula se empieza a armar sola (en segundo plano).
+  if (intakeProgress((await getIntake(user.id))!).ready && (await rateLimit(`manual-ia:user:${user.id}`, 6, HOUR))) {
+    await queueManual(user.id);
+  }
+  redirect("/mi-marca/manual");
 }
 
 /* ───────────── Manual de marca ───────────── */
 
 export async function generateManualAction(): Promise<void> {
   const { user } = await requireCreatorAccess();
-  // La skill cuesta por llamada cuando es IA real: máximo 4 generaciones por hora.
-  if (!(await rateLimit(`manual-ia:user:${user.id}`, 4, HOUR))) redirect("/mi-marca/manual?limite=1");
-  let ok = false;
-  try {
-    ok = await generateManual(user.id, user.name);
-  } catch {
-    // El detalle ya quedó en el log ([skills]); al usuario solo un aviso claro.
-    redirect("/mi-marca/manual?error=ia");
-  }
-  if (!ok) redirect("/mi-marca/historia");
-  await audit({ action: "brujula.manual_generated", actorUserId: user.id, ip: await getClientIp() });
+  const intake = await getIntake(user.id);
+  if (!intake || !intakeProgress(intake).ready) redirect("/mi-marca/historia");
+  // La skill cuesta por llamada cuando es IA real: máximo 6 por hora.
+  if (!(await rateLimit(`manual-ia:user:${user.id}`, 6, HOUR))) redirect("/mi-marca/manual?limite=1");
+  if ((await queueManual(user.id)) === "encolado") await audit({ action: "brujula.manual_requested", actorUserId: user.id, ip: await getClientIp() });
   redirect("/mi-marca/manual");
 }
 

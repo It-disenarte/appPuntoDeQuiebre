@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { Button, Chip, cn, FormError } from "@/components/ui";
 import { generateTextsAction, reviewTextsAction, type PlanActionState } from "@/lib/plan/actions";
 import { submitKeepingState } from "@/lib/form-submit";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Net = "instagram" | "tiktok" | "facebook";
 type Block = { texto: string; hashtags: string[]; extra?: string };
@@ -19,7 +20,7 @@ export function GenerateTexts({ id, again }: { id: string; again?: boolean }) {
       <FormError message={state?.error} />
       <input type="hidden" name="id" value={id} />
       <Button type="submit" variant={again ? "outline" : "primary"} size={again ? "sm" : "md"} disabled={pending} className="self-start">
-        {pending ? "Escribiendo tus textos…" : again ? "Volver a escribir los textos" : "Escribir los textos de publicación"}
+        {pending && <LoadingOverlay title="Escribiendo tus textos…" />}{pending ? "Escribiendo tus textos…" : again ? "Volver a escribir los textos" : "Escribir los textos de publicación"}
       </Button>
     </form>
   );

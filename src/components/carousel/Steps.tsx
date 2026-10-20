@@ -5,6 +5,7 @@ import { Button, cn, Field, FormError, TextAreaField } from "@/components/ui";
 import { chooseIdeaAction, createCarouselAction, refreshIdeasAction, saveAnswersAction, type CarouselActionState } from "@/lib/carousel/actions";
 import { GOALS, IMAGE_STYLES, TYPES, type Idea, type InterviewOut } from "@/lib/carousel/schemas";
 import { submitKeepingState } from "@/lib/form-submit";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 function Chips({ name, items, value, onChange }: { name: string; items: readonly { id: string; label: string; hint?: string }[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -72,7 +73,7 @@ export function BriefForm({ tema = "", pieza, plan = "basico" }: { tema?: string
         {animado && plan === "pro" && <p className="text-xs text-ink-600">La animación en video se activa pronto. Hoy guardamos tu preferencia y descargas las imágenes estáticas.</p>}
       </fieldset>
       <Button type="submit" size="lg" disabled={pending || !tipo || !objetivo || !estilo} className="self-start">
-        {pending ? "Pensando ideas…" : "Proponme ideas"}
+        {pending && <LoadingOverlay title="Pensando ideas…" />}{pending ? "Pensando ideas…" : "Proponme ideas"}
       </Button>
       <p className="text-xs text-ink-500">Tarda unos segundos. Te daremos 3 ideas distintas y tú eliges.</p>
     </form>
@@ -105,7 +106,7 @@ export function IdeasStep({ id, rounds, canRefresh, recommended }: { id: string;
                 <p className="font-extrabold">{idea.titulo}</p>
                 <p className="text-sm text-ink-600">{idea.promesa}</p>
                 <Button type="submit" size="sm" disabled={pending} className="mt-auto self-start">
-                  {pending ? "Armando…" : "Elegir esta"}
+                  {pending && <LoadingOverlay title="Armando…" />}{pending ? "Armando…" : "Elegir esta"}
                 </Button>
               </form>
             ))}
@@ -212,7 +213,7 @@ export function InterviewStep({ id, interview, previous }: { id: string; intervi
         ))}
       </fieldset>
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Armando tu carrusel…" : "Armar mi carrusel"}
+        {pending && <LoadingOverlay title="Armando tu carrusel…" />}{pending ? "Armando tu carrusel…" : "Armar mi carrusel"}
       </Button>
       {pending && <p className="text-sm text-ink-600">Puede tardar hasta un minuto…</p>}
     </form>

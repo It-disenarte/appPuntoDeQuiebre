@@ -1,8 +1,9 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { brandManuals, creatorIntake, kitVisual, schedules, voiceProfiles } from "@/lib/db/schema";
+import { brandManuals, creatorIntake, jobs, kitVisual, schedules, users, voiceProfiles } from "@/lib/db/schema";
+import { enqueue } from "@/lib/jobs";
 import { runBrujula, runPerfilVoz, SKILLS } from "@/lib/skills";
 import { buildMuestraVoz, type BrujulaInput, type PerfilVozInput } from "@/lib/skills/mock";
 import { brujulaV2Output, horarioV1Output, MANUAL_SECTIONS, perfilVozV1Output, SECTION_IDS, type BrujulaV2, type HorarioV1, type PerfilVozV1, type SectionId } from "@/lib/skills/schemas";
@@ -120,6 +121,42 @@ export async function generateManual(userId: string, name: string): Promise<bool
 
   await db().update(creatorIntake).set({ completedAt: new Date() }).where(eq(creatorIntake.userId, userId));
   return true;
+}
+
+/** Un trabajo que lleva más que esto sin terminar se da por perdido y se puede pedir otro. */
+const MANUAL_JOB_STALE_MS = 20 * 60 * 1000;
+
+export type ManualJob = { status: "pendiente" | "corriendo" | "lista" | "error"; error: string | null; createdAt: Date; recent: boolean };
+
+/** El último trabajo de "armar mi brújula" (null si nunca se pidió). */
+export async function latestManualJob(userId: string): Promise<ManualJob | null> {
+  const [row] = await db()
+    .select({ status: jobs.status, error: jobs.error, createdAt: jobs.createdAt })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), eq(jobs.kind, "brujula.generar")))
+    .orderBy(desc(jobs.createdAt))
+    .limit(1);
+  return row ? { ...row, recent: Date.now() - row.createdAt.getTime() < MANUAL_JOB_STALE_MS } : null;
+}
+
+/** Pide armar la brújula y el perfil de voz en segundo plano (dos llamadas de IA seguidas tardan demasiado para una sola petición). */
+export async function queueManual(userId: string): Promise<"encolado" | "en_curso"> {
+  const [active] = await db()
+    .select({ id: jobs.id })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), eq(jobs.kind, "brujula.generar"), inArray(jobs.status, ["pendiente", "corriendo"]), gt(jobs.createdAt, new Date(Date.now() - MANUAL_JOB_STALE_MS))))
+    .limit(1);
+  if (active) return "en_curso";
+  await enqueue("brujula.generar", userId, {}, { maxAttempts: 1 });
+  return "encolado";
+}
+
+/** Lo que corre el worker. */
+export async function runManualJob(userId: string): Promise<void> {
+  const [u] = await db().select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!u) throw new Error("Usuario no encontrado");
+  const ok = await generateManual(userId, u.name);
+  if (!ok) throw new Error("Falta terminar la historia y las elecciones rápidas");
 }
 
 export type VoteResult = { ok: true; approved: boolean } | { ok: false; error: string };

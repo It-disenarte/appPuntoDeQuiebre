@@ -5,6 +5,7 @@ import { Button, cn, Field, FormError, TextAreaField } from "@/components/ui";
 import { submitKeepingState } from "@/lib/form-submit";
 import { generateWeekAction, requestSupportAction, saveAnswersAction, type LiveActionState } from "@/lib/lives/actions";
 import { DAYS, PLATFORMS, SITUATIONS, type Situation } from "@/lib/lives/schemas";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 const chip = "tap inline-flex cursor-pointer items-center rounded-full border px-4 text-sm font-semibold select-none";
 
@@ -102,7 +103,7 @@ export function GenerateWeekForm({ week, label }: { week: string; label: string 
       <FormError message={state?.error} />
       <input type="hidden" name="week" value={week} />
       <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Armando tu guía… (hasta un minuto)" : label}
+        {pending && <LoadingOverlay title="Armando tu guía… (hasta un minuto)" />}{pending ? "Armando tu guía… (hasta un minuto)" : label}
       </Button>
     </form>
   );
@@ -115,7 +116,7 @@ export function SupportForm() {
       <FormError message={state?.error} />
       <Field label="¿Tienes un tema en mente? (opcional)" name="tema" maxLength={140} />
       <Button type="submit" variant="outline" disabled={pending} className="self-start">
-        {pending ? "Preparando… (hasta un minuto)" : "Pedir apoyo para un directo"}
+        {pending && <LoadingOverlay title="Preparando… (hasta un minuto)" />}{pending ? "Preparando… (hasta un minuto)" : "Pedir apoyo para un directo"}
       </Button>
     </form>
   );

@@ -8,12 +8,12 @@ import { jobs } from "@/lib/db/schema";
  * `FOR UPDATE SKIP LOCKED`, así dos workers nunca toman el mismo. Un trabajo "corriendo" que lleva demasiado se considera
  * perdido (el worker murió) y vuelve a la fila hasta agotar sus intentos.
  */
-export type JobKind = "metricas.leer" | "analizador.correr" | "coach.revisar" | "video.unir" | "edicion.planear" | "edicion.renderizar" | "edicion.receta";
+export type JobKind = "metricas.leer" | "analizador.correr" | "coach.revisar" | "video.unir" | "edicion.planear" | "edicion.renderizar" | "edicion.receta" | "brujula.generar";
 
 export const STALE_MS = 15 * 60 * 1000;
 
-export async function enqueue(kind: JobKind, userId: string | null, payload: Record<string, unknown>): Promise<string> {
-  const [row] = await db().insert(jobs).values({ kind, userId, payload }).returning({ id: jobs.id });
+export async function enqueue(kind: JobKind, userId: string | null, payload: Record<string, unknown>, opts: { maxAttempts?: number } = {}): Promise<string> {
+  const [row] = await db().insert(jobs).values({ kind, userId, payload, ...(opts.maxAttempts ? { maxAttempts: opts.maxAttempts } : {}) }).returning({ id: jobs.id });
   return row!.id;
 }
 

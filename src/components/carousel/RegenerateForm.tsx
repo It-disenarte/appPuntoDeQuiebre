@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button, FormError, TextAreaField } from "@/components/ui";
 import { regenerateAction, type CarouselActionState } from "@/lib/carousel/actions";
 import { submitKeepingState } from "@/lib/form-submit";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 /** Nivel 3: rehacer TODO el carrusel con una nota (máximo 2 veces; la versión anterior se conserva hasta que llegue la nueva). */
 export function RegenerateForm({ id, left }: { id: string; left: number }) {
@@ -17,7 +18,7 @@ export function RegenerateForm({ id, left }: { id: string; left: number }) {
         <input type="hidden" name="id" value={id} />
         <TextAreaField label="¿Qué quieres distinto?" name="nota" rows={2} maxLength={300} required />
         <Button type="submit" variant="outline" size="sm" disabled={pending} className="self-start">
-          {pending ? "Rehaciendo… (hasta un minuto)" : "Rehacer todo el carrusel"}
+          {pending && <LoadingOverlay title="Rehaciendo… (hasta un minuto)" />}{pending ? "Rehaciendo… (hasta un minuto)" : "Rehacer todo el carrusel"}
         </Button>
       </form>
     </details>

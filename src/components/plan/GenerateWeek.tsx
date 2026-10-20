@@ -5,6 +5,7 @@ import { Button, cn, Field, FormError } from "@/components/ui";
 import { generatePlanAction, type PlanActionState } from "@/lib/plan/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 import { STORY_LIBRARY } from "@/lib/plan/mock";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 /** "Generar mi semana", con la tarjeta de enfoque de las historias (de 1 a 3 temas y tipos que no quiere ver). */
 export function GenerateWeek({ week, topics, label }: { week: string; topics: string[]; label: string }) {
@@ -43,7 +44,7 @@ export function GenerateWeek({ week, topics, label }: { week: string; topics: st
         </div>
       </details>
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Armando tu semana…" : label}
+        {pending && <LoadingOverlay title="Armando tu semana…" />}{pending ? "Armando tu semana…" : label}
       </Button>
       <p className="text-xs text-ink-500">Tarda unos segundos: escribimos el guion de cada pieza con tu voz.</p>
     </form>

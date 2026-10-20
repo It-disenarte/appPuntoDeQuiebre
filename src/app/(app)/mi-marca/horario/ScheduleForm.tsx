@@ -5,6 +5,7 @@ import { Button, cn, FormError } from "@/components/ui";
 import { saveScheduleAnswersAction, type BrujulaState } from "@/lib/brujula/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 import { DAYS, DURATIONS, LIGHTS, MOMENTS, PLACES, type ScheduleAnswers } from "@/lib/brujula/schedule";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Opt = { value: string; label: string };
 const chip = "tap inline-flex cursor-pointer items-center rounded-full border px-4 text-sm font-semibold select-none has-[:checked]:border-azul has-[:checked]:bg-azul has-[:checked]:text-blanco border-ink-300 bg-blanco text-ink-800 hover:bg-ink-100";
@@ -75,7 +76,7 @@ export function ScheduleForm({ initial }: { initial: ScheduleAnswers | null }) {
       <Multi legend="¿Con qué luz cuentas?" name="luz" options={LIGHTS} defaults={initial?.luz ?? []} />
 
       <Button type="submit" size="lg" disabled={pending || days.length < 2} className="self-start">
-        {pending ? "Armando tu horario…" : "Ver mi horario"}
+        {pending && <LoadingOverlay title="Armando tu horario…" />}{pending ? "Armando tu horario…" : "Ver mi horario"}
       </Button>
       {days.length < 2 && <p className={cn("-mt-3 text-xs text-ink-500")}>Elige al menos 2 días.</p>}
     </form>

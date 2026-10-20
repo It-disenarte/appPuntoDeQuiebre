@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button, cn, FormError } from "@/components/ui";
 import { submitKeepingState } from "@/lib/form-submit";
 import { voteSectionAction, type BrujulaState } from "@/lib/brujula/actions";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Vote = "ajustar" | "no" | null;
 
@@ -50,7 +51,7 @@ export function VoteForm({ section, adjustmentsLeft }: { section: string; adjust
           />
           <p className="text-xs text-ink-500">{open === "ajustar" ? "Máximo 120 caracteres. Solo cambiamos lo que pidas." : "Reescribimos esta sección con tu nota."} Te quedan {adjustmentsLeft} ajuste(s) en esta sección.</p>
           <Button type="submit" size="sm" disabled={pending} className="self-start">
-            {pending ? "Ajustando…" : "Enviar"}
+            {pending && <LoadingOverlay title="Ajustando…" />}{pending ? "Ajustando…" : "Enviar"}
           </Button>
         </form>
       )}

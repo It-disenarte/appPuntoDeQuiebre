@@ -7,6 +7,7 @@ import { Button, Field, FormError, TextAreaField } from "@/components/ui";
 import { submitKeepingState } from "@/lib/form-submit";
 import { choosePartAction, refreshPartAction, saveAndGenerateAction, type ProfileActionState } from "@/lib/profile/actions";
 import type { Current } from "@/lib/profile/schemas";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 /* ───────────── Perfil de hoy ───────────── */
 
@@ -27,7 +28,7 @@ export function CurrentForm({ current, hasResult }: { current: Current | null; h
       </div>
       <TextAreaField label="Nombres de tus destacadas (separados por coma)" name="destacadas" defaultValue={current?.destacadas.join(", ") ?? ""} rows={2} maxLength={300} />
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Preparando tus propuestas…" : hasResult ? "Volver a generar mis propuestas" : "Proponme mejoras"}
+        {pending && <LoadingOverlay title="Preparando tus propuestas…" />}{pending ? "Preparando tus propuestas…" : hasResult ? "Volver a generar mis propuestas" : "Proponme mejoras"}
       </Button>
       {hasResult && <p className="text-xs text-ink-500">Al volver a generar se reemplazan las propuestas anteriores (lo que ya elegiste se conserva).</p>}
     </form>

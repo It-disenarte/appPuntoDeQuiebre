@@ -6,6 +6,7 @@ import { useActionState, useRef, useState } from "react";
 import { Button, FormError } from "@/components/ui";
 import { deletePhotoAction, startRevealAction, type KitActionState } from "@/lib/kit/actions";
 import { submitKeepingState } from "@/lib/form-submit";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Photo = { id: string };
 const MAX = 4;
@@ -75,7 +76,7 @@ export function PhotoUploader({ photos }: { photos: Photo[] }) {
       <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-2">
         <FormError message={state?.error} />
         <Button type="submit" size="lg" disabled={pending || photos.length < MIN} className="self-start">
-          {pending ? "Armando tu kit…" : "Armar mi kit"}
+          {pending && <LoadingOverlay title="Armando tu kit…" />}{pending ? "Armando tu kit…" : "Armar mi kit"}
         </Button>
       </form>
     </div>

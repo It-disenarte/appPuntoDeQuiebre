@@ -8,6 +8,7 @@ import { submitKeepingState } from "@/lib/form-submit";
 import { fontStack } from "@/lib/kit/fonts";
 import { ELEMENTS, MAX_ELEMENTS, type FontOption, type PaletteOption, type TitleOption } from "@/lib/kit/schemas";
 import { titleLookOf } from "@/lib/kit/look";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Opt = PaletteOption | FontOption | TitleOption;
 type ManualData = { presets: { id: string; nombre: string }[]; styles: { id: string; nombre: string }[]; titleFonts: string[]; textFonts: string[] };
@@ -88,7 +89,7 @@ export function StartRound({ n }: { n: number }) {
       <FormError message={state?.error} />
       <input type="hidden" name="ronda" value={n} />
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Preparando tus opciones…" : "Empezar esta ronda"}
+        {pending && <LoadingOverlay title="Preparando tus opciones…" />}{pending ? "Preparando tus opciones…" : "Empezar esta ronda"}
       </Button>
     </form>
   );

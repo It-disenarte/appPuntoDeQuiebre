@@ -6,6 +6,7 @@ import { CarouselCover, ReelCover, type CarouselStyle, type Look } from "@/compo
 import { startRevealAction, submitVotesAction, type KitActionState } from "@/lib/kit/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 import { PIECES, VOTE_REASONS, type PieceId } from "@/lib/kit/schemas";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 type PieceState = { voto: "si" | "no" | "pendiente"; ajustes: number; noUsar: boolean };
 type Props = {
@@ -83,7 +84,7 @@ export function RevealForm({ looks, carousel, photos, hook, pieces, maxAdjust }:
         })}
       </div>
       <Button type="submit" size="lg" disabled={pending || Object.keys(votes).length === 0} className="self-start">
-        {pending ? "Aplicando tus calificaciones…" : "Enviar calificaciones"}
+        {pending && <LoadingOverlay title="Aplicando tus calificaciones…" />}{pending ? "Aplicando tus calificaciones…" : "Enviar calificaciones"}
       </Button>
     </form>
   );
@@ -95,7 +96,7 @@ export function StartReveal() {
     <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-3">
       <FormError message={state?.error} />
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Armando tu kit…" : "Armar mi kit"}
+        {pending && <LoadingOverlay title="Armando tu kit…" />}{pending ? "Armando tu kit…" : "Armar mi kit"}
       </Button>
     </form>
   );

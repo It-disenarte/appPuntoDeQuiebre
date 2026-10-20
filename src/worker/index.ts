@@ -19,6 +19,7 @@ import { runRecipe } from "@/lib/edit/recipe";
 import { runPlan, runRender } from "@/lib/edit/service";
 import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
+import { runManualJob } from "@/lib/brujula/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
 import { refreshExpiringTokens, syncAll } from "@/lib/instagram/service";
@@ -81,6 +82,10 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { reviewId?: string };
     if (!job.userId || !p.reviewId) throw new Error("Trabajo sin usuario o revisión");
     await runReview(job.userId, p.reviewId);
+  },
+  "brujula.generar": async (job) => {
+    if (!job.userId) throw new Error("Trabajo sin usuario");
+    await runManualJob(job.userId);
   },
   "analizador.correr": async (job) => {
     const p = job.payload as { runId?: string };

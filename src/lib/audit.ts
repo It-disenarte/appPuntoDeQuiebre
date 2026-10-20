@@ -11,7 +11,7 @@ export type AuditAction =
   | "auth.registered"
   | "commitment.accepted"
   | "brujula.completed"
-  | "brujula.manual_generated"
+  | "brujula.manual_generated" | "brujula.manual_requested"
   | "brujula.manual_approved"
   | "brujula.voice_saved"
   | "brujula.schedule_saved"

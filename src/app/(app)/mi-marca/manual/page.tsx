@@ -8,7 +8,10 @@ import { requireCreatorAccess } from "@/lib/auth/gates";
 import { formatDate } from "@/lib/billing/labels";
 import { generateManualAction } from "@/lib/brujula/actions";
 import { labelOf, FORMATS } from "@/lib/brujula/content";
-import { getManual, getOverview, MAX_ADJUSTMENTS } from "@/lib/brujula/service";
+import { getManual, getOverview, latestManualJob, MAX_ADJUSTMENTS } from "@/lib/brujula/service";
+import { Poller } from "@/components/metrics/Poller";
+import { GeneratingCard } from "@/components/brujula/GeneratingCard";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { MANUAL_SECTIONS, type BrujulaV2, type SectionId } from "@/lib/skills/schemas";
 import { VoteForm } from "./VoteForm";
 
@@ -108,7 +111,21 @@ function SectionBody({ id, m }: { id: SectionId; m: BrujulaV2 }) {
 export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/manual">) {
   const { user } = await requireCreatorAccess();
   const params = await searchParams;
-  const [manual, overview] = await Promise.all([getManual(user.id), getOverview(user.id)]);
+  const [manual, overview, job] = await Promise.all([getManual(user.id), getOverview(user.id), latestManualJob(user.id)]);
+  const recent = Boolean(job?.recent);
+  const generating = Boolean(recent && (job!.status === "pendiente" || job!.status === "corriendo"));
+  // Un intento fallido solo se avisa si es posterior a la brújula que ya tiene.
+  const failed = Boolean(recent && job!.status === "error" && (!manual || job!.createdAt > manual.generatedAt));
+  if (generating) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4">
+        <Poller everyMs={3000} />
+        <Steps overview={overview} current="brujula" />
+        <PageHeader eyebrow="Mi marca" title="Tu brújula" />
+        <GeneratingCard since={job!.createdAt.getTime()} />
+      </div>
+    );
+  }
 
   if (!manual) {
     return (
@@ -116,12 +133,13 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
         <Steps overview={overview} current="brujula" />
         <PageHeader eyebrow="Mi marca" title="Tu brújula" />
         {params.limite && <p className="rounded-xl bg-naranja-100 p-4 text-sm">Ya generaste varias veces seguidas. Intenta de nuevo en una hora.</p>}
-        {params.error && <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">No pudimos armar tu brújula con la IA. Tus respuestas están guardadas: intenta de nuevo en un momento y, si sigue pasando, avísanos.</p>}
+        {(params.error || failed) && <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">No pudimos armar tu brújula con la IA. Tus respuestas están guardadas: intenta de nuevo en un momento y, si sigue pasando, avísanos.</p>}
         {overview.story.ready ? (
           <Card className="flex flex-col gap-3">
             <p className="font-extrabold">Todo listo para armar tu brújula</p>
             <p className="text-sm text-ink-600">Con lo que nos contaste armamos tu nicho, tu público, tus pilares y tu tono. Después los revisas sección por sección.</p>
             <form action={generateManualAction}>
+              <PendingOverlay title="Empezando…" hint="Un momento." />
               <Button data-tour="generar-manual" type="submit" size="lg">
                 Generar mi brújula
               </Button>
@@ -192,6 +210,7 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
           Ver mi perfil de voz
         </Link>
         <form action={generateManualAction}>
+          <PendingOverlay title="Empezando…" hint="Un momento." />
           <button type="submit" className="tap font-semibold text-ink-600 underline underline-offset-4">
             Rehacer mi brújula
           </button>

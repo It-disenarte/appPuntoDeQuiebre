@@ -5,6 +5,7 @@ import { Button, Field, FormError } from "@/components/ui";
 import { confirmReportAction, type MetricsActionState } from "@/lib/metrics/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 import { KEY_FIELDS } from "@/lib/metrics/schemas";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 /** Paso de revisión: la IA pudo leer mal un número, así que el creador confirma o corrige antes de explicar. */
 export function ConfirmForm({ period, values }: { period: string; values: Record<string, number | null | undefined> }) {
@@ -19,7 +20,7 @@ export function ConfirmForm({ period, values }: { period: string; values: Record
         ))}
       </div>
       <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Armando tu informe…" : "Están bien, explícame"}
+        {pending && <LoadingOverlay title="Armando tu informe…" />}{pending ? "Armando tu informe…" : "Están bien, explícame"}
       </Button>
     </form>
   );
