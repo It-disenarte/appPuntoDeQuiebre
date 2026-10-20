@@ -31,6 +31,13 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   const [elapsed, setElapsed] = useState(0);
   const [take, setTake] = useState<{ url: string; blob: Blob; seconds: number; mime: string } | null>(null);
   const [queue, setQueue] = useState<(QueueItem & { pct?: number; msg?: string; waiting?: boolean })[]>([]);
+  /** Proporción real de lo que entrega la cámara (ancho/alto): la vista previa la respeta, sin recortar ni acercar. */
+  const [aspect, setAspect] = useState(9 / 16);
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
+  const [micId, setMicId] = useState("");
+  const [rawAudio, setRawAudio] = useState(false);
+  const [level, setLevel] = useState(0);
+  const [audioKey, setAudioKey] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
@@ -49,16 +56,104 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   }, []);
   useEffect(() => stopCamera, [stopCamera]);
 
+  const audioConstraints = (id: string, raw: boolean): MediaTrackConstraints => ({
+    ...(id ? { deviceId: { exact: id } } : {}),
+    echoCancellation: !raw,
+    noiseSuppression: !raw,
+    autoGainControl: !raw,
+  });
+
+  const refreshMics = useCallback(async () => {
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      setMics(all.filter((d) => d.kind === "audioinput"));
+    } catch {
+      /* sin lista: se queda el micrófono predeterminado */
+    }
+  }, []);
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.addEventListener) return;
+    navigator.mediaDevices.addEventListener("devicechange", refreshMics); // al conectar o quitar un micrófono
+    return () => navigator.mediaDevices.removeEventListener("devicechange", refreshMics);
+  }, [refreshMics]);
+
+  /** Cambia el micrófono sin reiniciar la cámara: se sustituye solo la pista de audio. */
+  async function changeMic(id: string, raw = rawAudio) {
+    const stream = streamRef.current;
+    if (!stream) return;
+    setError("");
+    try {
+      const next = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints(id, raw) });
+      stream.getAudioTracks().forEach((t) => (stream.removeTrack(t), t.stop()));
+      next.getAudioTracks().forEach((t) => stream.addTrack(t));
+      setMicId(id);
+      setRawAudio(raw);
+      setAudioKey((k) => k + 1);
+      try {
+        localStorage.setItem("pdq-mic", id);
+      } catch {
+        /* sin almacenamiento: no se recuerda */
+      }
+    } catch {
+      setError("No pudimos usar ese micrófono. Revisa que esté bien conectado y elige otro.");
+    }
+  }
+
+  // Medidor de nivel: sirve para comprobar que el micrófono elegido (p. ej. uno externo) de verdad está captando.
+  useEffect(() => {
+    const stream = streamRef.current;
+    if (phase === "apagada" || !stream || stream.getAudioTracks().length === 0) return;
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks())).connect(analyser);
+    const data = new Uint8Array(analyser.fftSize);
+    const timer = setInterval(() => {
+      analyser.getByteTimeDomainData(data);
+      let peak = 0;
+      for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
+      setLevel(Math.min(1, peak / 90));
+    }, 90);
+    return () => {
+      clearInterval(timer);
+      void ctx.close().catch(() => undefined);
+    };
+  }, [phase === "apagada", audioKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function startCamera() {
     setError("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return setError("Este navegador no puede grabar video. Prueba con Chrome o Safari actualizado.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", aspectRatio: { ideal: 3 / 4 }, width: { ideal: 1080 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } }, audio: { echoCancellation: true, noiseSuppression: true } });
+      let remembered = "";
+      try {
+        remembered = localStorage.getItem("pdq-mic") ?? "";
+      } catch {
+        /* sin almacenamiento */
+      }
+      // Vertical completo (9:16), como el modo video de la cámara del teléfono: sin recortar el encuadre.
+      const video: MediaTrackConstraints = { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } };
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: audioConstraints(remembered, rawAudio) });
+      } catch (err) {
+        // Si el micrófono recordado ya no está conectado, se vuelve al predeterminado.
+        if (!remembered || (err as DOMException).name === "NotAllowedError") throw err;
+        remembered = "";
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: audioConstraints("", rawAudio) });
+      }
+      setMicId(remembered);
+      setAudioKey((k) => k + 1);
+      void refreshMics();
       streamRef.current = stream;
       // Si la cámara permite acercar, se deja sin zoom para ver todo el encuadre (best-effort: no todos los celulares lo ofrecen).
       const track = stream.getVideoTracks()[0];
       const zoom = (track?.getCapabilities?.() as { zoom?: { min: number } } | undefined)?.zoom;
+      // Zoom en 1× (el mínimo que ofrece la cámara), igual que la app de cámara; algunos teléfonos arrancan acercados.
       if (track && zoom) await track.applyConstraints({ advanced: [{ zoom: zoom.min } as MediaTrackConstraintSet] }).catch(() => undefined);
+      const st = track?.getSettings?.();
+      if (st?.width && st?.height) setAspect(st.width / st.height);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
@@ -257,10 +352,10 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
 
       <div className="relative overflow-hidden rounded-card bg-ink-800">
         {phase === "revision" && take ? (
-          <video src={take.url} controls playsInline className="mx-auto aspect-3/4 h-[42dvh] w-auto max-w-full bg-negro object-cover" />
+          <video src={take.url} controls playsInline style={{ aspectRatio: aspect }} className="mx-auto h-[52dvh] w-auto max-w-full bg-negro object-contain" />
         ) : (
-          <div className="relative mx-auto aspect-3/4 h-[42dvh] w-auto max-w-full bg-negro">
-            <video ref={videoRef} muted playsInline className="size-full -scale-x-100 object-cover" />
+          <div style={{ aspectRatio: aspect }} className="relative mx-auto h-[52dvh] w-auto max-w-full bg-negro">
+            <video ref={videoRef} muted playsInline className="size-full -scale-x-100 object-contain" />
             {phase === "apagada" && (
               <div className="absolute inset-0 grid place-items-center p-6 text-center">
                 <div className="flex flex-col items-center gap-3">
@@ -291,6 +386,38 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         )}
         <p className="p-3 text-center text-xs text-ink-400">{phase === "revision" ? "Míralo. Si no te convence, repite la parte." : "Coloca tu cara dentro de la guía · Luz frente a ti · Celular a la altura de los ojos"}</p>
       </div>
+
+      {phase !== "apagada" && phase !== "revision" && (
+        <div className="flex flex-col gap-2 rounded-xl bg-ink-800 p-3 text-sm">
+          <label htmlFor="mic" className="font-semibold">
+            Micrófono
+          </label>
+          <select
+            id="mic"
+            value={micId}
+            onChange={(e) => void changeMic(e.target.value)}
+            disabled={phase === "cuenta" || phase === "grabando"}
+            className="h-11 rounded-lg border border-ink-600 bg-ink-900 px-3 text-base text-blanco disabled:opacity-50"
+          >
+            <option value="">Predeterminado del teléfono</option>
+            {mics
+              .filter((m) => m.deviceId && m.deviceId !== "default")
+              .map((m, i) => (
+                <option key={m.deviceId} value={m.deviceId}>
+                  {m.label || `Micrófono ${i + 1}`}
+                </option>
+              ))}
+          </select>
+          <div className="h-2 overflow-hidden rounded-full bg-ink-700" role="meter" aria-label="Nivel del micrófono" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level * 100)}>
+            <div className="h-full rounded-full bg-exito transition-[width] duration-100" style={{ width: `${Math.round(level * 100)}%` }} />
+          </div>
+          <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Si conectas un micrófono externo, elígelo aquí.</p>
+          <label className="flex items-center gap-2 text-xs text-ink-300">
+            <input type="checkbox" checked={rawAudio} onChange={(e) => void changeMic(micId, e.target.checked)} disabled={phase === "cuenta" || phase === "grabando"} className="size-4 accent-blanco" />
+            Audio sin filtros (recomendado con micrófono externo)
+          </label>
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="rounded-xl bg-alerta/15 p-3 text-sm text-blanco">
