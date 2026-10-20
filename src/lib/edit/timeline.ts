@@ -2,7 +2,7 @@
 import { CUT_MARGIN_S, MAX_FINAL_SECONDS, type Overrides, type Plan } from "./schemas";
 
 export type Range = { a: number; b: number };
-export type Segment = Range & { offset: number };
+export type Segment = Range & { offset: number; tramo?: number; silent?: boolean };
 
 /** Cortes que SÍ se aplican: se quitan los restaurados y cada uno se achica 0.05 s por lado para no comerse sílabas. */
 export function activeCuts(cortes: Plan["cortes"], restored: number[], margin = CUT_MARGIN_S): Range[] {
@@ -38,6 +38,53 @@ export function keepSegments(duration: number, cuts: Range[]): Segment[] {
   }
   if (duration > cursor + 0.01) segs.push({ a: cursor, b: duration, offset });
   return segs;
+}
+
+/** Pedazos de un tramo (modo mixto). Sin tramo se usan todos. */
+export const segsFor = (segs: Segment[], tramo?: number) => (tramo === undefined ? segs : segs.filter((s) => s.tramo === tramo));
+
+/**
+ * Línea de tiempo del modo mixto: los tramos en el orden que pidió la IA (pueden repetir un pedazo, el gancho prestado). Lo que se
+ * corta por privacidad se resta de cada tramo. Los apoyos con audio en silencio se marcan para quitarles el sonido.
+ */
+export function mixtoSegments(plan: Plan, duration: number): Segment[] {
+  const cuts = plan.privacidad
+    .filter((p) => p.accion === "cortar")
+    .map((p) => ({ a: p.inicio_s, b: p.fin_s }))
+    .sort((x, y) => x.a - y.a);
+  const out: Segment[] = [];
+  let offset = 0;
+  for (const l of plan.linea_de_tiempo) {
+    const lo = Math.max(0, l.inicio_s);
+    const hi = Math.min(duration, l.fin_s);
+    if (hi - lo < 0.1) continue;
+    const inside = cuts.filter((c) => c.b > lo && c.a < hi).map((c) => ({ a: Math.max(c.a, lo), b: Math.min(c.b, hi) }));
+    // El tramo menos lo que se corta por privacidad.
+    const parts: Range[] = [];
+    let cursor = lo;
+    for (const c of inside) {
+      if (c.a > cursor + 0.02) parts.push({ a: cursor, b: c.a });
+      cursor = Math.max(cursor, c.b);
+    }
+    if (hi > cursor + 0.02) parts.push({ a: cursor, b: hi });
+    for (const s of parts) {
+      if (s.b - s.a < 0.1) continue;
+      out.push({ a: s.a, b: s.b, offset, tramo: l.tramo, silent: l.audio === "silencio" });
+      offset += s.b - s.a;
+    }
+  }
+  return out;
+}
+
+/** Segmentos de un plan según su modo: a cámara (original menos cortes) o mixto (la línea de tiempo). */
+export function planSegments(plan: Plan, overrides: Overrides, duration: number): Segment[] {
+  if (plan.modo === "mixto" && plan.linea_de_tiempo.length > 0) return mixtoSegments(plan, duration);
+  return keepSegments(duration, activeCuts(plan.cortes, overrides.restored));
+}
+
+/** Rangos del video editado que se difuminan por privacidad (modo mixto). */
+export function blurRanges(plan: Plan, segs: Segment[]): Range[] {
+  return plan.privacidad.filter((p) => p.accion === "difuminar").flatMap((p) => mapRange(p.inicio_s, p.fin_s, segs));
 }
 
 export const editedDuration = (segs: Segment[]) => segs.reduce((s, x) => s + (x.b - x.a), 0);
@@ -85,8 +132,8 @@ export function zoomExpression(plan: Plan, segs: Segment[], lowRes = false): str
     const rp = Math.min(ramp, (r.b - r.a) / 2);
     terms.push(`${f(extra)}*min(clip((t-${f(r.a)})/${f(rp)},0,1),clip((${f(r.b)}-t)/${f(rp)},0,1))`);
   };
-  for (const e of plan.encuadres) for (const r of mapRange(e.inicio_s, e.fin_s, segs)) add(r, Math.min(PLANO_ZOOM[e.plano], 1 + (cap - 1)) - 1, 0.25);
-  for (const z of plan.zooms) for (const r of mapRange(z.inicio_s, z.fin_s, segs)) add(r, z.tipo === "golpe" ? 0.12 : 0.08, z.tipo === "golpe" ? 0.1 : 0.6);
+  for (const e of plan.encuadres) for (const r of mapRange(e.inicio_s, e.fin_s, segsFor(segs, e.tramo))) add(r, Math.min(PLANO_ZOOM[e.plano], 1 + (cap - 1)) - 1, 0.25);
+  for (const z of plan.zooms) for (const r of mapRange(z.inicio_s, z.fin_s, segsFor(segs, z.tramo))) add(r, z.tipo === "golpe" ? 0.12 : 0.08, z.tipo === "golpe" ? 0.1 : 0.6);
   if (terms.length === 0) return "1";
   return `min(${f(cap)},1+${terms.join("+")})`;
 }
@@ -176,7 +223,7 @@ export function buildAss({ plan, overrides, segs, kit, width = 1080, height = 19
   plan.textos_pantalla.forEach((t, i) => {
     const text = overrides.titles[String(i)] ?? t.texto;
     const style = t.tipo === "gancho" ? "Hook" : t.tipo === "cta" ? "Cta" : "Section";
-    for (const r of mapRange(t.inicio_s, t.fin_s, segs)) {
+    for (const r of mapRange(t.inicio_s, t.fin_s, segsFor(segs, t.tramo))) {
       if (t.tipo === "gancho") hooks.push(r);
       const shown = kit.uppercase ? clean(text).toUpperCase() : clean(text);
       events.push(`Dialogue: 1,${ts(r.a)},${ts(r.b)},${style},,0,0,0,,${shown}`);
@@ -185,7 +232,7 @@ export function buildAss({ plan, overrides, segs, kit, width = 1080, height = 19
 
   plan.subtitulos.lineas.forEach((l, i) => {
     const text = overrides.subtitles[String(i)] ?? l.texto;
-    for (const r of mapRange(l.inicio_s, l.fin_s, segs)) {
+    for (const r of mapRange(l.inicio_s, l.fin_s, segsFor(segs, l.tramo))) {
       if (hooks.some((h) => r.a < h.b && r.b > h.a)) continue; // mientras está el gancho en pantalla no se repite en subtítulos
       events.push(`Dialogue: 0,${ts(r.a)},${ts(r.b)},Sub,,0,0,0,,${highlight(text, l.resaltar, kit.highlightColor, kit.textColor)}`);
     }
@@ -225,7 +272,7 @@ export type Warning = { code: "duracion" | "sin_gancho"; text: string };
 
 /** Avisos para el creador: el video pasa de 61 s (por ejemplo, al restaurar un corte) o no trae texto de gancho. */
 export function checkPlan(plan: Plan, overrides: Overrides, duration: number): { finalSeconds: number; warnings: Warning[] } {
-  const segs = keepSegments(duration, activeCuts(plan.cortes, overrides.restored));
+  const segs = planSegments(plan, overrides, duration);
   const finalSeconds = editedDuration(segs);
   const warnings: Warning[] = [];
   if (finalSeconds > MAX_FINAL_SECONDS + 0.5) warnings.push({ code: "duracion", text: `El video quedaría de ${Math.round(finalSeconds)} s y pasa de ${MAX_FINAL_SECONDS} s. Quita algo o déjalo si así lo prefieres.` });

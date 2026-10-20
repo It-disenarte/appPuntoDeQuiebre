@@ -32,10 +32,14 @@ export const planSchema = z
     duracion_original_s: n.default(0),
     duracion_final_s: n.default(0),
     cortes: z.array(z.object({ inicio_s: n, fin_s: n, motivo: z.enum(CUT_REASONS).catch("silencio"), texto: str.default("") }).passthrough()).default([]),
-    subtitulos: z.object({ lineas: z.array(z.object({ inicio_s: n, fin_s: n, texto: str, resaltar: z.array(str).default([]) }).passthrough()).default([]) }).passthrough().default({ lineas: [] }),
-    zooms: z.array(z.object({ inicio_s: n, fin_s: n, tipo: z.enum(["acercamiento_suave", "golpe"]).catch("acercamiento_suave"), motivo: str.default("") }).passthrough()).default([]),
-    textos_pantalla: z.array(z.object({ tipo: z.enum(["gancho", "seccion", "cta"]).catch("seccion"), inicio_s: n, fin_s: n, texto: str, estilo: str.default("") }).passthrough()).default([]),
-    encuadres: z.array(z.object({ inicio_s: n, fin_s: n, plano: z.enum(["normal", "cercano", "muy_cercano"]).catch("normal") }).passthrough()).default([]),
+    subtitulos: z.object({ lineas: z.array(z.object({ inicio_s: n, fin_s: n, texto: str, resaltar: z.array(str).default([]), tramo: n.optional() }).passthrough()).default([]) }).passthrough().default({ lineas: [] }),
+    zooms: z.array(z.object({ inicio_s: n, fin_s: n, tipo: z.enum(["acercamiento_suave", "golpe"]).catch("acercamiento_suave"), motivo: str.default(""), tramo: n.optional() }).passthrough()).default([]),
+    textos_pantalla: z.array(z.object({ tipo: z.enum(["gancho", "seccion", "cta"]).catch("seccion"), inicio_s: n, fin_s: n, texto: str, estilo: str.default(""), tramo: n.optional() }).passthrough()).default([]),
+    encuadres: z.array(z.object({ inicio_s: n, fin_s: n, plano: z.enum(["normal", "cercano", "muy_cercano"]).catch("normal"), tramo: n.optional() }).passthrough()).default([]),
+    /** Solo en modo mixto: el orden final del video (tiempos del original; un tramo puede repetir un pedazo, el gancho prestado). */
+    linea_de_tiempo: z.array(z.object({ tramo: n, tipo: z.enum(["gancho_prestado", "habla", "apoyo"]).catch("habla"), inicio_s: n, fin_s: n, audio: z.enum(["propio", "silencio"]).catch("propio"), que_se_ve: str.default("") }).passthrough()).default([]),
+    /** Solo en modo mixto: lo que se difumina o se corta por privacidad. */
+    privacidad: z.array(z.object({ inicio_s: n, fin_s: n, accion: z.enum(["difuminar", "cortar"]).catch("difuminar"), porque: str.default("") }).passthrough()).default([]),
     portada: z.object({ segundo: n.default(0), porque: str.default(""), titulo: str.default(""), resaltar: str.default(""), elementos: z.array(str).default([]) }).passthrough().nullable().default(null),
     sugerencia_audio: str.default(""),
     resumen: z.array(str).default([]),
@@ -72,6 +76,10 @@ export function normalizePlan(p: Plan, duration: number): Plan {
   // Los planos cubren el video en orden y sin traslapes; si repite el mismo plano seguido se junta con el anterior.
   const planos: Plan["encuadres"] = [];
   for (const e of p.encuadres.map(span).filter(ok).sort((a, b) => a.inicio_s - b.inicio_s)) {
+    if (e.tramo !== undefined) {
+      planos.push(e); // en modo mixto cada plano pertenece a su tramo
+      continue;
+    }
     const last = planos.at(-1);
     const start = last ? Math.max(e.inicio_s, last.fin_s) : e.inicio_s;
     if (e.fin_s - start <= 0.05) continue;
@@ -82,6 +90,8 @@ export function normalizePlan(p: Plan, duration: number): Plan {
     ...p,
     duracion_original_s: D,
     cortes,
+    linea_de_tiempo: p.linea_de_tiempo.map(span).filter(ok).map((l, i) => ({ ...l, tramo: i + 1 })),
+    privacidad: p.privacidad.map(span).filter(ok),
     zooms: p.zooms.map(span).filter(ok).sort((a, b) => a.inicio_s - b.inicio_s),
     subtitulos: { ...p.subtitulos, lineas: p.subtitulos.lineas.map(span).filter((l) => ok(l) && l.texto.trim().length > 0).sort((a, b) => a.inicio_s - b.inicio_s) },
     textos_pantalla: p.textos_pantalla.map(span).filter((t) => ok(t) && t.texto.trim().length > 0),

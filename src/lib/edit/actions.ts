@@ -26,7 +26,7 @@ async function guarded(fd: FormData, run: (userId: string, pieceId: string) => P
   return { ok: true };
 }
 
-export const requestEditAction = async (_p: EditActionState, fd: FormData) => guarded(fd, requestEdit, true);
+export const requestEditAction = async (_p: EditActionState, fd: FormData) => guarded(fd, (u, p) => requestEdit(u, p, str(fd, "modo") === "mixto" ? "mixto" : "a_camara"), true);
 export const requestRenderAction = async (_p: EditActionState, fd: FormData) => guarded(fd, requestRender, true);
 export const requestAdjustAction = async (_p: EditActionState, fd: FormData) => guarded(fd, (u, p) => requestAdjust(u, p, str(fd, "nota")), true);
 

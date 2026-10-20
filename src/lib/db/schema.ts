@@ -924,6 +924,8 @@ export const videoEdits = pgTable(
     pieceId: uuid("piece_id")
       .notNull()
       .references(() => contentPieces.id, { onDelete: "cascade" }),
+    /** "a_camara": solo habla a cámara; "mixto": habla y además hay tomas de apoyo (skill 13). */
+    mode: text("mode", { enum: ["a_camara", "mixto"] }).notNull().default("a_camara"),
     status: text("status", { enum: ["planeando", "revision", "renderizando", "lista", "error"] }).notNull().default("planeando"),
     plan: jsonb("plan").$type<unknown>(),
     words: jsonb("words").$type<unknown>(),

@@ -1,0 +1,1 @@
+ALTER TABLE "video_edits" ADD COLUMN "mode" text DEFAULT 'a_camara' NOT NULL;

@@ -69,7 +69,14 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
       {!edit && !recipe && modo === "camara" && (
         <>
           <p className="text-sm text-ink-300">Quitamos silencios y muletillas, ponemos subtítulos con tu kit, acercamientos y tu gancho en pantalla (máximo {MAX_FINAL_SECONDS} s). Tú revisas antes de armarlo.</p>
-          {exp?.status === "lista" ? <RequestEditButton pieceId={pieceId} /> : <p className="text-xs text-ink-300">Primero arma tu video completo (arriba) y aquí podrás mandarlo a edición.</p>}
+          {exp?.status === "lista" ? <RequestEditButton pieceId={pieceId} modo="a_camara" /> : <p className="text-xs text-ink-300">Primero arma tu video completo (arriba) y aquí podrás mandarlo a edición.</p>}
+        </>
+      )}
+
+      {!edit && !recipe && modo === "mixto" && (
+        <>
+          <p className="text-sm text-ink-300">Para videos donde hablas y además hay tomas (detrás de cámaras). La IA ve tu video y: pone al inicio tu frase más fuerte si no empiezas con gancho, acomoda las tomas sin voz como apoyo de 1 a 3 s, quita pláticas con otras personas y difumina nombres, mensajes o números que se vean (máximo {MAX_FINAL_SECONDS} s).</p>
+          {exp?.status === "lista" ? <RequestEditButton pieceId={pieceId} modo="mixto" /> : <p className="text-xs text-ink-300">Primero arma tu video completo (arriba) y aquí podrás mandarlo a edición.</p>}
         </>
       )}
 
@@ -86,7 +93,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
           <p role="alert" className="text-sm text-alerta-100">
             {edit.status === "error" ? `No pudimos editarlo: ${edit.error ?? "algo falló"}.` : "La edición está tardando más de lo normal."}
           </p>
-          <RequestEditButton pieceId={pieceId} label="Reintentar" />
+          <RequestEditButton pieceId={pieceId} label="Reintentar" modo={edit.mode} />
         </div>
       )}
 
@@ -126,6 +133,34 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
             </div>
           )}
 
+          {plan.modo === "mixto" && (
+            <details className="rounded-xl bg-ink-700 p-3" open>
+              <summary className="cursor-pointer text-sm font-semibold">Así quedó el orden de tu video</summary>
+              <ol className="mt-2 flex flex-col gap-1 text-sm">
+                {plan.linea_de_tiempo.map((l) => (
+                  <li key={l.tramo}>
+                    {l.tramo}. {l.tipo === "gancho_prestado" ? "Tu frase más fuerte, al inicio" : l.tipo === "apoyo" ? "Toma de apoyo (sin sonido)" : "Tú hablando"} <span className="text-xs text-ink-300">· {clock(l.inicio_s)}–{clock(l.fin_s)}{l.que_se_ve ? ` · ${l.que_se_ve}` : ""}</span>
+                  </li>
+                ))}
+              </ol>
+              {plan.privacidad.length > 0 && (
+                <div className="mt-3 text-sm">
+                  <p className="font-semibold">Por privacidad:</p>
+                  <ul className="list-disc pl-5">
+                    {plan.privacidad.map((p, i) => (
+                      <li key={i}>
+                        {p.accion === "difuminar" ? "Difuminé" : "Corté"} {clock(p.inicio_s)}–{clock(p.fin_s)}
+                        {p.porque ? ` · ${p.porque}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-ink-300">En el modo mixto los cortes se cambian con «Pedir un cambio».</p>
+            </details>
+          )}
+
+          {plan.modo !== "mixto" && (
           <details className="rounded-xl bg-ink-700 p-3">
             <summary className="cursor-pointer text-sm font-semibold">Ver lo que quité ({plan.cortes.length})</summary>
             <ul className="mt-2 flex flex-col gap-2 text-sm">
@@ -150,6 +185,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
               })}
             </ul>
           </details>
+          )}
 
           <details className="rounded-xl bg-ink-700 p-3">
             <summary className="cursor-pointer text-sm font-semibold">Textos en pantalla y subtítulos</summary>

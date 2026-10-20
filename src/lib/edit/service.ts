@@ -1,6 +1,6 @@
 import "server-only";
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -9,6 +9,7 @@ import type { ReadableStream as NodeWebStream } from "node:stream/web";
 import { randomUUID } from "node:crypto";
 import { and, count, eq, gte, ne } from "drizzle-orm";
 import { getLimits } from "@/lib/admin/limits";
+import { claudeConfigured, claudeWithImages } from "@/lib/ai/claude";
 import { geminiConfigured, geminiGenerate, parseJson } from "@/lib/ai/gemini";
 import { getSubscription } from "@/lib/billing/service";
 import { getManual, getVoiceProfile } from "@/lib/brujula/service";
@@ -20,14 +21,14 @@ import { getPiece, parseScript } from "@/lib/plan/service";
 import { sendToUser } from "@/lib/push";
 import { getExport } from "@/lib/recording/join";
 import { probeVideo, runFfmpeg } from "@/lib/recording/ffmpeg";
-import { runEdicion } from "@/lib/skills";
+import { extractJson, runEdicion } from "@/lib/skills";
 import type { VideoGuion } from "@/lib/skills/schemas";
 import { deleteObject, getObject, putObjectStream, storageConfigured } from "@/lib/storage";
 import { resolveKitFont, stageFonts } from "./fonts";
-import { mockPlan, mockWords } from "./mock";
-import { audioArgs, buildFilterScript, coverArgs, editArgs } from "./render-args";
+import { mockMixtoPlan, mockPlan, mockWords } from "./mock";
+import { audioArgs, buildFilterScript, coverArgs, editArgs, frameArgs } from "./render-args";
 import { EMPTY_OVERRIDES, MAX_ADJUSTMENTS, normalizePlan, overridesSchema, planSchema, wordsSchema, type Overrides, type Plan, type Word } from "./schemas";
-import { activeCuts, buildAss, buildCoverAss, checkPlan, keepSegments, type AssStyleKit } from "./timeline";
+import { buildAss, buildCoverAss, checkPlan, planSegments, type AssStyleKit } from "./timeline";
 
 export type Edit = typeof videoEdits.$inferSelect;
 type Result = { ok: true } | { ok: false; error: string };
@@ -64,7 +65,7 @@ export async function editQuota(userId: string): Promise<{ allowed: boolean; use
 
 /* ───────────── Pedir la edición ───────────── */
 
-export async function requestEdit(userId: string, pieceId: string): Promise<Result> {
+export async function requestEdit(userId: string, pieceId: string, mode: "a_camara" | "mixto" = "a_camara"): Promise<Result> {
   const q = await editQuota(userId);
   if (!q.allowed) return { ok: false, error: "La edición automática es del plan Pro." };
   const piece = await getPiece(userId, pieceId);
@@ -76,11 +77,11 @@ export async function requestEdit(userId: string, pieceId: string): Promise<Resu
   if (!cur && q.used >= q.limit) return { ok: false, error: `Ya usaste tus ${q.limit} ediciones de este mes. Se renuevan el día 1.` };
   if (cur) {
     // Volver a empezar desde cero (el cupo del mes ya se contó la primera vez).
-    await db().update(videoEdits).set({ status: "planeando", plan: null, words: null, overrides: EMPTY_OVERRIDES, adjustments: 0, adjustNote: null, error: null }).where(eq(videoEdits.id, cur.id));
+    await db().update(videoEdits).set({ mode, status: "planeando", plan: null, words: null, overrides: EMPTY_OVERRIDES, adjustments: 0, adjustNote: null, error: null }).where(eq(videoEdits.id, cur.id));
     await enqueue("edicion.planear", userId, { editId: cur.id });
     return { ok: true };
   }
-  const [row] = await db().insert(videoEdits).values({ userId, pieceId }).returning({ id: videoEdits.id });
+  const [row] = await db().insert(videoEdits).values({ userId, pieceId, mode }).returning({ id: videoEdits.id });
   await enqueue("edicion.planear", userId, { editId: row!.id });
   return { ok: true };
 }
@@ -99,6 +100,7 @@ async function mutateOverrides(userId: string, pieceId: string, fn: (o: Override
 
 export const toggleCut = (userId: string, pieceId: string, index: number) =>
   mutateOverrides(userId, pieceId, (o, plan) => {
+    if (plan.modo === "mixto") return "En el modo mixto los cortes se cambian con “Pedir un cambio”.";
     if (index < 0 || index >= plan.cortes.length) return "Ese corte no existe.";
     const restored = o.restored.includes(index) ? o.restored.filter((i) => i !== index) : [...o.restored, index];
     return { ...o, restored };
@@ -232,7 +234,7 @@ export async function runPlan(userId: string, editId: string): Promise<void> {
     const input13 = {
       creador_id: userId,
       plan: "pro",
-      modo: "a_camara",
+      modo: e.mode,
       video: { duracion_s: duration, red_destino: ["instagram"], formato: "reel" },
       pieza: { pilar: piece.pillar, tema: piece.topic, guion: { gancho: script.gancho, desarrollo: script.cuerpo.join(" "), cierre_cta: script.cierre } },
       transcripcion: { palabras: words },
@@ -243,11 +245,34 @@ export async function runPlan(userId: string, editId: string): Promise<void> {
       coach: null,
       ajuste: { numero: e.adjustments, anterior: previous, nota: e.adjustNote },
     };
-    const r = await runEdicion(userId, input13, planSchema, () => mockPlan(words, duration, { hook: script.gancho, cta: script.cierre, topic: piece.topic, perLine: ak.perLine, highlight: manual?.content.palabras_si?.[0] }));
-    const plan = normalizePlan(r.output, duration);
+    const ctx13 = { hook: script.gancho, cta: script.cierre, topic: piece.topic, perLine: ak.perLine, highlight: manual?.content.palabras_si?.[0] };
+    let rawPlan: Plan;
+    let planMock = mock;
+    if (e.mode === "mixto") {
+      // Modo mixto: la IA además VE el video (un fotograma cada 3 s) para elegir apoyos, gancho prestado y lo que hay que difuminar.
+      if (claudeConfigured()) {
+        const pattern = path.join(dir, "f-%03d.jpg");
+        await runFfmpeg(frameArgs(input, pattern, 3, 50));
+        const frames = (await readdir(dir)).filter((n) => n.startsWith("f-") && n.endsWith(".jpg")).sort();
+        const images = await Promise.all(frames.map((n) => readFile(path.join(dir, n))));
+        const skillText = await readFile(path.join(process.cwd(), "skills", "edicion", "v1", "skill.md"), "utf8");
+        const mixInput = { ...input13, modo: "mixto", clips: [{ id: "c1", duracion_s: Math.round(duration * 10) / 10, fotogramas: frames.map((_, k) => ({ segundo: k * 3, url: "imagen adjunta, en orden" })), transcripcion: null }] };
+        const resp = await claudeWithImages(skillText, `Entrada:\n${JSON.stringify(mixInput)}\n\nLas imágenes son los fotogramas del video, uno cada 3 segundos, en orden. Responde solo con el JSON de salida del modo mixto.`, images);
+        rawPlan = { ...planSchema.parse(extractJson(resp.text)), modo: "mixto" };
+        await logCall(userId, "edicion-mixto", false, "ok", { i: resp.inputTokens, o: resp.outputTokens });
+      } else {
+        rawPlan = mockMixtoPlan(words, duration, ctx13);
+        planMock = true;
+      }
+    } else {
+      const r = await runEdicion(userId, input13, planSchema, () => mockPlan(words, duration, ctx13));
+      rawPlan = r.output;
+      planMock = planMock || r.mock;
+    }
+    const plan = normalizePlan(rawPlan, duration);
     await db()
       .update(videoEdits)
-      .set({ status: "revision", plan, words: { palabras: words }, duration: Math.round(duration), overrides: e.adjustments > 0 ? { ...EMPTY_OVERRIDES } : parseOverrides(e.overrides), mock: mock || r.mock, error: null })
+      .set({ status: "revision", plan, words: { palabras: words }, duration: Math.round(duration), overrides: e.adjustments > 0 ? { ...EMPTY_OVERRIDES } : parseOverrides(e.overrides), mock: planMock, error: null })
       .where(eq(videoEdits.id, editId));
   } catch (err) {
     await db().update(videoEdits).set({ status: "error", error: (err instanceof Error ? err.message : "No se pudo planear la edición").slice(0, 300) }).where(eq(videoEdits.id, editId));
@@ -287,7 +312,7 @@ export async function runRender(userId: string, editId: string): Promise<void> {
     await downloadTo(exp.objectKey, input);
     const info = await probeVideo(input);
     const duration = info.duration || e.duration || 0;
-    const segs = keepSegments(duration, activeCuts(plan.cortes, o.restored));
+    const segs = planSegments(plan, o, duration);
     const ak = await assKitOf(userId);
     const [tf, xf] = await Promise.all([resolveKitFont(ak.kit.titleFont, "titulo"), resolveKitFont(ak.kit.textFont, "texto")]);
     const fontsDir = path.join(dir, "fonts");

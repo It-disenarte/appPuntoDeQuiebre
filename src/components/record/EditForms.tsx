@@ -5,11 +5,12 @@ import { Button, FormError, TextAreaField } from "@/components/ui";
 import { requestAdjustAction, requestEditAction, requestRenderAction, setSubtitleAction, setTitleAction, type EditActionState } from "@/lib/edit/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 
-function Simple({ action, pieceId, label, busy, variant = "light" }: { action: (p: EditActionState, fd: FormData) => Promise<EditActionState>; pieceId: string; label: string; busy: string; variant?: "light" | "outline" | "ghost" }) {
+function Simple({ action, pieceId, label, busy, variant = "light", modo }: { action: (p: EditActionState, fd: FormData) => Promise<EditActionState>; pieceId: string; label: string; busy: string; variant?: "light" | "outline" | "ghost"; modo?: string }) {
   const [state, act, pending] = useActionState<EditActionState, FormData>(action, undefined);
   return (
     <form onSubmit={submitKeepingState(act)} className="flex flex-col gap-2">
       <input type="hidden" name="pieza" value={pieceId} />
+      {modo && <input type="hidden" name="modo" value={modo} />}
       <Button type="submit" variant={variant} disabled={pending} className={variant === "ghost" ? "self-start text-blanco hover:bg-ink-700" : "self-start"}>
         {pending ? busy : label}
       </Button>
@@ -22,7 +23,7 @@ function Simple({ action, pieceId, label, busy, variant = "light" }: { action: (
   );
 }
 
-export const RequestEditButton = ({ pieceId, label = "Mandar a edición" }: { pieceId: string; label?: string }) => <Simple action={requestEditAction} pieceId={pieceId} label={label} busy="Enviando…" />;
+export const RequestEditButton = ({ pieceId, label = "Mandar a edición", modo }: { pieceId: string; label?: string; modo?: "a_camara" | "mixto" }) => <Simple action={requestEditAction} pieceId={pieceId} label={label} busy="Enviando…" modo={modo} />;
 export const RenderButton = ({ pieceId }: { pieceId: string }) => <Simple action={requestRenderAction} pieceId={pieceId} label="Se ve bien, armar mi video" busy="Enviando…" />;
 
 export function AdjustForm({ pieceId, left }: { pieceId: string; left: number }) {

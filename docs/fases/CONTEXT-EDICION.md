@@ -11,3 +11,8 @@ Decisión (VPS de 2 núcleos y 7.8 GB compartido con otras apps): se usa **ffmpe
 - Retención: partes, video completo y editado se borran a los 30 días (worker diario 4:00).
 - Verificado con ffmpeg 9.0.2 real en Windows (`tests/ffmpeg-real.test.ts`, se activa con FFMPEG_BIN/FFPROBE_BIN): unión de partes 3:4/9:16/webm, filtro de edición y portada. NO verificado aún: el binario de Alpine en Docker, voz real con Gemini, plan de Claude real, ni el aspecto final a ojo.
 - Hallazgo: `-filter_complex_script` ya no existe en ffmpeg moderno; el filtro va como argumento directo.
+
+## Actualización: modo mixto y receta CapCut
+- **Receta CapCut** (`tomas sueltas`): hasta 8 tomas por video (`loose_clips`, 0021), la IA Claude ve fotogramas (cada 2 s, máx. 8 por toma) y entrega los pasos; el código fija el primer paso ("Crea un proyecto 9:16…"), el último ("Exporta en 1080p"), el paso de importar la fuente, ≤10 pasos y la fuente/colores del kit. Descarga de la TTF del kit en `/api/kit/fuente/<familia>`. Sin IA: receta por reglas.
+- **Modo mixto** (`video_edits.mode`, 0022): el plan agrega `linea_de_tiempo` (orden final; el gancho prestado repite un pedazo), `privacidad` (difuminar o cortar) y `tramo` en textos/zooms/planos. El render recorre los tiempos por tramo, silencia los apoyos y difumina con `boxblur`. Claude ve un fotograma cada 3 s (máx. 50). Los cortes no se restauran a mano en este modo (se piden con «Pedir un cambio»).
+- Verificado con ffmpeg 9 real: línea de tiempo con tramo repetido, apoyo en silencio, difuminado y corte de privacidad. NO verificado: Claude con imágenes real, Gemini con voz real, ni ffmpeg de Alpine.

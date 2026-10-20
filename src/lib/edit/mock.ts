@@ -54,3 +54,17 @@ export function mockPlan(words: Word[], duration: number, ctx: { hook: string; c
     dudas_transcripcion: [],
   });
 }
+
+/** Plan mixto por REGLAS (sin IA): un solo tramo hablado desde la primera hasta la última palabra, sin apoyos ni difuminados. */
+export function mockMixtoPlan(words: Word[], duration: number, ctx: Parameters<typeof mockPlan>[2]): Plan {
+  const base = mockPlan(words, duration, ctx);
+  const start = Math.max(0, (words[0]?.inicio_s ?? 0) - 0.15);
+  const end = Math.min(duration, (words.at(-1)?.fin_s ?? duration) + 0.5);
+  return planSchema.parse({
+    ...base,
+    modo: "mixto",
+    linea_de_tiempo: [{ tramo: 1, tipo: "habla", inicio_s: start, fin_s: end, audio: "propio", que_se_ve: "Tú hablando a cámara" }],
+    privacidad: [],
+    resumen: [...base.resumen.slice(0, 3), "Es una edición mixta de ejemplo: la IA real agrega apoyos y gancho prestado"],
+  });
+}

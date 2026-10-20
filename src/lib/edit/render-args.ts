@@ -1,6 +1,6 @@
 // Argumentos de ffmpeg de la edición (puros: se prueban sin ffmpeg). El filtro va como un solo argumento (sin shell).
 import { OUT_H, OUT_W } from "@/lib/recording/ffmpeg";
-import { zoomExpression, type Segment } from "./timeline";
+import { blurRanges, zoomExpression, type Segment } from "./timeline";
 import type { Plan } from "./schemas";
 
 /** Ruta lista para una opción de filtro: entre comillas simples y con los dos puntos escapados (sirve también con unidades de Windows). */
@@ -21,12 +21,19 @@ export function buildFilterScript(opts: { segs: Segment[]; plan: Plan; assPath: 
   const parts: string[] = [];
   segs.forEach((s, i) => {
     parts.push(`[0:v]trim=start=${s.a.toFixed(3)}:end=${s.b.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`);
-    parts.push(`[0:a]atrim=start=${s.a.toFixed(3)}:end=${s.b.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`);
+    parts.push(`[0:a]atrim=start=${s.a.toFixed(3)}:end=${s.b.toFixed(3)},asetpts=PTS-STARTPTS${s.silent ? ",volume=0" : ""}[a${i}]`);
   });
   parts.push(`${segs.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${segs.length}:v=1:a=1[vc][a]`);
   const z = zoomExpression(plan, segs, opts.lowRes);
   const hasZoom = z !== "1";
   let last = "vc";
+  // Privacidad (modo mixto): se difumina toda la imagen mientras se ve o se oye algo sensible.
+  const blur = blurRanges(plan, segs);
+  if (blur.length > 0) {
+    const when = blur.map((r) => `between(t,${r.a.toFixed(2)},${r.b.toFixed(2)})`).join("+");
+    parts.push(`[${last}]boxblur=luma_radius=40:luma_power=3:chroma_radius=40:chroma_power=3:enable='${when}'[vb]`);
+    last = "vb";
+  }
   if (hasZoom) {
     parts.push(`[${last}]scale=w='trunc(${OUT_W}*(${z})/2)*2':h=-2:eval=frame,crop=${OUT_W}:${OUT_H}:(iw-${OUT_W})/2:(ih-${OUT_H})*0.4[vz]`);
     last = "vz";
