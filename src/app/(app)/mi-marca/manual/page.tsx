@@ -122,7 +122,7 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
             <p className="font-extrabold">Todo listo para armar tu brújula</p>
             <p className="text-sm text-ink-600">Con lo que nos contaste armamos tu nicho, tu público, tus pilares y tu tono. Después los revisas sección por sección.</p>
             <form action={generateManualAction}>
-              <Button type="submit" size="lg">
+              <Button data-tour="generar-manual" type="submit" size="lg">
                 Generar mi brújula
               </Button>
             </form>
@@ -169,7 +169,7 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
         const ok = v?.voto === "si";
         const used = v?.ajustes ?? 0;
         return (
-          <Card key={s.id} id={s.id} className="flex flex-col gap-4 scroll-mt-4">
+          <Card key={s.id} id={s.id} data-tour="manual-seccion" className="flex flex-col gap-4 scroll-mt-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-extrabold">{s.title}</h2>
               {ok ? <Chip tone="exito">Aprobada</Chip> : used > 0 ? <Chip tone="naranja">Ajustada · falta tu calificación</Chip> : <Chip>Por calificar</Chip>}

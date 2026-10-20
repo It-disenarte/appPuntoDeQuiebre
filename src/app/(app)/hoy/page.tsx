@@ -85,7 +85,7 @@ export default async function HoyPage() {
               {overview.stepsDone} de {overview.stepsTotal} pasos listos. Con ella tus guiones sonarán a ti.
             </p>
           </div>
-          <ButtonLink href={nextStep.href} size="sm">
+          <ButtonLink data-tour="siguiente-paso-boton" href={nextStep.href} size="sm">
             {nextStep.text}
           </ButtonLink>
         </Card>
@@ -176,7 +176,7 @@ export default async function HoyPage() {
                 </Link>
               </>
             )}
-            <ButtonLink data-tour="ir-estudio" href="/grabar" variant="dark" className="mt-4">
+            <ButtonLink data-tour={nextStep ? undefined : "ir-estudio"} href="/grabar" variant="dark" className="mt-4">
               Ir al estudio
             </ButtonLink>
           </Card>

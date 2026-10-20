@@ -27,7 +27,7 @@ export default async function HorarioPage({ searchParams }: PageProps<"/mi-marca
 
       {editing ? (
         <>
-          <Card className="flex flex-col gap-3">
+          <Card data-tour="horario-info" className="flex flex-col gap-3">
             <p className="font-extrabold">Los creadores que crecen no son los que tienen más tiempo: son los que no fallan.</p>
             <p className="text-sm text-ink-700">Por eso apartamos días fijos en tu semana, como una cita contigo que no cambia cada vez.</p>
             <ul className="list-disc pl-5 text-sm text-ink-700">
@@ -39,7 +39,9 @@ export default async function HorarioPage({ searchParams }: PageProps<"/mi-marca
               Elige días que <strong>sí puedas cumplir</strong>, aunque sean pocos.
             </p>
           </Card>
-          <ScheduleForm initial={schedule?.answers ?? null} />
+          <div data-tour="horario-form">
+            <ScheduleForm initial={schedule?.answers ?? null} />
+          </div>
         </>
       ) : (
         r && (
@@ -93,7 +95,7 @@ export default async function HorarioPage({ searchParams }: PageProps<"/mi-marca
 
             {!accepted && (
               <form action={acceptScheduleAction}>
-                <Button type="submit" size="lg">
+                <Button data-tour="horario-aceptar" type="submit" size="lg">
                   Aceptar este horario
                 </Button>
               </form>

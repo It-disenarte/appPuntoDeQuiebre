@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
-import { TOUR_IDS, TOURS, tourForPath } from "@/lib/tour/tours";
+import { TOUR_IDS, TOURS, toursForPath } from "@/lib/tour/tours";
 
 const holder = vi.hoisted(() => ({ db: null as unknown, userId: "" }));
 vi.mock("@/lib/db", () => ({ db: () => holder.db }));
@@ -32,11 +32,15 @@ describe("asistente de inicio", () => {
         if (s.click) expect(s.target && s.path).toBeTruthy(); // un paso de “toca aquí” necesita su elemento y su pantalla
       }
     }
-    for (const p of ["/hoy", "/semana", "/grabar", "/progreso", "/mi-marca", "/carruseles", "/directos", "/tendencias", "/analizador"]) {
-      expect(TOUR_IDS).toContain(tourForPath(p, false));
+    const paths = ["/hoy", "/semana", "/grabar", "/progreso", "/mi-marca", "/carruseles", "/directos", "/tendencias", "/analizador", "/mi-marca/historia", "/mi-marca/historia/proposito", "/mi-marca/historia/elecciones", "/mi-marca/manual", "/mi-marca/kit", "/mi-marca/horario", "/mi-marca/voz"];
+    for (const p of paths) {
+      const ids = toursForPath(p, false);
+      expect(ids.length).toBeGreaterThan(0);
+      for (const id of ids) expect(TOUR_IDS).toContain(id);
     }
-    expect(tourForPath("/grabar", true)).toBe("grabar-estudio");
-    expect(tourForPath("/admin", false)).toBeNull();
+    expect(toursForPath("/grabar", true)).toEqual(["grabar-estudio"]);
+    expect(toursForPath("/mi-marca/historia/elecciones", false)).toEqual(["elecciones"]);
+    expect(toursForPath("/admin", false)).toEqual([]);
   });
 
   it("marca guías vistas sin repetir, ignora ids inventados y permite reiniciarlas", async () => {

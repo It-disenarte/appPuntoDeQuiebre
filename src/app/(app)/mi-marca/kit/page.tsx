@@ -68,7 +68,7 @@ export default async function KitPage({ searchParams }: PageProps<"/mi-marca/kit
             <p className="font-extrabold">
               {p.roundsDone} de {p.roundsTotal} rondas
             </p>
-            <ButtonLink href={stageUrl(current)} size="sm">
+            <ButtonLink data-tour="kit-siguiente" href={stageUrl(current)} size="sm">
               {p.roundsDone === 0 ? "Empezar" : "Continuar"}
             </ButtonLink>
           </div>

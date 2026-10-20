@@ -19,11 +19,19 @@ export const TOURS: Tour[] = [
     ],
   },
   {
+    id: "configuracion",
+    label: "Tu primera configuración",
+    steps: [
+      { title: "Primero, tu marca", text: "Son 4 pasos: tu historia, tu brújula, tu kit visual y tu horario. Te acompaño en cada uno." },
+      { target: "siguiente-paso-boton", click: true, path: "/hoy", title: "Empieza aquí", text: "Toca el botón y te llevo al primer paso pendiente." },
+    ],
+  },
+  {
     id: "hoy",
     label: "Hoy",
     steps: [
       { target: "pagina", title: "Tu día", text: "Aquí ves qué toca hoy. El número naranja es tu racha de días seguidos." },
-      { target: "siguiente-paso", title: "Lo primero", text: "Completa estos pasos de tu marca. Con ellos tus guiones suenan a ti." },
+      { target: "siguiente-paso", title: "Lo primero", text: "Completa los pasos de tu marca. Con ellos tus guiones suenan a ti." },
       { target: "metricas-pendientes", title: "Tus métricas", text: "Sube capturas de tu Instagram y te explico cómo te fue este mes." },
       { target: "racha", title: "Tu semana", text: "Un círculo por día. Naranja es cumplido; el azul es hoy." },
       { target: "tarea", title: "Tarea de hoy", text: "Lo que publicas hoy. Toca “Ver guion y textos” para ver qué decir." },
@@ -116,21 +124,82 @@ export const TOURS: Tour[] = [
       { target: "resultados", title: "Resultados", text: "Guarda las ideas que te gusten con la estrella." },
     ],
   },
+  {
+    id: "historia",
+    label: "Tu historia",
+    steps: [
+      { target: "historia-progreso", title: "Paso 1: tu historia", text: "Una pregunta a la vez, hablando o escribiendo. Cualquiera se puede saltar." },
+      { target: "historia-siguiente", click: true, path: "/mi-marca/historia", title: "Sigue", text: "Toca el botón para ir a la siguiente pregunta." },
+    ],
+  },
+  {
+    id: "historia-paso",
+    label: "Responder una pregunta",
+    steps: [{ target: "pregunta", title: "Cuéntamelo", text: "Habla o escribe como si se lo contaras a un amigo. No hay respuestas malas." }],
+  },
+  {
+    id: "elecciones",
+    label: "Elecciones rápidas",
+    steps: [{ target: "pagina", title: "Último paso de tu historia", text: "Unos toques y listo. Con esto armo tu brújula." }],
+  },
+  {
+    id: "manual",
+    label: "Genera tu brújula",
+    steps: [{ target: "generar-manual", click: true, path: "/mi-marca/manual", title: "Paso 2: tu brújula", text: "Con tu historia armo tu nicho, tu público, tus pilares y tu tono. Toca para generarla." }],
+  },
+  {
+    id: "manual-revision",
+    label: "Revisa tu brújula",
+    steps: [{ target: "manual-seccion", title: "Revisa cada sección", text: "Lee y dime Sí si te representa, o pide un ajuste. Al aprobar las 5, queda lista." }],
+  },
+  {
+    id: "kit",
+    label: "Tu kit visual",
+    steps: [
+      { target: "pagina", title: "Paso 3: tu kit visual", text: "Eliges jugando colores, letras y estilo de títulos. Son 5 rondas rápidas." },
+      { target: "kit-siguiente", click: true, path: "/mi-marca/kit", title: "Empieza", text: "Toca para ir a la primera ronda." },
+    ],
+  },
+  {
+    id: "horario",
+    label: "Tu horario",
+    steps: [
+      { target: "horario-info", title: "Paso 4: tu horario", text: "Apartamos días fijos para grabar. Elige los que sí puedas cumplir, aunque sean pocos." },
+      { target: "horario-form", title: "Respóndelo", text: "Contesta y guarda. Te propongo un horario para que lo aceptes." },
+    ],
+  },
+  {
+    id: "horario-propuesta",
+    label: "Acepta tu horario",
+    steps: [{ target: "horario-aceptar", click: true, path: "/mi-marca/horario", title: "Tu propuesta", text: "Si te acomoda, acéptala y te avisamos antes de cada sesión." }],
+  },
+  {
+    id: "voz",
+    label: "Tu perfil de voz",
+    steps: [{ target: "pagina", title: "Tu perfil de voz", text: "Describe cómo hablas para que todo lo que escribo suene a ti. Se arma con tu historia." }],
+  },
 ];
 
 export const tourById = (id: string) => TOURS.find((t) => t.id === id);
 export const TOUR_IDS = TOURS.map((t) => t.id);
 
-/** Guía que corresponde a una pantalla (null si no tiene). */
-export function tourForPath(pathname: string, hasPiece: boolean): string | null {
-  if (pathname === "/hoy") return "hoy";
-  if (pathname === "/semana") return "semana";
-  if (pathname === "/grabar") return hasPiece ? "grabar-estudio" : "grabar";
-  if (pathname === "/progreso") return "progreso";
-  if (pathname === "/mi-marca") return "mi-marca";
-  if (pathname === "/carruseles") return "carruseles";
-  if (pathname === "/directos") return "directos";
-  if (pathname === "/tendencias") return "tendencias";
-  if (pathname === "/analizador") return "analizador";
-  return null;
+/** Guías que corresponden a una pantalla, en orden de prioridad (se lanza la primera que no ha visto y tenga algo que mostrar). */
+export function toursForPath(pathname: string, hasPiece: boolean): string[] {
+  if (pathname === "/hoy") return ["configuracion", "hoy"];
+  if (pathname === "/semana") return ["semana"];
+  if (pathname === "/grabar") return [hasPiece ? "grabar-estudio" : "grabar"];
+  if (pathname === "/progreso") return ["progreso"];
+  if (pathname === "/mi-marca") return ["mi-marca"];
+  if (pathname === "/carruseles") return ["carruseles"];
+  if (pathname === "/directos") return ["directos"];
+  if (pathname === "/tendencias") return ["tendencias"];
+  if (pathname === "/analizador") return ["analizador"];
+  if (pathname === "/mi-marca/historia") return ["historia"];
+  if (/^\/mi-marca\/historia\/(?!elecciones$)[^/]+$/.test(pathname)) return ["historia-paso"];
+  if (pathname === "/mi-marca/historia/elecciones") return ["elecciones"];
+  if (pathname === "/mi-marca/manual") return ["manual", "manual-revision"];
+  if (pathname === "/mi-marca/kit") return ["kit"];
+  if (pathname === "/mi-marca/horario") return ["horario", "horario-propuesta"];
+  if (pathname === "/mi-marca/voz") return ["voz"];
+  return [];
 }

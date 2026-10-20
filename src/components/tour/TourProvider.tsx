@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { markTourSeenAction } from "@/lib/tour/actions";
-import { tourById, tourForPath, type TourStep } from "@/lib/tour/tours";
+import { tourById, toursForPath, type TourStep } from "@/lib/tour/tours";
 
 type Active = { id: string; steps: TourStep[] };
 type Box = { top: number; left: number; width: number; height: number };
@@ -23,11 +23,12 @@ function findTarget(name: string): Element | null {
   return null;
 }
 
-/** Pasos de una guía: se conservan los de otra pantalla (se esperan) y los de esta cuyo elemento existe. */
+/** Pasos de una guía: se conservan los de otra pantalla (se esperan) y los de esta cuyo elemento existe. Sin ningún paso con elemento, no hay guía. */
 function initialSteps(id: string, pathname: string): TourStep[] {
   const tour = tourById(id);
   if (!tour) return [];
-  return tour.steps.filter((s) => !s.target || (s.path && s.path !== pathname) || findTarget(s.target));
+  const steps = tour.steps.filter((s) => !s.target || (s.path && s.path !== pathname) || findTarget(s.target));
+  return steps.some((s) => s.target) ? steps : [];
 }
 
 export function TourProvider({ seen }: { seen: string[] }) {
@@ -48,7 +49,7 @@ export function TourProvider({ seen }: { seen: string[] }) {
   const [box, setBox] = useState<Box | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const sectionId = tourForPath(pathname, hasPiece);
+  const sectionIds = toursForPath(pathname, hasPiece);
   const step = active?.steps[i];
   const key = active ? `${active.id}:${i}` : "";
   const el = found?.key === key ? found.el : undefined; // undefined = aún no está listo
@@ -67,12 +68,14 @@ export function TourProvider({ seen }: { seen: string[] }) {
 
   // Primera vez en una pantalla: se lanza sola (en Hoy, primero el recorrido por las pestañas).
   useEffect(() => {
-    if (!sectionId || active) return;
-    const id = pathname === "/hoy" && !done.has("inicio") ? "inicio" : !done.has(sectionId) ? sectionId : null;
-    if (!id) return;
-    const t = setTimeout(() => start(id), 700);
+    if (sectionIds.length === 0 || active) return;
+    const t = setTimeout(() => {
+      const order = pathname === "/hoy" ? ["inicio", ...sectionIds] : sectionIds;
+      const id = order.find((x) => !done.has(x) && initialSteps(x, pathname).length > 0);
+      if (id) start(id);
+    }, 700);
     return () => clearTimeout(t);
-  }, [pathname, sectionId, active, done, start]);
+  }, [pathname, sectionIds.join(","), active, done, start]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finish = useCallback(() => {
     if (!active) return;
@@ -152,7 +155,7 @@ export function TourProvider({ seen }: { seen: string[] }) {
     if (ready && !step?.click) cardRef.current?.focus();
   }, [ready, step, i]);
 
-  const showHelp = !active && sectionId !== null && !(pathname === "/grabar" && hasPiece);
+  const showHelp = !active && sectionIds.length > 0 && !(pathname === "/grabar" && hasPiece);
   const prev = i > 0 ? active?.steps[i - 1] : undefined;
   const canGoBack = i > 0 && !prev?.click && !step?.path;
 
@@ -177,7 +180,10 @@ export function TourProvider({ seen }: { seen: string[] }) {
       {showHelp && (
         <button
           type="button"
-          onClick={() => sectionId && start(sectionId)}
+          onClick={() => {
+            const id = sectionIds.find((x) => initialSteps(x, pathname).length > 0);
+            if (id) start(id);
+          }}
           aria-label="Ver la guía de esta sección"
           className="tap pb-safe fixed bottom-24 left-4 z-40 grid size-11 place-items-center rounded-full bg-negro text-blanco shadow-card lg:bottom-6 lg:left-auto lg:right-6"
         >

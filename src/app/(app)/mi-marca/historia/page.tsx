@@ -23,21 +23,21 @@ export default async function HistoriaPage() {
         Una pregunta a la vez, hablando o escribiendo. Con esto armamos tu brújula y tu perfil de voz. <strong>No tienes que contar nada que no quieras:</strong> cualquier pregunta se puede saltar.
       </p>
 
-      <Card className="p-0">
+      <Card data-tour="historia-progreso" className="p-0">
         <div className="flex items-center justify-between gap-3 px-5 pt-5">
           <p className="font-extrabold">
             {p.done} de {p.total} preguntas
           </p>
           {p.nextStep ? (
-            <ButtonLink href={`/mi-marca/historia/${p.nextStep}`} size="sm">
+            <ButtonLink data-tour="historia-siguiente" href={`/mi-marca/historia/${p.nextStep}`} size="sm">
               {p.done === 0 ? "Empezar" : "Continuar"}
             </ButtonLink>
           ) : !p.quickDone ? (
-            <ButtonLink href="/mi-marca/historia/elecciones" size="sm">
+            <ButtonLink data-tour="historia-siguiente" href="/mi-marca/historia/elecciones" size="sm">
               Elecciones rápidas
             </ButtonLink>
           ) : (
-            <ButtonLink href="/mi-marca/manual" size="sm">
+            <ButtonLink data-tour="historia-siguiente" href="/mi-marca/manual" size="sm">
               Ver mi brújula
             </ButtonLink>
           )}

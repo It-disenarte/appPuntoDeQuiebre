@@ -25,7 +25,7 @@ export default async function PasoPage({ params }: PageProps<"/mi-marca/historia
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <Steps overview={overview} current="historia" />
       <PageHeader eyebrow={`Pregunta ${step.n} de ${STORY_STEPS.length}`} title={step.title} />
-      <Card className="flex flex-col gap-5">
+      <Card data-tour="pregunta" className="flex flex-col gap-5">
         <p className="text-lg font-semibold">{step.question}</p>
         <p className="text-sm text-ink-500">No tienes que contar nada que no quieras.</p>
         {step.kind === "venta" ? (
