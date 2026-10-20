@@ -21,6 +21,7 @@ import { deleteObject, getObject } from "@/lib/storage";
 import { frameArgs } from "./render-args";
 import { MAX_CLIPS, mockRecipe, recipeSchema, shapeRecipe, type Recipe, type RecipeClip } from "./recipe-schemas";
 import { MAX_ADJUSTMENTS } from "./schemas";
+import { VO_MAX_TOTAL_BYTES } from "./vo-rules";
 import { assKitOf, editQuota } from "./service";
 
 export type Clip = typeof looseClips.$inferSelect;
@@ -47,6 +48,7 @@ export async function canAddClip(userId: string, pieceId: string): Promise<Resul
   if (!q.allowed) return { ok: false, error: "La edición es del plan Pro." };
   const [{ n }] = await db().select({ n: count() }).from(looseClips).where(eq(looseClips.pieceId, pieceId));
   if ((n ?? 0) >= MAX_CLIPS) return { ok: false, error: `Máximo ${MAX_CLIPS} tomas.` };
+  if ((await (await import("./voiceover")).clipsBytes(pieceId)) >= VO_MAX_TOTAL_BYTES) return { ok: false, error: "Tus tomas ya pesan 1 GB en total. Quita alguna para subir más." };
   return { ok: true };
 }
 

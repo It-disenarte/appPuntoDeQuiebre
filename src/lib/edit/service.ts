@@ -65,7 +65,8 @@ export async function editQuota(userId: string): Promise<{ allowed: boolean; use
 
 /* ───────────── Pedir la edición ───────────── */
 
-export async function requestEdit(userId: string, pieceId: string, mode: "a_camara" | "mixto" = "a_camara"): Promise<Result> {
+export async function requestEdit(userId: string, pieceId: string, mode: "a_camara" | "mixto" | "voz_en_off" = "a_camara"): Promise<Result> {
+  if (mode === "voz_en_off") return (await import("./voiceover")).requestVoEdit(userId, pieceId);
   const q = await editQuota(userId);
   if (!q.allowed) return { ok: false, error: "La edición automática es del plan Pro." };
   const piece = await getPiece(userId, pieceId);
@@ -100,7 +101,7 @@ async function mutateOverrides(userId: string, pieceId: string, fn: (o: Override
 
 export const toggleCut = (userId: string, pieceId: string, index: number) =>
   mutateOverrides(userId, pieceId, (o, plan) => {
-    if (plan.modo === "mixto") return "En el modo mixto los cortes se cambian con “Pedir un cambio”.";
+    if (plan.modo === "mixto" || plan.modo === "voz_en_off") return "Los cortes de este modo se cambian con “Pedir un cambio”.";
     if (index < 0 || index >= plan.cortes.length) return "Ese corte no existe.";
     const restored = o.restored.includes(index) ? o.restored.filter((i) => i !== index) : [...o.restored, index];
     return { ...o, restored };
@@ -149,18 +150,18 @@ export async function requestRender(userId: string, pieceId: string): Promise<Re
 
 /* ───────────── Trabajo del worker ───────────── */
 
-async function logCall(userId: string, skill: string, mock: boolean, status: "ok" | "error", t?: { i?: number; o?: number }) {
+export async function logCall(userId: string, skill: string, mock: boolean, status: "ok" | "error", t?: { i?: number; o?: number }) {
   await db().insert(aiCalls).values({ userId, skill, skillVersion: `${skill}-v1`, mock, status, costCents: 0, inputTokens: t?.i ?? null, outputTokens: t?.o ?? null }).catch(() => undefined);
 }
 
-async function downloadTo(key: string, file: string) {
+export async function downloadTo(key: string, file: string) {
   const obj = await getObject(key);
   if (!obj) throw new Error("No se encontró el video");
   await pipeline(Readable.fromWeb(obj.body as unknown as NodeWebStream), createWriteStream(file));
 }
 
 /** Transcripción con tiempos por palabra (Gemini). Los tiempos son del video original. */
-async function transcribeWords(audio: Buffer, hint: string): Promise<Word[]> {
+export async function transcribeWords(audio: Buffer, hint: string): Promise<Word[]> {
   const prompt = `Transcribe este audio en español de México, palabra por palabra, con el segundo en que empieza y termina cada palabra. Respeta el nombre de la marca: ${hint}. No corrijas ni resumas lo que dice. Responde SOLO con JSON: {"palabras":[{"texto":"hola","inicio_s":0.52,"fin_s":0.8}]}`;
   const raw = await geminiGenerate([{ text: prompt }, { inline: { mime: "audio/mp3", data: audio } }], { json: true, timeoutMs: 150_000 });
   const parsed = wordsSchema.parse(parseJson(raw));
@@ -196,6 +197,7 @@ export async function assKitOf(userId: string): Promise<{ kit: AssStyleKit; perL
 export async function runPlan(userId: string, editId: string): Promise<void> {
   const [e] = await db().select().from(videoEdits).where(and(eq(videoEdits.id, editId), eq(videoEdits.userId, userId))).limit(1);
   if (!e) return;
+  if (e.mode === "voz_en_off") return (await import("./voiceover")).runVoPlan(userId, editId);
   const piece = await getPiece(userId, e.pieceId);
   const parsed = piece ? parseScript("video", piece.script) : null;
   if (!piece || !parsed || !("cuerpo" in parsed)) throw new Error("La pieza ya no existe");
@@ -300,6 +302,7 @@ export async function runRender(userId: string, editId: string): Promise<void> {
   const [e] = await db().select().from(videoEdits).where(and(eq(videoEdits.id, editId), eq(videoEdits.userId, userId))).limit(1);
   const plan0 = e && parsePlan(e.plan);
   if (!e || !plan0) return;
+  if (e.mode === "voz_en_off") return (await import("./voiceover")).runVoRender(userId, editId);
   const exp = await getExport(userId, e.pieceId);
   if (!exp?.objectKey) throw new Error("No hay video completo para editar");
   await db().update(videoEdits).set({ status: "renderizando", error: null }).where(eq(videoEdits.id, editId));

@@ -169,6 +169,13 @@
       "when": 1792520039291,
       "tag": "0023_guias_vistas",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792534631016,
+      "tag": "0024_voz_en_off",
+      "breakpoints": true
     }
   ]
 }

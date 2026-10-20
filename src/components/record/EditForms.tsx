@@ -23,7 +23,7 @@ function Simple({ action, pieceId, label, busy, variant = "light", modo }: { act
   );
 }
 
-export const RequestEditButton = ({ pieceId, label = "Mandar a edición", modo }: { pieceId: string; label?: string; modo?: "a_camara" | "mixto" }) => <Simple action={requestEditAction} pieceId={pieceId} label={label} busy="Enviando…" modo={modo} />;
+export const RequestEditButton = ({ pieceId, label = "Mandar a edición", modo }: { pieceId: string; label?: string; modo?: "a_camara" | "mixto" | "voz_en_off" }) => <Simple action={requestEditAction} pieceId={pieceId} label={label} busy="Enviando…" modo={modo} />;
 export const RenderButton = ({ pieceId }: { pieceId: string }) => <Simple action={requestRenderAction} pieceId={pieceId} label="Se ve bien, armar mi video" busy="Enviando…" />;
 
 export function AdjustForm({ pieceId, left }: { pieceId: string; left: number }) {

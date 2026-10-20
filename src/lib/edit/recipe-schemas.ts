@@ -5,7 +5,7 @@ const str = z.string();
 const n = z.coerce.number();
 const strN = z.string().nullable().default(null);
 
-export const MAX_CLIPS = 8;
+export const MAX_CLIPS = 12;
 export const MAX_STEPS = 10;
 export const FIRST_STEP = "Crea un proyecto 9:16 e importa los clips en este orden";
 export const FONT_STEP = "Importa tu tipografía: Texto → Fuente → Importar";

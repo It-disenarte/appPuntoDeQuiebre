@@ -5,6 +5,8 @@ import { EditSection } from "@/components/record/EditSection";
 import { FullVideoSection } from "@/components/record/FullVideoSection";
 import { CoachSection } from "@/components/record/CoachSection";
 import { RecordingStudio } from "@/components/record/RecordingStudio";
+import { VoiceoverSection } from "@/components/record/VoiceoverSection";
+import { getEdit } from "@/lib/edit/service";
 import { Card, Chip, PageHeader } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { DAY_NAMES, dowMon0 } from "@/lib/plan/rules";
@@ -58,6 +60,37 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
     );
   }
 
+  // Voz en off: tomas sueltas + una voz grabada aparte (solo Pro; la sección explica el plan si no lo tiene).
+  if (params.modo === "vozenoff") {
+    const edit = await getEdit(user.id, piece.id);
+    const t = partTexts(script);
+    const text = [t.gancho, t.cuerpo, t.cierre].filter(Boolean).join("\n\n");
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-4">
+        <PageHeader dark eyebrow={`Voz en off · ${dayLabel(piece.day)}`} title={piece.topic} />
+        {edit && edit.mode === "voz_en_off" ? (
+          <>
+            <EditSection userId={user.id} pieceId={piece.id} mode="vozenoff" />
+            <details className="rounded-card bg-ink-800 p-3">
+              <summary className="cursor-pointer text-sm font-semibold">Cambiar mis tomas o mi voz</summary>
+              <div className="mt-3">
+                <VoiceoverSection userId={user.id} pieceId={piece.id} text={text} again />
+              </div>
+            </details>
+          </>
+        ) : (
+          <VoiceoverSection userId={user.id} pieceId={piece.id} text={text} />
+        )}
+        <Link href={`/grabar?pieza=${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
+          Prefiero grabarme a cámara
+        </Link>
+        <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
+          Ver el guion completo
+        </Link>
+      </div>
+    );
+  }
+
   const recs = await listRecordings(user.id, piece.id);
   const done = recs.map((r) => ({ part: r.part as Part, id: r.id, seconds: r.seconds }));
   return (
@@ -100,6 +133,11 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
       {done.length === 3 && <FullVideoSection userId={user.id} pieceId={piece.id} />}
       {done.length === 3 && <EditSection userId={user.id} pieceId={piece.id} mode={typeof params.modo === "string" ? params.modo : undefined} />}
       {done.length === 3 && <CoachSection userId={user.id} pieceId={piece.id} />}
+      {done.length < 3 && (
+        <Link href={`/grabar?pieza=${piece.id}&modo=vozenoff`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
+          ¿Tu video es voz en off con tomas? Hazlo aquí
+        </Link>
+      )}
       <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
         Ver el guion completo
       </Link>

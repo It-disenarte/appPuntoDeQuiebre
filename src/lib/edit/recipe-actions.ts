@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { moveClip, removeClip, requestRecipe, requestRecipeAdjust } from "./recipe";
+import { removeVoiceover } from "./voiceover";
 
 export type RecipeActionState = { error?: string; ok?: boolean } | undefined;
 const uuid = z.string().uuid();
@@ -37,5 +38,12 @@ export async function moveClipAction(fd: FormData): Promise<void> {
   const { user } = await requireCreatorAccess();
   const id = uuid.safeParse(str(fd, "id"));
   if (id.success) await moveClip(user.id, id.data, str(fd, "dir") === "up" ? "up" : "down");
+  revalidatePath("/grabar");
+}
+
+export async function removeVoiceoverAction(fd: FormData): Promise<void> {
+  const { user } = await requireCreatorAccess();
+  const piece = uuid.safeParse(str(fd, "pieza"));
+  if (piece.success) await removeVoiceover(user.id, piece.data);
   revalidatePath("/grabar");
 }

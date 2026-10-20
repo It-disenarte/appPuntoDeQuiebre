@@ -55,6 +55,24 @@ export function mockPlan(words: Word[], duration: number, ctx: { hook: string; c
   });
 }
 
+/** Plan de voz en off por REGLAS (sin IA): las tomas en su orden, repartidas en partes iguales a lo largo de la voz. */
+export function mockVoPlan(words: Word[], duration: number, clipSeconds: number[], ctx: Parameters<typeof mockPlan>[2]): Plan {
+  const base = mockPlan(words, duration, ctx);
+  const n = Math.max(1, clipSeconds.length);
+  const each = duration / n;
+  const tramos = clipSeconds.map((len, i) => ({ clip: i + 1, desde_s: 0, hasta_s: Math.min(len, each), inicio_s: i * each, fin_s: (i + 1) * each, que_se_ve: "", frase: "" }));
+  return planSchema.parse({
+    ...base,
+    modo: "voz_en_off",
+    cortes: [],
+    zooms: [],
+    encuadres: [],
+    tramos_voz: tramos,
+    portada: { ...(base.portada ?? {}), segundo: Math.min(1, Math.max(0, duration - 0.5)) },
+    resumen: [`Acomodé tus ${n} tomas sobre tu voz`, "Puse subtítulos con tu estilo", "Empecé con tu gancho en pantalla", "Es una edición de ejemplo hecha con reglas: la IA real elige la toma que va con cada frase"],
+  });
+}
+
 /** Plan mixto por REGLAS (sin IA): un solo tramo hablado desde la primera hasta la última palabra, sin apoyos ni difuminados. */
 export function mockMixtoPlan(words: Word[], duration: number, ctx: Parameters<typeof mockPlan>[2]): Plan {
   const base = mockPlan(words, duration, ctx);

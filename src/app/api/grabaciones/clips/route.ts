@@ -6,6 +6,7 @@ import { audit } from "@/lib/audit";
 import { isSameOrigin } from "@/lib/auth/dal";
 import { getApiCreator } from "@/lib/auth/gates";
 import { canAddClip, commitClip } from "@/lib/edit/recipe";
+import { VO_MAX_CLIP_SECONDS } from "@/lib/edit/voiceover";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { baseType, MAX_PART_BYTES, MAX_PART_SECONDS, VIDEO_TYPES } from "@/lib/recording/rules";
 import { getClientIp } from "@/lib/request";
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
   const pieceId = z.string().uuid().safeParse(q.get("pieza") ?? "");
   const seconds = Number(q.get("segundos"));
   if (!pieceId.success || !Number.isFinite(seconds) || seconds < 1 || seconds > MAX_PART_SECONDS * 2) return Response.json({ error: "Datos de la toma no válidos." }, { status: 400 });
+  // Para la voz en off las tomas son cortas (máximo 20 s cada una).
+  if (q.get("uso") === "vo" && seconds > VO_MAX_CLIP_SECONDS + 1) return Response.json({ error: `Cada toma puede durar hasta ${VO_MAX_CLIP_SECONDS} segundos. Recórtala o sube otra.` }, { status: 400 });
   const can = await canAddClip(user.id, pieceId.data);
   if (!can.ok) return Response.json({ error: can.error }, { status: 400 });
 

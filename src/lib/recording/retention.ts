@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { looseClips, recordings, videoEdits, videoExports } from "@/lib/db/schema";
+import { looseClips, recordings, videoEdits, videoExports, voiceovers } from "@/lib/db/schema";
 import { deleteObject, storageConfigured } from "@/lib/storage";
 
 /** Los videos (partes, video completo y videos editados) se conservan 30 días: luego se borran para no llenar el disco. */
@@ -36,6 +36,12 @@ export async function purgeOldVideos(now = new Date()): Promise<{ parts: number;
   for (const c of await d.select().from(looseClips).where(lt(looseClips.createdAt, cutoff))) {
     await deleteObject(c.objectKey).catch(() => undefined);
     await d.delete(looseClips).where(eq(looseClips.id, c.id));
+    parts += 1;
+  }
+  // Voces en off: igual que las tomas, a los 30 días.
+  for (const v of await d.select().from(voiceovers).where(lt(voiceovers.createdAt, cutoff))) {
+    await deleteObject(v.objectKey).catch(() => undefined);
+    await d.delete(voiceovers).where(eq(voiceovers.id, v.id));
     parts += 1;
   }
   return { parts, exports: exps, edits };

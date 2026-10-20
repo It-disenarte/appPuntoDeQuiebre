@@ -56,7 +56,7 @@ function duration(file: File): Promise<number> {
 }
 
 /** Sube varias tomas sueltas, una por una, con su avance. */
-export function ClipUploader({ pieceId, count, max }: { pieceId: string; count: number; max: number }) {
+export function ClipUploader({ pieceId, count, max, voiceOver = false }: { pieceId: string; count: number; max: number; voiceOver?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("");
@@ -78,7 +78,7 @@ export function ClipUploader({ pieceId, count, max }: { pieceId: string; count: 
       const secs = await duration(file);
       const err = await new Promise<string | null>((resolve) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", `/api/grabaciones/clips?pieza=${encodeURIComponent(pieceId)}&segundos=${secs}`);
+        xhr.open("POST", `/api/grabaciones/clips?pieza=${encodeURIComponent(pieceId)}&segundos=${secs}${voiceOver ? "&uso=vo" : ""}`);
         xhr.setRequestHeader("Content-Type", mime);
         xhr.upload.onprogress = (e) => e.lengthComputable && setStatus(`Subiendo toma ${i + 1} de ${list.length} · ${Math.round((e.loaded / e.total) * 100)} %`);
         xhr.onload = () => {
@@ -120,7 +120,7 @@ export function ClipUploader({ pieceId, count, max }: { pieceId: string; count: 
         </p>
       )}
       <p className="text-xs text-ink-300">
-        {count} de {max} tomas · MP4, MOV o WebM. Se conservan 30 días.
+        {count} de {max} tomas · MP4, MOV o WebM{voiceOver ? ", de hasta 20 s cada una" : ""}. Se conservan 30 días.
       </p>
     </div>
   );

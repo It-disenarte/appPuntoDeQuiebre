@@ -47,6 +47,63 @@ export function editArgs(input: string, filterGraph: string, output: string): st
   return ["-y", "-hide_banner", "-loglevel", "error", "-i", input, "-filter_complex", filterGraph, "-map", "[v]", "-map", "[a]", "-threads", "1", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", output];
 }
 
+/**
+ * Voz en off: cada tramo toma un pedazo de su toma (recortado a 9:16 y a 30 fps, repitiendo el último cuadro si la toma es corta),
+ * se pegan en orden y se queman subtítulos y textos. El audio es SOLO la voz (la última entrada); el sonido de las tomas se descarta.
+ */
+export function buildVoFilterScript(opts: { tramos: Plan["tramos_voz"]; assPath: string; fontsDir: string }): string {
+  const { tramos } = opts;
+  if (tramos.length === 0) throw new Error("No hay tomas acomodadas sobre la voz");
+  const parts: string[] = [];
+  tramos.forEach((t, i) => {
+    const need = Math.max(0.1, t.fin_s - t.inicio_s);
+    parts.push(
+      `[${t.clip - 1}:v]trim=start=${t.desde_s.toFixed(3)}:end=${t.hasta_s.toFixed(3)},setpts=PTS-STARTPTS,fps=30,scale=${OUT_W}:${OUT_H}:force_original_aspect_ratio=increase,crop=${OUT_W}:${OUT_H},setsar=1,` +
+        `tpad=stop_mode=clone:stop_duration=${Math.ceil(need) + 1},trim=duration=${need.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p[v${i}]`,
+    );
+  });
+  parts.push(`${tramos.map((_, i) => `[v${i}]`).join("")}concat=n=${tramos.length}:v=1:a=0[vc]`);
+  parts.push(`[vc]subtitles=filename=${filterPath(opts.assPath)}:fontsdir=${filterPath(opts.fontsDir)}[v]`);
+  return parts.join(";\n");
+}
+
+/** Entradas: las tomas en orden y, al final, la voz. */
+export function voEditArgs(clips: string[], voice: string, filterGraph: string, output: string): string[] {
+  return [
+    "-y",
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    ...clips.flatMap((c) => ["-i", c]),
+    "-i",
+    voice,
+    "-filter_complex",
+    filterGraph,
+    "-map",
+    "[v]",
+    "-map",
+    `${clips.length}:a`,
+    "-shortest",
+    "-threads",
+    "1",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "21",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "160k",
+    "-movflags",
+    "+faststart",
+    output,
+  ];
+}
+
 export function coverArgs(input: string, second: number, assPath: string, fontsDir: string, output: string): string[] {
   return ["-y", "-hide_banner", "-loglevel", "error", "-ss", Math.max(0, second).toFixed(3), "-i", input, "-vf", `subtitles=filename=${filterPath(assPath)}:fontsdir=${filterPath(fontsDir)}`, "-frames:v", "1", output];
 }

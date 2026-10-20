@@ -14,7 +14,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 /** Edición automática (solo Pro, skill 13 modo “a cámara”): plan de la IA, revisión del creador y video editado. */
 export async function EditSection({ userId, pieceId, mode }: { userId: string; pieceId: string; mode?: string }) {
   const [edit, quota, exp, recipe] = await Promise.all([getEdit(userId, pieceId), editQuota(userId), getExport(userId, pieceId), getRecipe(userId, pieceId)]);
-  const modo = mode === "camara" || mode === "tomas" || mode === "mixto" ? mode : null;
+  const modo = mode === "camara" || mode === "tomas" || mode === "mixto" || mode === "vozenoff" ? mode : null;
   const base = `/grabar?pieza=${pieceId}`;
   const working = edit && (edit.status === "planeando" || edit.status === "renderizando") && !isStuck(edit);
   const plan = edit ? parsePlan(edit.plan) : null;
@@ -51,6 +51,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
             ["camara", "Hablo a cámara", "La app lo edita sola: cortes, subtítulos, acercamientos y portada."],
             ["tomas", "Son tomas sueltas", "Vlog, proceso o tendencia sin voz: te armamos una receta paso a paso para CapCut."],
             ["mixto", "Las dos cosas", "Hablo y además hay tomas (detrás de cámaras): la app lo edita sola con apoyos."],
+            ["vozenoff", "Voz en off con tomas", "Subes tus tomas y grabas tu voz: la IA acomoda cada toma donde va y lo edita."],
           ].map(([id, title, text]) => (
             <Link key={id} href={`${base}&modo=${id}`} className="rounded-xl bg-ink-700 p-3 hover:bg-ink-600">
               <span className="block text-sm font-extrabold">{title}</span>
@@ -84,7 +85,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
 
       {working && (
         <p className="text-sm" aria-live="polite">
-          {edit.status === "planeando" ? "Escuchando tu video y armando el plan de edición…" : "Armando tu video editado…"} Tarda unos minutos. Puedes salir: te avisamos.
+          {edit.status === "planeando" ? (edit.mode === "voz_en_off" ? "Escuchando tu voz y viendo tus tomas…" : "Escuchando tu video y armando el plan de edición…") : "Armando tu video editado…"} Tarda unos minutos. Puedes salir: te avisamos.
         </p>
       )}
 
@@ -160,7 +161,22 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
             </details>
           )}
 
-          {plan.modo !== "mixto" && (
+          {plan.modo === "voz_en_off" && (
+            <details className="rounded-xl bg-ink-700 p-3" open>
+              <summary className="cursor-pointer text-sm font-semibold">Así acomodé tus tomas</summary>
+              <ol className="mt-2 flex flex-col gap-1 text-sm">
+                {plan.tramos_voz.map((t, i) => (
+                  <li key={i}>
+                    {clock(t.inicio_s)}–{clock(t.fin_s)} · Toma {t.clip}
+                    <span className="text-xs text-ink-300">{t.frase ? ` · “${t.frase}”` : ""}{t.que_se_ve ? ` · ${t.que_se_ve}` : ""}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs text-ink-300">Para cambiar qué toma va dónde, usa «Pedir un cambio».</p>
+            </details>
+          )}
+
+          {plan.modo !== "mixto" && plan.modo !== "voz_en_off" && (
           <details className="rounded-xl bg-ink-700 p-3">
             <summary className="cursor-pointer text-sm font-semibold">Ver lo que quité ({plan.cortes.length})</summary>
             <ul className="mt-2 flex flex-col gap-2 text-sm">

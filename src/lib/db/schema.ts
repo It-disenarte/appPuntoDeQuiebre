@@ -926,8 +926,8 @@ export const videoEdits = pgTable(
     pieceId: uuid("piece_id")
       .notNull()
       .references(() => contentPieces.id, { onDelete: "cascade" }),
-    /** "a_camara": solo habla a cámara; "mixto": habla y además hay tomas de apoyo (skill 13). */
-    mode: text("mode", { enum: ["a_camara", "mixto"] }).notNull().default("a_camara"),
+    /** "a_camara": solo habla a cámara; "mixto": habla y además hay tomas de apoyo (skill 13); "voz_en_off": tomas sueltas + una voz grabada aparte. */
+    mode: text("mode", { enum: ["a_camara", "mixto", "voz_en_off"] }).notNull().default("a_camara"),
     status: text("status", { enum: ["planeando", "revision", "renderizando", "lista", "error"] }).notNull().default("planeando"),
     plan: jsonb("plan").$type<unknown>(),
     words: jsonb("words").$type<unknown>(),
@@ -965,6 +965,26 @@ export const looseClips = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("loose_clips_piece_idx").on(t.pieceId, t.position)],
+);
+
+/** La voz en off de una pieza (un solo audio por pieza): la narración sobre la que la IA acomoda las tomas sueltas. */
+export const voiceovers = pgTable(
+  "voiceovers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    objectKey: text("object_key").notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    seconds: integer("seconds").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("voiceovers_piece_idx").on(t.pieceId)],
 );
 
 /** Receta paso a paso para CapCut armada por la IA (la app no edita estos videos). */

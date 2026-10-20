@@ -78,6 +78,7 @@ export function mixtoSegments(plan: Plan, duration: number): Segment[] {
 
 /** Segmentos de un plan según su modo: a cámara (original menos cortes) o mixto (la línea de tiempo). */
 export function planSegments(plan: Plan, overrides: Overrides, duration: number): Segment[] {
+  if (plan.modo === "voz_en_off") return duration > 0 ? [{ a: 0, b: duration, offset: 0 }] : [];
   if (plan.modo === "mixto" && plan.linea_de_tiempo.length > 0) return mixtoSegments(plan, duration);
   return keepSegments(duration, activeCuts(plan.cortes, overrides.restored));
 }

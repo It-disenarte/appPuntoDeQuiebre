@@ -72,7 +72,7 @@ describe("receta para CapCut (sin IA: receta de ejemplo)", () => {
     expect((await svc.canAddClip(b!.id, pieceId)).ok).toBe(false);
   }, 30_000);
 
-  it("limita a 8 tomas, las ordena y las quita", async () => {
+  it("limita a 12 tomas, las ordena y las quita", async () => {
     const svc = await import("@/lib/edit/recipe");
     for (let i = 0; i < 3; i++) await svc.commitClip({ userId, pieceId, key: `clip-${i}`, contentType: "video/mp4", bytes: 10, seconds: 4 + i });
     let list = await svc.listClips(userId, pieceId);
@@ -84,8 +84,8 @@ describe("receta para CapCut (sin IA: receta de ejemplo)", () => {
     expect(holder.deleted).toContain("clip-0");
     list = await svc.listClips(userId, pieceId);
     expect(list.map((c) => c.position)).toEqual([0, 1]);
-    for (let i = 3; i < 9; i++) await svc.commitClip({ userId, pieceId, key: `clip-${i}`, contentType: "video/mp4", bytes: 10, seconds: 3 });
-    expect((await svc.canAddClip(userId, pieceId)).ok).toBe(false); // ya hay 8
+    for (let i = 3; i < 13; i++) await svc.commitClip({ userId, pieceId, key: `clip-${i}`, contentType: "video/mp4", bytes: 10, seconds: 3 });
+    expect((await svc.canAddClip(userId, pieceId)).ok).toBe(false); // ya hay 12
   }, 30_000);
 
   it("arma la receta, deja el primer y último paso fijos y permite 3 ajustes", async () => {
