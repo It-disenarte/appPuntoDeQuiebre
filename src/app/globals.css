@@ -54,6 +54,23 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* En el teléfono, un toque largo o un arrastre sin querer no selecciona texto (y no abre la búsqueda de Google ni el menú de copiar).
+   Se puede escribir y seleccionar en campos de texto, y en lo que lleve la clase select-text. */
+@media (pointer: coarse) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  [contenteditable="true"],
+  .select-text {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 body {
   background: var(--app-bg);
   color: var(--color-ink-900);
