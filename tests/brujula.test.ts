@@ -150,6 +150,12 @@ describe("skills de prueba respetan el esquema real", () => {
     expect(out.kit_visual_ref).toBe("kit-visual-v1");
     expect(out.palabras_si.length).toBeGreaterThanOrEqual(5);
   });
+  it("tolera una visión a futuro en null (se guarda vacía) en vez de tumbar toda la brújula", () => {
+    const base = mockBrujulaV2(input()) as Record<string, unknown>;
+    const out = brujulaV2Output.safeParse({ ...base, vision: { hoy: "Hoy", despues: null } });
+    expect(out.success).toBe(true);
+    expect(out.success && out.data.vision.despues).toBe("");
+  });
   it("tolera lo que la IA real suele devolver: kit_visual_ref null y arreglos omitidos", () => {
     const base = mockBrujulaV2(input()) as Record<string, unknown>;
     const out = brujulaV2Output.safeParse({ ...base, kit_visual_ref: null, datos_faltantes: undefined });

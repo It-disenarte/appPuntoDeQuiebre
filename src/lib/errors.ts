@@ -33,7 +33,8 @@ export async function recordError(e: { source: ErrorSource; message: string; pat
     const message = e.message.replace(/\s+/g, " ").slice(0, 300) || "Error sin mensaje";
     const path = e.path ? e.path.split("?")[0]!.slice(0, 120) : null;
     const signature = signatureOf(e.source, message, path);
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    // Como texto con tipo explícito: el cliente de Postgres del worker no acepta un Date suelto dentro de un fragmento sql.
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     await db()
       .insert(appErrors)
       .values({ source: e.source, signature, message, path })
@@ -41,7 +42,7 @@ export async function recordError(e: { source: ErrorSource; message: string; pat
         target: appErrors.signature,
         set: {
           count: sql`${appErrors.count} + 1`,
-          recentCount: sql`case when ${appErrors.lastAt} >= ${hourAgo} then ${appErrors.recentCount} + 1 else 1 end`,
+          recentCount: sql`case when ${appErrors.lastAt} >= ${hourAgo}::timestamptz then ${appErrors.recentCount} + 1 else 1 end`,
           resolved: false,
           lastAt: new Date(),
         },

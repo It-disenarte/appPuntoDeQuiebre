@@ -4,6 +4,8 @@ import { z } from "zod";
 
 const str = z.string();
 const strs = z.array(z.string());
+/** Texto que la IA a veces devuelve como null cuando no tiene nada que decir (p. ej. la visión a futuro): se guarda como vacío. */
+const softStr = z.preprocess((v) => (v == null ? "" : v), z.string());
 
 /* ───────────── brujula-v2 ───────────── */
 
@@ -25,8 +27,8 @@ export const brujulaV2Output = z
     palabras_no: strs.min(1).max(10),
     postura: str,
     puente: str.nullable(),
-    vision: z.object({ hoy: str, despues: str }).passthrough(),
-    estilo_grabacion: z.object({ formato_principal: str, descripcion: str }).passthrough(),
+    vision: z.object({ hoy: softStr, despues: softStr }).passthrough(),
+    estilo_grabacion: z.object({ formato_principal: str, descripcion: softStr }).passthrough(),
     lives: z.object({ hace_lives: z.boolean(), plataforma: str.nullable(), frecuencia: str.nullable() }).passthrough(),
     // Sin kit visual (Fase 2B) la IA puede devolver null.
     kit_visual_ref: str.nullable(),
