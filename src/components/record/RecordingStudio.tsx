@@ -381,6 +381,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         ))}
       </ol>
 
+      {phase !== "revision" && (
       <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
         <div>
           <p className="font-extrabold">Grabar «{PART_LABEL[part]}»</p>
@@ -397,6 +398,24 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
           O elegir un video de mi galería
         </label>
       </div>
+      )}
+
+      {/* Revisar el video (de la cámara del teléfono o de la galería) antes de subirlo. */}
+      {phase === "revision" && take && (
+        <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4">
+          <p className="font-extrabold">Revisa tu «{PART_LABEL[part]}»</p>
+          <video src={take.url} controls playsInline preload="metadata" className="mx-auto max-h-[52dvh] w-auto max-w-full rounded-lg bg-negro" />
+          <p className="text-center text-xs text-ink-400">{take.seconds} s · {megabytes(take.blob.size)} MB · Míralo. Si no te convence, repite la parte.</p>
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={() => (setTake(null), setPhase("apagada"))} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
+              Repetir parte
+            </button>
+            <button type="button" onClick={useTake} className="tap rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
+              Subir esta toma
+            </button>
+          </div>
+        </div>
+      )}
 
 
       {IN_APP_CAMERA && (
