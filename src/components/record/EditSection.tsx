@@ -5,13 +5,17 @@ import { Button } from "@/components/ui";
 import { answerDoubtAction, toggleCutAction } from "@/lib/edit/actions";
 import { CUT_LABEL, MAX_ADJUSTMENTS, MAX_FINAL_SECONDS } from "@/lib/edit/schemas";
 import { checkEdit, editQuota, getEdit, isStuck, parseOverrides, parsePlan } from "@/lib/edit/service";
+import { getRecipe } from "@/lib/edit/recipe";
+import { RecipeSection } from "@/components/record/RecipeSection";
 import { getExport } from "@/lib/recording/join";
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 /** Edición automática (solo Pro, skill 13 modo “a cámara”): plan de la IA, revisión del creador y video editado. */
-export async function EditSection({ userId, pieceId }: { userId: string; pieceId: string }) {
-  const [edit, quota, exp] = await Promise.all([getEdit(userId, pieceId), editQuota(userId), getExport(userId, pieceId)]);
+export async function EditSection({ userId, pieceId, mode }: { userId: string; pieceId: string; mode?: string }) {
+  const [edit, quota, exp, recipe] = await Promise.all([getEdit(userId, pieceId), editQuota(userId), getExport(userId, pieceId), getRecipe(userId, pieceId)]);
+  const modo = mode === "camara" || mode === "tomas" || mode === "mixto" ? mode : null;
+  const base = `/grabar?pieza=${pieceId}`;
   const working = edit && (edit.status === "planeando" || edit.status === "renderizando") && !isStuck(edit);
   const plan = edit ? parsePlan(edit.plan) : null;
   const overrides = edit ? parseOverrides(edit.overrides) : null;
@@ -40,12 +44,36 @@ export async function EditSection({ userId, pieceId }: { userId: string; pieceId
         </span>
       </div>
 
-      {!edit && (
+      {!edit && !recipe && modo === null && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-ink-300">¿Cómo grabaste este video?</p>
+          {[
+            ["camara", "Hablo a cámara", "La app lo edita sola: cortes, subtítulos, acercamientos y portada."],
+            ["tomas", "Son tomas sueltas", "Vlog, proceso o tendencia sin voz: te armamos una receta paso a paso para CapCut."],
+            ["mixto", "Las dos cosas", "Hablo y además hay tomas (detrás de cámaras): la app lo edita sola con apoyos."],
+          ].map(([id, title, text]) => (
+            <Link key={id} href={`${base}&modo=${id}`} className="rounded-xl bg-ink-700 p-3 hover:bg-ink-600">
+              <span className="block text-sm font-extrabold">{title}</span>
+              <span className="block text-xs text-ink-300">{text}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {!edit && !recipe && modo !== null && (
+        <Link href={base} className="self-start text-xs font-semibold text-azul-100 underline underline-offset-4">
+          ← Cambiar la forma de editar
+        </Link>
+      )}
+
+      {!edit && !recipe && modo === "camara" && (
         <>
           <p className="text-sm text-ink-300">Quitamos silencios y muletillas, ponemos subtítulos con tu kit, acercamientos y tu gancho en pantalla (máximo {MAX_FINAL_SECONDS} s). Tú revisas antes de armarlo.</p>
           {exp?.status === "lista" ? <RequestEditButton pieceId={pieceId} /> : <p className="text-xs text-ink-300">Primero arma tu video completo (arriba) y aquí podrás mandarlo a edición.</p>}
         </>
       )}
+
+      {!edit && (recipe || modo === "tomas") && <RecipeSection userId={userId} pieceId={pieceId} showUploader={!recipe} />}
 
       {working && (
         <p className="text-sm" aria-live="polite">

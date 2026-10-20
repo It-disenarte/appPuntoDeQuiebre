@@ -15,6 +15,7 @@ import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sess
 import { recordError } from "@/lib/errors";
 import { runReview } from "@/lib/coach/service";
 import { purgeOldVideos } from "@/lib/recording/retention";
+import { runRecipe } from "@/lib/edit/recipe";
 import { runPlan, runRender } from "@/lib/edit/service";
 import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
@@ -61,6 +62,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     if (!job.userId || !p.editId) throw new Error("Trabajo sin usuario o edición");
     await runPlan(job.userId, p.editId);
   },
+  "edicion.receta": async (job) => {
+    const p = job.payload as { recipeId?: string };
+    if (!job.userId || !p.recipeId) throw new Error("Trabajo sin usuario o receta");
+    await runRecipe(job.userId, p.recipeId);
+  },
   "edicion.renderizar": async (job) => {
     const p = job.payload as { editId?: string };
     if (!job.userId || !p.editId) throw new Error("Trabajo sin usuario o edición");
@@ -84,7 +90,7 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
 };
 
 /** Trabajos de video (unir, planear y renderizar ediciones): comparten UN solo ciclo para que corra uno a la vez y no saturen el servidor. */
-const HEAVY: JobKind[] = ["video.unir", "edicion.planear", "edicion.renderizar"];
+const HEAVY: JobKind[] = ["video.unir", "edicion.planear", "edicion.renderizar", "edicion.receta"];
 
 async function jobLoop(kinds: JobKind[], everyMs: number, stop: { value: boolean }) {
   while (!stop.value) {

@@ -148,6 +148,13 @@
       "when": 1792453714137,
       "tag": "0020_retencion_videos",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792516930186,
+      "tag": "0021_receta_capcut",
+      "breakpoints": true
     }
   ]
 }

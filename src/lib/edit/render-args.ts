@@ -48,3 +48,8 @@ export function coverArgs(input: string, second: number, assPath: string, fontsD
 export function audioArgs(input: string, output: string): string[] {
   return ["-y", "-hide_banner", "-loglevel", "error", "-i", input, "-vn", "-ac", "1", "-ar", "16000", "-c:a", "libmp3lame", "-b:a", "48k", output];
 }
+
+/** Un fotograma cada `every` segundos (máx. `max`), reducido a 480 px de ancho, para que la IA “vea” el video. */
+export function frameArgs(input: string, pattern: string, every = 2, max = 8): string[] {
+  return ["-y", "-hide_banner", "-loglevel", "error", "-i", input, "-vf", `fps=1/${every},scale=480:-2`, "-frames:v", String(max), "-q:v", "5", pattern];
+}

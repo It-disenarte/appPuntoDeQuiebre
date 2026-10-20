@@ -91,3 +91,33 @@ export function probeVideo(file: string): Promise<{ duration: number; width: num
     });
   });
 }
+
+/** Corre ffmpeg y devuelve lo que escribió en su salida de errores (donde ffmpeg pone sus mediciones, p. ej. el volumen). */
+export function ffmpegStderr(args: string[], timeoutMs = 120_000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const p = spawn(process.env.FFMPEG_BIN || "ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
+    let err = "";
+    p.stderr.on("data", (d: Buffer) => {
+      if (err.length < 20_000) err += d.toString();
+    });
+    const t = setTimeout(() => {
+      p.kill("SIGKILL");
+      reject(new Error("ffmpeg tardó demasiado"));
+    }, timeoutMs);
+    p.on("error", (e) => {
+      clearTimeout(t);
+      reject(new Error(`No se pudo ejecutar ffmpeg: ${e.message}`));
+    });
+    p.on("close", () => {
+      clearTimeout(t);
+      resolve(err);
+    });
+  });
+}
+
+/** Volumen medio (dB) de un video, o null si no tiene audio. Sirve para saber si una toma trae voz. */
+export async function meanVolume(file: string): Promise<number | null> {
+  const out = await ffmpegStderr(["-hide_banner", "-i", file, "-vn", "-af", "volumedetect", "-f", "null", "-"]);
+  const m = out.match(/mean_volume:\s*(-?[\d.]+) dB/);
+  return m ? Number(m[1]) : null;
+}

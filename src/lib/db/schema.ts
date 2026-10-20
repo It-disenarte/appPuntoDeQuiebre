@@ -941,3 +941,46 @@ export const videoEdits = pgTable(
   },
   (t) => [uniqueIndex("video_edits_piece_idx").on(t.pieceId), index("video_edits_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Tomas sueltas que el creador sube para que la IA arme una receta de edición para CapCut (skill 13, modo receta). */
+export const looseClips = pgTable(
+  "loose_clips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    objectKey: text("object_key").notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    seconds: integer("seconds").notNull(),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("loose_clips_piece_idx").on(t.pieceId, t.position)],
+);
+
+/** Receta paso a paso para CapCut armada por la IA (la app no edita estos videos). */
+export const capcutRecipes = pgTable(
+  "capcut_recipes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pieceId: uuid("piece_id")
+      .notNull()
+      .references(() => contentPieces.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["procesando", "lista", "error"] }).notNull().default("procesando"),
+    result: jsonb("result").$type<unknown>(),
+    adjustments: integer("adjustments").notNull().default(0),
+    adjustNote: text("adjust_note"),
+    mock: boolean("mock").notNull().default(false),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("capcut_recipes_piece_idx").on(t.pieceId)],
+);

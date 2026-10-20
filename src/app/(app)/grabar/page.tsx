@@ -96,7 +96,7 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
         </section>
       )}
       {done.length === 3 && <FullVideoSection userId={user.id} pieceId={piece.id} />}
-      {done.length === 3 && <EditSection userId={user.id} pieceId={piece.id} />}
+      {done.length === 3 && <EditSection userId={user.id} pieceId={piece.id} mode={typeof params.modo === "string" ? params.modo : undefined} />}
       {done.length === 3 && <CoachSection userId={user.id} pieceId={piece.id} />}
       <Link href={`/semana/${piece.id}`} className="self-start text-sm font-semibold text-azul-100 underline underline-offset-4">
         Ver el guion completo
