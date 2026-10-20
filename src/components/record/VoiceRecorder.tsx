@@ -56,6 +56,7 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   useEffect(() => stopMic, [stopMic]);
 
   const [micNote, setMicNote] = useState("");
+  const [activeMic, setActiveMic] = useState("");
   const micCount = useRef(0);
   const phaseRef = useRef<Phase>(phase);
   const openMicRef = useRef<(id?: string, raw?: boolean) => Promise<void>>(async () => undefined);
@@ -103,6 +104,11 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   useEffect(() => {
     openMicRef.current = openMic;
   });
+
+  // Nombre del micrófono que de verdad está en uso (para comprobar que es el externo).
+  useEffect(() => {
+    setActiveMic(streamRef.current?.getAudioTracks()[0]?.label ?? "");
+  }, [audioKey]);
 
   // Medidor de nivel (para comprobar que el micrófono elegido de verdad capta).
   useEffect(() => {
@@ -283,6 +289,19 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
             <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Con un micrófono externo, elígelo aquí.</p>
             <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa una app de grabadora de voz y sube el audio.</p>
           {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
+          <p className="text-xs text-ink-300">
+            En uso: <strong className="text-blanco">{activeMic || "micrófono predeterminado"}</strong>
+          </p>
+          <details className="text-xs text-ink-300">
+            <summary className="cursor-pointer font-semibold">Ver los micrófonos que detecta tu teléfono ({mics.length})</summary>
+            <ul className="mt-1 list-disc pl-5">
+              {mics.length === 0 && <li>Ninguno todavía (se ven después de dar el permiso).</li>}
+              {mics.map((m, i) => (
+                <li key={m.deviceId || i}>{m.label || "(sin nombre)"} {m.deviceId ? `· ${m.deviceId.slice(0, 8)}` : ""}</li>
+              ))}
+            </ul>
+            <p className="mt-1">Si tu micrófono USB no está en esta lista, el navegador del teléfono no lo expone: usa la cámara nativa (video) o una grabadora y sube el audio (voz en off).</p>
+          </details>
             <label className="flex items-center gap-2 text-xs text-ink-300">
               <input type="checkbox" checked={rawAudio} onChange={(e) => void openMic(micId, e.target.checked)} disabled={busy} className="size-4 accent-blanco" />
               Audio sin filtros (recomendado con micrófono externo)
