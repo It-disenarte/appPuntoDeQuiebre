@@ -102,7 +102,7 @@ export function PageHeader({
   dark?: boolean;
 }) {
   return (
-    <header className={cn("flex items-end justify-between gap-4", className)}>
+    <header data-tour="pagina" className={cn("flex items-end justify-between gap-4", className)}>
       <div className="min-w-0">
         {eyebrow && <p className={cn("text-sm", dark ? "text-ink-400" : "text-ink-500")}>{eyebrow}</p>}
         <h1 className={cn("font-display mt-1 text-[2.25rem] lg:text-5xl", dark ? "text-blanco" : "text-negro")}>{title}</h1>

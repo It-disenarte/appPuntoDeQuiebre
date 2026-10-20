@@ -40,7 +40,7 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
             </Link>
           </Card>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul data-tour="videos" className="flex flex-col gap-2">
             {pieces.map((p) => (
               <li key={p.id}>
                 <Link href={`/grabar?pieza=${p.id}`} className="flex items-center justify-between gap-3 rounded-card bg-ink-800 p-4 hover:bg-ink-700">
@@ -68,11 +68,13 @@ export default async function GrabarPage({ searchParams }: PageProps<"/grabar">)
           <p className="text-sm">El almacenamiento de videos todavía no está configurado, así que no se pueden subir grabaciones.</p>
         </Card>
       ) : (
-        <RecordingStudio pieceId={piece.id} texts={partTexts(script)} done={done} />
+        <div data-tour="estudio">
+          <RecordingStudio pieceId={piece.id} texts={partTexts(script)} done={done} />
+        </div>
       )}
 
       {recs.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Partes subidas">
+        <section data-tour="partes" className="flex flex-col gap-3" aria-label="Partes subidas">
           <h2 className="font-extrabold">Partes subidas</h2>
           {(["gancho", "cuerpo", "cierre"] as const)
             .map((p) => recs.find((r) => r.part === p))

@@ -1,4 +1,5 @@
 import { ChevronRight, LogOut } from "lucide-react";
+import { ResetToursButton } from "@/components/tour/ResetToursButton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button, buttonClass, ButtonLink, Card, Chip } from "@/components/ui";
@@ -61,7 +62,7 @@ export default async function MiMarcaPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <section className="rounded-card bg-negro p-5 text-blanco">
+          <section data-tour="plan" className="rounded-card bg-negro p-5 text-blanco">
             <p className="font-extrabold">{sub ? `Plan ${PLANS[sub.plan].name}` : "Cuenta de administrador"}</p>
             <p className="mt-1 text-sm text-ink-300">{sub ? subscriptionSummary(access.state, sub, access.graceEndsAt) : "Vista previa sin suscripción."}</p>
             {sub && (
@@ -78,7 +79,7 @@ export default async function MiMarcaPage() {
             )}
           </section>
 
-          <Card>
+          <Card data-tour="brujula">
             <div className="flex items-center justify-between">
               <p className="text-xs text-ink-500">Brújula de marca</p>
               {!m && <Chip>Pendiente</Chip>}
@@ -125,7 +126,7 @@ export default async function MiMarcaPage() {
               </div>
             </Card>
           )}
-          <Card className="flex flex-col gap-2">
+          <Card data-tour="atajos" className="flex flex-col gap-2">
             <p className="font-extrabold">Tendencias</p>
             <p className="text-sm text-ink-600">Ideas listas para grabar con lo que está de moda, con fecha límite.</p>
             <ButtonLink href="/tendencias" size="sm" variant="outline" className="self-start">
@@ -156,7 +157,7 @@ export default async function MiMarcaPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-        <Card className="flex flex-col gap-3">
+        <Card data-tour="avisos" className="flex flex-col gap-3">
           <p className="font-extrabold">Avisos</p>
           <p className="text-sm text-ink-600">Te recordamos tus sesiones de grabación, tus publicaciones y tus métricas del mes.</p>
           {notificationsOn ? <PushToggle publicKey={vapid} /> : <p className="text-sm text-ink-600">Tienes los avisos apagados.</p>}
@@ -199,7 +200,7 @@ export default async function MiMarcaPage() {
             </>
           )}
         </Card>
-        <Card className="p-0">
+        <Card data-tour="lista" className="p-0">
           <ul className="divide-y divide-ink-200">
             {rows.map((r) => (
               <li key={r.title}>
@@ -223,6 +224,11 @@ export default async function MiMarcaPage() {
               </li>
             ))}
           </ul>
+        </Card>
+        <Card className="flex flex-col gap-2">
+          <p className="font-extrabold">Guía de la app</p>
+          <p className="text-sm text-ink-600">Te vuelvo a mostrar, paso a paso, qué hace cada sección.</p>
+          <ResetToursButton />
         </Card>
         </div>
       </div>

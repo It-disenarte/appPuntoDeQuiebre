@@ -21,14 +21,14 @@ export default async function CarruselesPage({ searchParams }: PageProps<"/carru
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <PageHeader eyebrow="Publicar" title="Carruseles" />
-      <Card className="flex flex-col gap-4">
+      <Card data-tour="nuevo" className="flex flex-col gap-4">
         <h2 className="text-lg font-extrabold">Crear un carrusel nuevo</h2>
         <p className="text-sm text-ink-700">Te proponemos la idea, escribimos cada slide con tu voz y lo armamos con tu kit visual. Sales con imágenes listas para subir, sin saber diseñar.</p>
         <BriefForm tema={piece?.kind === "carrusel" ? piece.topic : ""} pieza={piece?.kind === "carrusel" ? piece.id : undefined} plan={plan} />
       </Card>
 
       {list.length > 0 && (
-        <section className="flex flex-col gap-2" aria-label="Mis carruseles">
+        <section data-tour="mis-carruseles" className="flex flex-col gap-2" aria-label="Mis carruseles">
           <h2 className="text-lg font-extrabold">Mis carruseles</h2>
           {list.map((c) => {
             const brief = parseBrief(c.brief);

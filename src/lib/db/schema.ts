@@ -48,6 +48,8 @@ export const users = pgTable(
     termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
     /** Cliente en el proveedor de pagos (Stripe: cus_…). */
     billingCustomerId: text("billing_customer_id"),
+    /** Guías del asistente de inicio que ya vio (ids de src/lib/tour/tours.ts). */
+    toursSeen: text("tours_seen").array().notNull().default(sql`ARRAY[]::text[]`),
     ...timestamps,
   },
   (t) => [

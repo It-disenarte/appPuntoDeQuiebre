@@ -39,7 +39,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <PageHeader eyebrow={`Semana del ${dayNum(nextWeek)} al ${dayNum(addDays(nextWeek, 6))} de ${monthName(addDays(nextWeek, 6))}`} title="Tu parrilla" />
         {readiness.ready ? (
-          <Card className="flex flex-col gap-4">
+          <Card data-tour="generar" className="flex flex-col gap-4">
             <p className="font-extrabold">Armemos tu semana</p>
             <p className="text-sm text-ink-700">Te daremos tus videos y carruseles de la semana, cada uno con su guion escrito con tu voz, más una idea de historia por día.</p>
             <GenerateWeek week={nextWeek} topics={topics} label="Generar mi semana" />
@@ -78,7 +78,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
       <PageHeader eyebrow={`Semana del ${dayNum(plan.weekStart)} al ${dayNum(addDays(plan.weekStart, 6))} de ${monthName(addDays(plan.weekStart, 6))}`} title="Tu parrilla" />
       {plan.mock && <p className="rounded-xl bg-naranja-100 p-3 text-xs text-ink-900">Versión de prueba: los guiones los arma un generador de reglas, no la IA.</p>}
 
-      <Card>
+      <Card data-tour="mezcla">
         <p className="text-xs text-ink-500">Mezcla de esta semana · Etapa de {STAGE_LABEL[plan.stage].toLowerCase()}</p>
         {mix.success && (
           <>
@@ -97,7 +97,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
         {plan.summary && <p className="mt-3 text-sm text-ink-700">{plan.summary}</p>}
       </Card>
 
-      <ol className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+      <ol data-tour="piezas" className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
         {pieces.map((p) => {
           const idx = dowMon0(p.day);
           const isToday = p.day === today;
@@ -130,7 +130,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
 
       {variantTest?.testCard && <p className="rounded-2xl bg-naranja-100 px-4 py-3 text-sm text-ink-900">{variantTest.testCard}</p>}
 
-      <section aria-labelledby="historias" className="flex flex-col gap-3">
+      <section data-tour="historias" aria-labelledby="historias" className="flex flex-col gap-3">
         <h2 id="historias" className="text-lg font-extrabold">
           Tus historias de la semana
         </h2>

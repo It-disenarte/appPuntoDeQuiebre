@@ -27,7 +27,7 @@ export default async function ProgresoPage() {
       <PageHeader eyebrow={latest ? `Informe de ${monthName(latest.period)}` : "Tus métricas"} title="Tu progreso" />
 
       {!doneThisMonth && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
+        <Card data-tour="informe" className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
           <div>
             <p className="font-extrabold">Pásame tus métricas de {monthName(pending.period)}</p>
             <p className="text-sm text-ink-600">Unas capturas de tu perfil y te explico cómo te fue. Te digo dónde encontrarlas.</p>
@@ -55,7 +55,7 @@ export default async function ProgresoPage() {
           </div>
         </>
       ) : (
-        <Card className="flex flex-col items-start gap-3">
+        <Card data-tour="informe" className="flex flex-col items-start gap-3">
           <span className="grid size-12 place-items-center rounded-xl bg-azul-50 text-azul" aria-hidden>
             <BarChart3 className="size-6" />
           </span>
@@ -67,7 +67,7 @@ export default async function ProgresoPage() {
         </Card>
       )}
 
-      <Card className="flex flex-wrap items-center justify-between gap-3">
+      <Card data-tour="analizador" className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-extrabold">Analizador de competencia</p>
           <p className="text-sm text-ink-600">Descubre por qué funcionan los reels de las cuentas que admiras y llévate ideas con tu voz.</p>

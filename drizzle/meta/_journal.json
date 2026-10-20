@@ -162,6 +162,13 @@
       "when": 1792517547189,
       "tag": "0022_edicion_modo",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792520039291,
+      "tag": "0023_guias_vistas",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "tours_seen" text[] DEFAULT ARRAY[]::text[] NOT NULL;

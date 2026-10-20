@@ -67,7 +67,7 @@ export default async function HoyPage() {
         }
       />
       {metricsPending && !nextStep && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
+        <Card data-tour="metricas-pendientes" className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
           <div>
             <p className="font-extrabold">Pásame tus métricas de {monthName(metricPeriod)}</p>
             <p className="text-sm text-ink-600">Unas capturas de las estadísticas de tu Instagram y te explico cómo te fue. Te digo dónde encontrarlas.</p>
@@ -78,7 +78,7 @@ export default async function HoyPage() {
         </Card>
       )}
       {nextStep && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
+        <Card data-tour="siguiente-paso" className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-azul">
           <div>
             <p className="font-extrabold">Lo primero: arma tu marca</p>
             <p className="text-sm text-ink-600">
@@ -93,7 +93,7 @@ export default async function HoyPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="flex flex-col gap-4">
-          <Card className="py-4">
+          <Card data-tour="racha" className="py-4">
             <ol className="grid grid-cols-7 text-center" aria-label="Racha de esta semana">
               {week.map((w, i) => (
                 <li key={i} className="flex flex-col items-center gap-2">
@@ -109,7 +109,7 @@ export default async function HoyPage() {
 
           {todays.length > 0 ? (
             todays.map((p) => (
-              <section key={p.id} className="relative overflow-hidden rounded-card bg-azul p-6 text-blanco">
+              <section key={p.id} data-tour="tarea" className="relative overflow-hidden rounded-card bg-azul p-6 text-blanco">
                 <p className="rotulo text-azul-100">Tarea de hoy</p>
                 <h2 className="font-display mt-3 text-3xl lg:text-4xl">
                   {p.kind === "video" ? "Publica tu video" : "Publica tu carrusel"}: {p.topic}
@@ -125,7 +125,7 @@ export default async function HoyPage() {
               </section>
             ))
           ) : (
-            <Card>
+            <Card data-tour="tarea">
               <p className="text-xs text-ink-500">Tarea de hoy</p>
               {data ? (
                 <p className="mt-2 font-semibold">{upcoming ? `Hoy no publicas. Lo siguiente: ${upcoming.topic}.` : "Hoy no tienes nada que publicar."}</p>
@@ -139,14 +139,14 @@ export default async function HoyPage() {
           )}
 
           {storyView && story ? (
-            <div className="flex flex-col gap-2">
+            <div data-tour="historia" className="flex flex-col gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Camera className="size-4" aria-hidden /> Historia del día
               </p>
               <StoryCard id={story.id} dayLabel="Hoy" tipo={storyView.tipo} idea={storyView.idea} texto={storyView.texto} sticker={storyView.sticker} minutos={storyView.minutos} own={storyView.own} vote={story.vote} done={story.done} mode="rapido" />
             </div>
           ) : (
-            <Card className="flex items-center gap-4">
+            <Card data-tour="historia" className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-naranja-100 text-ink-900">
                 <Camera className="size-5" aria-hidden />
               </span>
@@ -159,7 +159,7 @@ export default async function HoyPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <Card>
+          <Card data-tour="sesion">
             <p className="text-xs text-ink-500">Tu próxima sesión de grabación</p>
             {nextBlock ? (
               <>

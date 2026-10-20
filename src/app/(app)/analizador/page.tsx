@@ -32,7 +32,7 @@ export default async function AnalizadorPage() {
         <p className="text-xs text-ink-500">Puedes correrlo una vez cada {intervalDays} días.</p>
       </Card>
 
-      <Card className="flex flex-col gap-3">
+      <Card data-tour="competidores" className="flex flex-col gap-3">
         <p className="font-extrabold">Cuentas que estudiamos ({comps.length})</p>
         <ul className="flex flex-col divide-y divide-ink-100">
           {comps.map((c) => (
@@ -69,14 +69,14 @@ export default async function AnalizadorPage() {
           </p>
         </Card>
       ) : (
-        <Card className="flex flex-col gap-3">
+        <Card data-tour="correr" className="flex flex-col gap-3">
           {run?.status === "error" && <p role="alert" className="text-sm text-alerta">El último intento falló: {run.error ?? "algo salió mal"}. No cuenta para tu límite semanal.</p>}
           {wait ? <p className="text-sm text-ink-700">Ya hiciste tu análisis de esta semana. Podrás correr otro el <strong>{dateEs(wait)}</strong>.</p> : <StartRunForm disabled={comps.length === 0} />}
         </Card>
       )}
 
       {lastDone && (
-        <section className="flex flex-col gap-3" aria-label="Resultados">
+        <section data-tour="resultados" className="flex flex-col gap-3" aria-label="Resultados">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-extrabold">Lo que encontramos</h2>
             {lastDone.mock && <Chip>Ejemplo</Chip>}

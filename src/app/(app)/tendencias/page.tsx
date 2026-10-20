@@ -19,7 +19,7 @@ export default async function TendenciasPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <PageHeader eyebrow="Inspiración" title="Tendencias" />
-      <Card className="flex flex-col gap-3">
+      <Card data-tour="pedir" className="flex flex-col gap-3">
         <p className="text-sm text-ink-700">Tomamos lo que está de moda en TikTok México y lo convertimos en <strong>ideas listas para grabar con tu marca</strong>, con la fecha límite para que entren a tiempo.</p>
         <p className="rounded-lg bg-naranja-100 p-3 text-sm text-ink-900">Las tendencias duran pocos días. Úsalo cuando puedas grabar en las próximas 48 horas.</p>
         <p className="text-xs text-ink-500">
@@ -33,7 +33,7 @@ export default async function TendenciasPage() {
         (() => {
           const rounds = parseRounds(latest.rounds);
           return (
-            <section className="flex flex-col gap-3" aria-label="Tus ideas">
+            <section data-tour="ideas" className="flex flex-col gap-3" aria-label="Tus ideas">
               {latest.mock && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Son ideas de ejemplo: con la IA y una lista real usan tu marca y las tendencias de hoy.</p>}
               {rounds.map((r, ri) => (
                 <div key={ri} className="flex flex-col gap-3">

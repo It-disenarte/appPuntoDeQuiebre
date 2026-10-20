@@ -100,7 +100,7 @@ export default async function DirectosPage() {
       <PageHeader eyebrow="Publicar" title="Tus directos" />
 
       {!answers ? (
-        <Card>
+        <Card data-tour="respuestas">
           <AnswersForm />
         </Card>
       ) : (
@@ -139,7 +139,7 @@ export default async function DirectosPage() {
               {guide && guideRow ? (
                 <>
                   {guideRow.mock && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Es una guía de ejemplo: con la IA activa usa tu marca y tu voz.</p>}
-                  <h2 className="text-lg font-extrabold">Directos de la semana del {Number(week.slice(8, 10))}</h2>
+                  <h2 data-tour="guia" className="text-lg font-extrabold">Directos de la semana del {Number(week.slice(8, 10))}</h2>
                   {guide.lives.map((l) => (
                     <LiveCard key={l.dia} l={l} guide={guideRow} />
                   ))}
@@ -156,7 +156,7 @@ export default async function DirectosPage() {
                   <GenerateWeekForm week={week} label="Rehacer la guía de esta semana" />
                 </>
               ) : (
-                <Card className="flex flex-col gap-3">
+                <Card data-tour="guia" className="flex flex-col gap-3">
                   <p className="text-sm text-ink-700">Armamos la guía de tus directos para la semana del {Number(week.slice(8, 10))}: máximo 3 con guion y los demás libres.</p>
                   <GenerateWeekForm week={week} label="Armar la guía de esta semana" />
                 </Card>

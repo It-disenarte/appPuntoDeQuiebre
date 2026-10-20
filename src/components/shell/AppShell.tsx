@@ -3,9 +3,10 @@
 import { CalendarDays, ChartColumn, House, LogOut, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { cn } from "@/components/ui";
 import { logoutAction } from "@/lib/auth/actions";
 
@@ -21,12 +22,15 @@ export function AppShell({
   userName,
   isAdmin,
   notice,
+  toursSeen,
   children,
 }: {
   userName: string;
   isAdmin: boolean;
   /** Aviso importante (p. ej. pago fallido en periodo de gracia). */
   notice?: { text: string; href: string };
+  /** Guías del asistente de inicio que ya vio. */
+  toursSeen: string[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -46,6 +50,7 @@ export function AppShell({
             <Link
               key={href}
               href={href}
+              data-tour={`nav-${href.slice(1)}`}
               aria-current={isActive(href) ? "page" : undefined}
               className={cn(
                 "tap flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.9375rem] font-semibold",
@@ -87,6 +92,10 @@ export function AppShell({
         <main className="mx-auto w-full max-w-xl px-4 pt-5 pb-32 lg:max-w-5xl lg:px-10 lg:pt-10 lg:pb-12">{children}</main>
       </div>
 
+      <Suspense>
+        <TourProvider seen={toursSeen} />
+      </Suspense>
+
       {/* Barra inferior en teléfono */}
       <nav
         aria-label="Secciones"
@@ -102,6 +111,7 @@ export function AppShell({
               <li key={href}>
                 <Link
                   href={href}
+                  data-tour={`nav-${href.slice(1)}`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "tap flex flex-col items-center gap-1 pt-2.5 pb-2 text-[0.6875rem] font-semibold",
