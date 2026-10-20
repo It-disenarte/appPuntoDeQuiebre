@@ -63,10 +63,22 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     autoGainControl: !raw,
   });
 
+  const [micNote, setMicNote] = useState("");
+  const micCount = useRef(0);
+  const phaseRef = useRef<Phase>(phase);
+  const changeMicRef = useRef<(id: string, raw?: boolean) => Promise<void>>(async () => undefined);
   const refreshMics = useCallback(async () => {
     try {
-      const all = await navigator.mediaDevices.enumerateDevices();
-      setMics(all.filter((d) => d.kind === "audioinput"));
+      const all = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+      setMics(all);
+      const before = micCount.current;
+      micCount.current = all.length;
+      // Se conectó un micrófono con la cámara abierta: se toma el audio de nuevo para que el teléfono use el nuevo, y sin filtros
+      // (en Android los micrófonos USB solo se respetan sin cancelación de eco).
+      if (before > 0 && all.length > before && streamRef.current && phaseRef.current === "lista") {
+        setMicNote("Detecté un micrófono nuevo y lo activé sin filtros. Habla y mira que la barra se mueva.");
+        void changeMicRef.current("", true);
+      }
     } catch {
       /* sin lista: se queda el micrófono predeterminado */
     }
@@ -76,6 +88,10 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
     navigator.mediaDevices.addEventListener("devicechange", refreshMics); // al conectar o quitar un micrófono
     return () => navigator.mediaDevices.removeEventListener("devicechange", refreshMics);
   }, [refreshMics]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   /** Cambia el micrófono sin reiniciar la cámara: se sustituye solo la pista de audio. */
   async function changeMic(id: string, raw = rawAudio) {
@@ -98,6 +114,10 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       setError("No pudimos usar ese micrófono. Revisa que esté bien conectado y elige otro.");
     }
   }
+
+  useEffect(() => {
+    changeMicRef.current = changeMic;
+  });
 
   // Medidor de nivel: sirve para comprobar que el micrófono elegido (p. ej. uno externo) de verdad está captando.
   useEffect(() => {
@@ -412,6 +432,8 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
             <div className="h-full rounded-full bg-exito transition-[width] duration-100" style={{ width: `${Math.round(level * 100)}%` }} />
           </div>
           <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Si conectas un micrófono externo, elígelo aquí.</p>
+          <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa «Abrir la cámara del teléfono», que sí lo detecta.</p>
+          {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
           <label className="flex items-center gap-2 text-xs text-ink-300">
             <input type="checkbox" checked={rawAudio} onChange={(e) => void changeMic(micId, e.target.checked)} disabled={phase === "cuenta" || phase === "grabando"} className="size-4 accent-blanco" />
             Audio sin filtros (recomendado con micrófono externo)

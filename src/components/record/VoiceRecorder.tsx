@@ -55,9 +55,24 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   }, []);
   useEffect(() => stopMic, [stopMic]);
 
+  const [micNote, setMicNote] = useState("");
+  const micCount = useRef(0);
+  const phaseRef = useRef<Phase>(phase);
+  const openMicRef = useRef<(id?: string, raw?: boolean) => Promise<void>>(async () => undefined);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
   const refreshMics = useCallback(async () => {
     try {
-      setMics((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput"));
+      const all = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+      setMics(all);
+      const before = micCount.current;
+      micCount.current = all.length;
+      // Se conectó un micrófono con el micrófono abierto: se toma de nuevo, sin filtros (los USB de Android lo requieren).
+      if (before > 0 && all.length > before && streamRef.current && phaseRef.current === "lista") {
+        setMicNote("Detecté un micrófono nuevo y lo activé sin filtros. Habla y mira que la barra se mueva.");
+        void openMicRef.current("", true);
+      }
     } catch {
       /* sin lista */
     }
@@ -84,6 +99,10 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
       setError((e as DOMException).name === "NotAllowedError" ? "Permite el acceso al micrófono en tu navegador y vuelve a intentar." : "No pudimos usar ese micrófono. Revisa que esté bien conectado.");
     }
   }
+
+  useEffect(() => {
+    openMicRef.current = openMic;
+  });
 
   // Medidor de nivel (para comprobar que el micrófono elegido de verdad capta).
   useEffect(() => {
@@ -262,6 +281,8 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
               <div className="h-full rounded-full bg-exito transition-[width] duration-100" style={{ width: `${Math.round(level * 100)}%` }} />
             </div>
             <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Con un micrófono externo, elígelo aquí.</p>
+            <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa una app de grabadora de voz y sube el audio.</p>
+          {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
             <label className="flex items-center gap-2 text-xs text-ink-300">
               <input type="checkbox" checked={rawAudio} onChange={(e) => void openMic(micId, e.target.checked)} disabled={busy} className="size-4 accent-blanco" />
               Audio sin filtros (recomendado con micrófono externo)
