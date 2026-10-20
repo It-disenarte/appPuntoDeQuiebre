@@ -2,10 +2,10 @@
 // Regla de oro: los nombres de campo no se renombran entre versiones, solo se agregan; por eso `passthrough()`.
 import { z } from "zod";
 
-const str = z.string();
+/** Texto. La IA a veces devuelve null cuando no tiene nada que decir (visión a futuro, texto sugerido…): se guarda vacío en vez de tumbar toda la respuesta. */
+const str = z.preprocess((v) => (v == null ? "" : v), z.string());
 const strs = z.array(z.string());
-/** Texto que la IA a veces devuelve como null cuando no tiene nada que decir (p. ej. la visión a futuro): se guarda como vacío. */
-const softStr = z.preprocess((v) => (v == null ? "" : v), z.string());
+const softStr = str;
 
 /* ───────────── brujula-v2 ───────────── */
 
