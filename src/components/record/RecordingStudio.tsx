@@ -18,6 +18,9 @@ function videoMime(f: File): string | null {
   return ext === "mp4" || ext === "m4v" ? "video/mp4" : ext === "mov" ? "video/quicktime" : ext === "webm" ? "video/webm" : null;
 }
 
+/** Por ahora la grabación dentro del navegador está apagada: se graba con la cámara nativa del teléfono y el teleprompter flotante. */
+const IN_APP_CAMERA = false;
+
 const MIMES = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
 const pickMime = () => (typeof MediaRecorder === "undefined" ? "" : (MIMES.find((m) => MediaRecorder.isTypeSupported(m)) ?? ""));
 
@@ -40,6 +43,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   const [level, setLevel] = useState(0);
   const [audioKey, setAudioKey] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nativeRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -377,27 +381,26 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         ))}
       </ol>
 
-      {(phase === "apagada" || phase === "lista") && (
-        <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
-          <div>
-            <p className="font-extrabold">Recomendado: cámara de tu teléfono con teleprompter flotante</p>
-            <p className="mt-1 text-xs text-ink-300">Máxima calidad (4K y estabilización), usa tu micrófono externo y ves el guion encima de la cámara. Graba la parte «{PART_LABEL[part]}» (cámbiala arriba).</p>
-          </div>
-          <ScriptReader key={part} floatingOnly text={text} onClose={() => undefined} />
-          <label className="tap inline-flex cursor-pointer items-center self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
-            <input type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-            2. Abrir la cámara del teléfono
-          </label>
-          <p className="text-xs text-ink-300">En la cámara empieza a grabar, toca ▶ en la ventana flotante y lee. Al terminar vuelve aquí: el video se sube solo.</p>
-          <label className="tap inline-flex cursor-pointer items-center self-start text-xs font-semibold underline underline-offset-4">
-            <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-            O elegir un video de mi galería
-          </label>
+      <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
+        <div>
+          <p className="font-extrabold">Grabar «{PART_LABEL[part]}»</p>
+          <p className="mt-1 text-xs text-ink-300">Se abre el teleprompter chiquito encima y luego la cámara de tu teléfono (con tu micrófono externo, a máxima calidad). Elige la parte arriba.</p>
         </div>
-      )}
+        <ScriptReader key={part} floatingOnly openLabel={`Grabar «${PART_LABEL[part]}»`} text={text} onClose={() => undefined} onOpened={() => nativeRef.current?.click()} />
+        <label className="tap inline-flex cursor-pointer items-center self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
+          <input ref={nativeRef} type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+          Abrir la cámara del teléfono
+        </label>
+        <p className="text-xs text-ink-300">Si la cámara no se abre sola, toca este botón. En la cámara empieza a grabar, toca ▶ en la ventana flotante y lee. Al terminar vuelve aquí: el video se sube solo.</p>
+        <label className="tap inline-flex cursor-pointer items-center self-start text-xs font-semibold underline underline-offset-4">
+          <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+          O elegir un video de mi galería
+        </label>
+      </div>
 
-      {(phase === "apagada" || phase === "lista") && <p className="text-center text-xs text-ink-400">— o grábate dentro de la app (usa el micrófono del teléfono) —</p>}
 
+      {IN_APP_CAMERA && (
+      <>
       <div className="relative overflow-hidden rounded-card bg-ink-800">
         {phase === "revision" && take ? (
           <video src={take.url} controls playsInline style={{ aspectRatio: aspect }} className="mx-auto h-[52dvh] w-auto max-w-full bg-negro object-contain" />
@@ -486,6 +489,8 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
           </label>
         </div>
       )}
+      </>
+      )}
 
       {error && (
         <p role="alert" className="rounded-xl bg-alerta/15 p-3 text-sm text-blanco">
@@ -493,6 +498,8 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
         </p>
       )}
 
+      {IN_APP_CAMERA && (
+      <>
       {phase !== "revision" && (
         <div className="flex items-center gap-3 text-sm">
           <label htmlFor="vel" className="text-ink-300">
@@ -529,6 +536,8 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
           </>
         )}
       </div>
+      </>
+      )}
 
       {queue.length > 0 && (
         <div className="flex flex-col gap-2 rounded-card bg-ink-800 p-4 text-sm" aria-live="polite">

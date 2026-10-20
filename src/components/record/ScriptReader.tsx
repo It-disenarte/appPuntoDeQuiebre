@@ -81,7 +81,7 @@ function draw(ctx: CanvasRenderingContext2D, lines: string[], progress: number, 
  * ventana flotante (Picture-in-Picture) que se queda encima de otras apps; mantiene la pantalla encendida y avanza a tu ritmo.
  * El estado vive en refs (no en el ciclo de React) para que la ventana flotante siga respondiendo con la app en segundo plano.
  */
-export function ScriptReader({ text, onClose, floatingOnly = false }: { text: string; onClose: () => void; floatingOnly?: boolean }) {
+export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = "1. Abrir el teleprompter flotante", onOpened }: { text: string; onClose: () => void; floatingOnly?: boolean; openLabel?: string; onOpened?: () => void }) {
   const [speed, setSpeed] = useState(3);
   const [running, setRunningState] = useState(false);
   const [started, setStarted] = useState(false);
@@ -258,7 +258,8 @@ export function ScriptReader({ text, onClose, floatingOnly = false }: { text: st
         /* sin controles de medios */
       }
       readyRef.current = true;
-      setNote("Listo. Ahora abre la cámara del teléfono, empieza a grabar y toca ▶ en la ventana flotante.");
+      setNote("Listo. En la cámara empieza a grabar y toca ▶ en la ventana flotante.");
+      onOpened?.();
     } catch {
       closePip();
       setNote("Tu teléfono no dejó abrir la ventana flotante. Prueba con Chrome actualizado o usa el teleprompter en pantalla completa.");
@@ -282,7 +283,7 @@ export function ScriptReader({ text, onClose, floatingOnly = false }: { text: st
             </button>
           ) : (
             <button type="button" onClick={() => void openPip()} className="tap self-start rounded-full bg-naranja px-5 text-sm font-semibold text-negro">
-              1. Abrir el teleprompter flotante
+              {openLabel}
             </button>
           )
         ) : (
