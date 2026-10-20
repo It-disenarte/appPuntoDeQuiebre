@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ScriptReader } from "@/components/record/ScriptReader";
 import { cn } from "@/components/ui";
 import { clampSpeed, estimateSeconds, MAX_PART_BYTES, MAX_PART_SECONDS, megabytes, PART_LABEL, PARTS, SPEED_LABEL, SPEEDS, VIDEO_TYPES, type Part } from "@/lib/recording/rules";
 import { onMobileData, queueAll, queueAvailable, queueDelete, queuePut, uploadPart, type QueueItem } from "./upload-queue";
@@ -64,6 +65,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   });
 
   const [micNote, setMicNote] = useState("");
+  const [reading, setReading] = useState(false);
   const [activeMic, setActiveMic] = useState("");
   const micCount = useRef(0);
   const phaseRef = useRef<Phase>(phase);
@@ -474,7 +476,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       {(phase === "apagada" || phase === "lista") && (
         <div className="flex flex-col gap-2 rounded-xl bg-ink-800 p-3 text-sm">
           <p className="font-semibold">¿Prefieres la cámara de tu teléfono?</p>
-          <p className="text-xs text-ink-300">Máxima calidad (4K, estabilización), pero no verás el teleprompter: léelo antes o ten el guion en otra pantalla. Graba solo la parte «{PART_LABEL[part]}».</p>
+          <p className="text-xs text-ink-300">Máxima calidad (4K, estabilización) y usa tu micrófono externo, pero no verás el teleprompter dentro de la cámara. Graba solo la parte «{PART_LABEL[part]}».</p>
           <div className="flex flex-wrap gap-2">
             <label className="tap inline-flex cursor-pointer items-center rounded-full bg-blanco px-4 text-sm font-semibold text-negro">
               <input type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
@@ -484,7 +486,11 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
               <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
               Elegir de mi galería
             </label>
+            <button type="button" onClick={() => setReading((r) => !r)} className="tap rounded-full border border-ink-600 px-4 text-sm font-semibold">
+              {reading ? "Ocultar el guion" : "Leer el guion de esta parte"}
+            </button>
           </div>
+          {reading && <ScriptReader text={text} onClose={() => setReading(false)} />}
         </div>
       )}
 

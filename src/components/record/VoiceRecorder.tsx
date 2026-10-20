@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ScriptReader } from "@/components/record/ScriptReader";
 import { cn } from "@/components/ui";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { VO_MAX_AUDIO_BYTES, VO_MAX_SECONDS, VOICE_FILE_TYPES } from "@/lib/edit/vo-rules";
@@ -35,6 +36,7 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   const [elapsed, setElapsed] = useState(0);
   const [take, setTake] = useState<{ url: string; blob: Blob; seconds: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [reading, setReading] = useState(false);
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [micId, setMicId] = useState("");
   const [rawAudio, setRawAudio] = useState(false);
@@ -234,7 +236,9 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
     <div className="flex flex-col gap-3">
       {uploading && <LoadingOverlay title="Subiendo tu voz…" hint="Un momento." />}
 
-      {phase === "apagada" && (
+      {phase === "apagada" && reading && <ScriptReader text={text} onClose={() => setReading(false)} />}
+
+      {phase === "apagada" && !reading && (
         <div className="flex flex-col gap-2">
           <button type="button" onClick={() => void openMic()} className="tap self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
             {hasVoice ? "Grabar la voz otra vez" : "Grabar mi voz"}
@@ -243,11 +247,12 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
             <input type="file" accept="audio/*,.m4a,.mp3,.aac,.ogg,.webm" className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
             Subir un audio que ya tengo
           </label>
-          <label className="tap inline-flex cursor-pointer items-center self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
-            <input type="file" accept="audio/*" capture className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
-            Grabar con la grabadora del teléfono
-          </label>
-          <p className="text-xs text-ink-300">Hasta {VO_MAX_SECONDS / 60} minutos. «Grabar mi voz» usa el micrófono del navegador; la grabadora del teléfono sirve si usas un micrófono USB o inalámbrico.</p>
+          <button type="button" onClick={() => setReading(true)} className="tap self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
+            Solo leer el guion (grabo con otro aparato)
+          </button>
+          <p className="text-xs text-ink-300">
+            Hasta {VO_MAX_SECONDS / 60} minutos. «Grabar mi voz» usa el micrófono del navegador. Si usas un micrófono USB o inalámbrico que el navegador no ve: graba con tu grabadora (o con la de tu micrófono), léete el guion con «Solo leer el guion» y luego súbelo con «Subir un audio que ya tengo».
+          </p>
         </div>
       )}
 
@@ -291,11 +296,11 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
               <div className="h-full rounded-full bg-exito transition-[width] duration-100" style={{ width: `${Math.round(level * 100)}%` }} />
             </div>
             <p className="text-xs text-ink-300">Habla y mira que la barra se mueva. Con un micrófono externo, elígelo aquí.</p>
-            <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, usa una app de grabadora de voz y sube el audio.</p>
+            <p className="text-xs text-ink-300">¿No ves tu micrófono USB (DJI, etc.)? Conéctalo, espera unos segundos y activa «Audio sin filtros»: en Android, sin esa opción el teléfono sigue usando su micrófono interno. Si aun así la barra no se mueve, graba con la grabadora del teléfono y sube el audio.</p>
           {micNote && <p className="text-xs font-semibold text-naranja">{micNote}</p>}
           {mics.length > 0 && !mics.some((m) => /usb|dji|wireless|bluetooth|extern/i.test(m.label)) && (
             <p role="status" className="rounded-lg bg-naranja-100 p-2 text-xs font-semibold text-ink-900">
-              El teléfono no le está pasando tu micrófono USB al navegador (solo ve los internos). Usa «Grabar con la grabadora del teléfono»: la grabadora del sistema sí lo reconoce.
+              El teléfono no le está pasando tu micrófono USB al navegador (solo ve los internos). Grábate con la grabadora de tu teléfono (o la de tu micrófono) y súbelo con «Subir un audio que ya tengo»; para ver el guion mientras grabas, usa «Solo leer el guion».
             </p>
           )}
           <p className="text-xs text-ink-300">
