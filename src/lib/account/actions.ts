@@ -12,7 +12,7 @@ import { checkPasswordPolicy, hashPassword, PASSWORD_MAX } from "@/lib/auth/pass
 import { createSession } from "@/lib/auth/session";
 import { normalizeCode } from "@/lib/billing/promo";
 import { openPortal, startCheckout } from "@/lib/billing/service";
-import { COMMITMENT_QUESTIONS, COMMITMENT_VERSION, wrongAnswers } from "@/lib/commitment";
+import { COMMITMENT_VERSION } from "@/lib/commitment";
 import { db } from "@/lib/db";
 import { commitments, invoiceRequests, payments, users } from "@/lib/db/schema";
 import { TERMS_VERSION } from "@/lib/legal";
@@ -34,7 +34,6 @@ const registerSchema = z.object({
   name: z.string().trim().min(2, "Escribe tu nombre.").max(80, "El nombre es muy largo."),
   email: z.string().trim().toLowerCase().email("Revisa tu correo.").max(254),
   password: z.string().max(PASSWORD_MAX),
-  confirm: z.string().max(PASSWORD_MAX),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escribe tu fecha de nacimiento."),
   terms: z.literal("on", { message: "Debes aceptar los términos y el aviso de privacidad." }),
   code: z.string().max(40).optional(),
@@ -46,7 +45,6 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
     name: fd.get("name"),
     email: fd.get("email"),
     password: fd.get("password"),
-    confirm: fd.get("confirm"),
     birthDate: fd.get("birthDate"),
     terms: fd.get("terms") ?? undefined,
     code: fd.get("code") || undefined,
@@ -57,7 +55,6 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
   const age = ageFromBirthDate(d.birthDate);
   if (age === null || age > MAX_AGE) return { error: "Revisa tu fecha de nacimiento.", fields };
   if (age < MIN_AGE) return { error: "La app es solo para mayores de 18 años.", fields };
-  if (d.password !== d.confirm) return { error: "Las contraseñas no coinciden.", fields };
   const policy = checkPasswordPolicy(d.password, d.email);
   if (policy) return { error: policy, fields };
 
@@ -115,13 +112,9 @@ export async function portalAction(): Promise<void> {
 
 export async function acceptCommitmentAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const { user } = await requirePaidUser();
-  const answers: Record<string, string> = {};
-  for (const q of COMMITMENT_QUESTIONS) answers[q.id] = str(fd, q.id).slice(0, 4);
-  const wrong = wrongAnswers(answers);
-  if (wrong.length > 0) return { error: "Revisa las respuestas marcadas.", wrong, fields: answers };
-  if (fd.get("accept") !== "on") return { error: "Marca “Acepto el compromiso” para continuar.", fields: answers };
+  if (fd.get("accept") !== "on") return { error: "Marca “Acepto el compromiso” para continuar." };
 
-  await db().insert(commitments).values({ userId: user.id, contentVersion: COMMITMENT_VERSION, answers }).onConflictDoNothing();
+  await db().insert(commitments).values({ userId: user.id, contentVersion: COMMITMENT_VERSION, answers: {} }).onConflictDoNothing();
   await audit({ action: "commitment.accepted", actorUserId: user.id, meta: { version: COMMITMENT_VERSION } });
   redirect("/hoy");
 }

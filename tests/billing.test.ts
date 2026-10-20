@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { computeAccess, hasCreatorAccess, hasLiveSubscription } from "@/lib/billing/access";
 import { mapSubscription, nextPastDueSince, shouldOverwrite, type ProviderSubscription } from "@/lib/billing/map";
 import { checkPromo, normalizeCode, type PromoForCheck } from "@/lib/billing/promo";
-import { COMMITMENT_QUESTIONS, wrongAnswers } from "@/lib/commitment";
 import { ageFromBirthDate, RFC_REGEX } from "@/lib/validation";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -108,11 +107,5 @@ describe("validaciones de registro y factura", () => {
     expect(RFC_REGEX.test("ABC010101AB1")).toBe(true);
     expect(RFC_REGEX.test("ABC011301AB1")).toBe(false);
     expect(RFC_REGEX.test("abc010101ab1")).toBe(false);
-  });
-  it("compromiso", () => {
-    const all = Object.fromEntries(COMMITMENT_QUESTIONS.map((q) => [q.id, q.correct]));
-    expect(wrongAnswers(all)).toEqual([]);
-    expect(wrongAnswers({ ...all, siembra: "a" })).toEqual(["siembra"]);
-    expect(wrongAnswers({})).toHaveLength(COMMITMENT_QUESTIONS.length);
   });
 });

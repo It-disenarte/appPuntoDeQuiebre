@@ -36,26 +36,40 @@ export function PlanPicker({ priceLabels, initialCode }: { priceLabels: Partial<
               </div>
               <p className="mt-4 text-xl font-extrabold">{priceLabels[id] ?? "Precio por confirmar"}</p>
               <ul className="mt-4 flex flex-col gap-2 text-sm text-ink-700">
-                {p.features.map((f) => (
+                {p.features.slice(0, 3).map((f) => (
                   <li key={f} className="flex gap-2">
                     <Check className="mt-0.5 size-4 shrink-0 text-azul" aria-hidden /> {f}
                   </li>
                 ))}
               </ul>
+              {p.features.length > 3 && (
+                <details className="mt-3 text-sm text-ink-700" onClick={(e) => e.stopPropagation()}>
+                  <summary className="cursor-pointer font-semibold text-azul">Ver todo lo que incluye</summary>
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {p.features.slice(3).map((f) => (
+                      <li key={f} className="flex gap-2">
+                        <Check className="mt-0.5 size-4 shrink-0 text-azul" aria-hidden /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </label>
           );
         })}
       </fieldset>
 
-      <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[1fr_auto]">
-        <Field
-          label="Código del webinar o de descuento (opcional)"
-          name="code"
-          autoCapitalize="characters"
-          spellCheck={false}
-          maxLength={40}
-          defaultValue={state?.fields?.code ?? initialCode}
-        />
+      <div className="flex flex-col gap-4">
+        {initialCode ? (
+          <input type="hidden" name="code" value={state?.fields?.code ?? initialCode} />
+        ) : (
+          <details open={Boolean(state?.fields?.code)} className="rounded-xl bg-ink-100 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-ink-800">¿Tienes un código?</summary>
+            <div className="mt-3">
+              <Field label="Código del webinar o de descuento" name="code" autoCapitalize="characters" spellCheck={false} maxLength={40} defaultValue={state?.fields?.code} />
+            </div>
+          </details>
+        )}
         <Button type="submit" size="lg" disabled={pending} className="w-full md:w-auto">
           {pending ? "Abriendo pago…" : `Continuar con ${PLANS[plan].name}`}
         </Button>
