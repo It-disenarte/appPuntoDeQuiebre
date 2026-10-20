@@ -6,7 +6,7 @@ export type Part = (typeof PARTS)[number];
 export const PART_LABEL: Record<Part, string> = { gancho: "Gancho", cuerpo: "Cuerpo", cierre: "Cierre" };
 export const isPart = (v: string): v is Part => (PARTS as readonly string[]).includes(v);
 
-export const MAX_PART_BYTES = 400 * 1024 * 1024;
+export const MAX_PART_BYTES = 700 * 1024 * 1024;
 export const MAX_PART_SECONDS = 180;
 export const VIDEO_TYPES: Record<string, string> = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
 

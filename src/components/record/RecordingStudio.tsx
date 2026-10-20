@@ -21,6 +21,24 @@ function videoMime(f: File): string | null {
 /** Por ahora la grabación dentro del navegador está apagada: se graba con la cámara nativa del teléfono y el teleprompter flotante. */
 const IN_APP_CAMERA = false;
 
+/** Duración de un video en segundos (0 si el navegador no la puede leer, p. ej. HEVC). Nunca se queda esperando más de 5 s. */
+function readDuration(url: string): Promise<number> {
+  return new Promise((resolve) => {
+    const v = document.createElement("video");
+    const done = (n: number) => {
+      clearTimeout(timer);
+      v.removeAttribute("src");
+      v.load();
+      resolve(n);
+    };
+    const timer = setTimeout(() => done(0), 5000);
+    v.preload = "metadata";
+    v.onloadedmetadata = () => done(Number.isFinite(v.duration) ? Math.round(v.duration) : 0);
+    v.onerror = () => done(0);
+    v.src = url;
+  });
+}
+
 const MIMES = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
 const pickMime = () => (typeof MediaRecorder === "undefined" ? "" : (MIMES.find((m) => MediaRecorder.isTypeSupported(m)) ?? ""));
 
@@ -44,6 +62,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   const [audioKey, setAudioKey] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nativeRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState("");
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -318,22 +337,25 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   async function pickNative(file: File | undefined) {
     if (!file) return;
     setError("");
+    setStatus(`Recibí tu video (${megabytes(file.size)} MB). Preparándolo…`);
     const mime = videoMime(file);
-    if (!mime) return setError("Ese archivo no es un video compatible (MP4, MOV o WebM).");
-    if (file.size > MAX_PART_BYTES) return setError(`El video pesa demasiado (máximo ${Math.round(MAX_PART_BYTES / 1048576)} MB). Graba esta parte más corta.`);
+    if (!mime) {
+      setStatus("");
+      return setError(`Ese archivo no es un video compatible (MP4, MOV o WebM). Tipo recibido: ${file.type || "desconocido"}.`);
+    }
+    if (file.size > MAX_PART_BYTES) {
+      setStatus("");
+      return setError(`El video pesa ${megabytes(file.size)} MB y el máximo es ${Math.round(MAX_PART_BYTES / 1048576)} MB. En los ajustes de tu cámara baja la resolución a 1080p o graba esta parte más corta.`);
+    }
     const url = URL.createObjectURL(file);
-    const seconds = await new Promise<number>((resolve) => {
-      const v = document.createElement("video");
-      v.preload = "metadata";
-      v.onloadedmetadata = () => resolve(Number.isFinite(v.duration) ? Math.round(v.duration) : 0);
-      v.onerror = () => resolve(0);
-      v.src = url;
-    });
+    const seconds = await readDuration(url);
     if (seconds > MAX_PART_SECONDS) {
       URL.revokeObjectURL(url);
+      setStatus("");
       return setError(`Cada parte puede durar máximo ${MAX_PART_SECONDS} segundos. Graba esta parte más corta.`);
     }
     // Si el navegador no pudo leer la duración (formatos como HEVC), se sube igual con un valor aproximado.
+    setStatus("");
     setTake({ url, blob: file, seconds: seconds || Math.round(estimateSeconds(text)), mime });
     setPhase("revision");
   }
@@ -341,11 +363,29 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   async function useTake() {
     if (!take) return;
     const item: QueueItem = { id: crypto.randomUUID(), pieceId, part, seconds: take.seconds, mime: take.mime, blob: take.blob, tries: 0, createdAt: Date.now() };
-    if (!queueAvailable()) return setError("Tu navegador no permite guardar la grabación en el teléfono para subirla después.");
-    try {
-      await queuePut(item);
-    } catch {
-      return setError("No pudimos guardar la grabación en tu teléfono (¿poco espacio?).");
+    setError("");
+    let queued = false;
+    if (queueAvailable()) {
+      setStatus("Guardando tu video en el teléfono para subirlo…");
+      try {
+        await queuePut(item);
+        queued = true;
+      } catch {
+        queued = false; // sin espacio o video muy grande: se intenta subir directo, sin la cola
+      }
+      setStatus("");
+    }
+    if (!queued) {
+      setTake(null);
+      setPhase("apagada");
+      setQueue((q) => [...q, { ...item, pct: 0 }]);
+      const err = await uploadPart(item, (pct) => setQueue((q) => q.map((x) => (x.id === item.id ? { ...x, pct } : x))));
+      setQueue((q) => q.filter((x) => x.id !== item.id));
+      if (err) return setError(`No se pudo subir: ${err.replace(/^!/, "")} Intenta de nuevo con WiFi.`);
+      const nextDirect = PARTS.find((p) => p !== part && !doneParts.has(p));
+      if (nextDirect) setPart(nextDirect);
+      router.refresh();
+      return;
     }
     setTake(null);
     const next = PARTS.find((p) => p !== part && !doneParts.has(p));
@@ -380,6 +420,12 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
           </li>
         ))}
       </ol>
+
+      {(status || error) && (
+        <p role={error ? "alert" : "status"} className={cn("rounded-xl p-3 text-sm", error ? "bg-alerta/15 text-blanco" : "bg-ink-700 text-ink-200")}>
+          {error || status}
+        </p>
+      )}
 
       {phase !== "revision" && (
       <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
@@ -511,7 +557,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       </>
       )}
 
-      {error && (
+      {IN_APP_CAMERA && error && (
         <p role="alert" className="rounded-xl bg-alerta/15 p-3 text-sm text-blanco">
           {error}
         </p>
