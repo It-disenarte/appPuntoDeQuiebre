@@ -116,9 +116,9 @@ export async function CoachSection({ userId, pieceId }: { userId: string; pieceI
             Seguir a mis textos
           </Link>
           {sub?.plan === "pro" && (
-            <span className="tap inline-flex items-center rounded-full border border-ink-600 px-4 text-sm text-ink-300" aria-disabled>
-              Mandar a edición · próximamente
-            </span>
+            <a href="#edicion" className="tap inline-flex items-center rounded-full border border-ink-600 px-4 text-sm font-semibold">
+              Ir a la edición automática
+            </a>
           )}
         </div>
       )}

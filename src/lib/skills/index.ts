@@ -104,13 +104,15 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
       json = extractJson(res.raw);
     } catch {
       // Una sola repetición si el JSON vino roto y no se pudo reparar (salida cortada o mal formada).
-      console.error(`[skills] ${key}: JSON no válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres), se repite la llamada una vez. Final: ${res.raw.slice(-160)}`);
+      console.error(`[skills] ${key}: JSON no válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres), se repite la llamada una vez. Inicio: ${res.raw.slice(0, 240)} … Final: ${res.raw.slice(-160)}`);
       res = await callClaude(key, input);
       try {
         json = extractJson(res.raw);
       } catch (err) {
-        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres). Final: ${res.raw.slice(-160)}`);
-        throw err;
+        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres). Inicio: ${res.raw.slice(0, 240)} … Final: ${res.raw.slice(-160)}`);
+        // El error lleva el inicio de lo que contestó el modelo (queda en Admin → Errores y en la pantalla de quien lo pidió).
+        const peek = res.raw.replace(/s+/g, " ").trim().slice(0, 140);
+        throw new Error(`${err instanceof Error ? err.message : "Sin JSON"} (fin: ${res.stopReason ?? "?"}, ${res.raw.length} caracteres): «${peek}»`);
       }
     }
     const { inputTokens, outputTokens } = res;
