@@ -57,6 +57,19 @@ export async function setUserStatusAction(_prev: AdminState, fd: FormData): Prom
   return { ok: true, message: status === "disabled" ? "Cuenta desactivada." : "Cuenta reactivada." };
 }
 
+/** Da o quita el plan Pro de cortesía (para probar las funciones Pro o regalarlas). No cambia lo que se cobra. */
+export async function setProOverrideAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const id = uuid.safeParse(fd.get("userId"));
+  const on = fd.get("on") === "1";
+  if (!id.success) return { error: "Datos inválidos." };
+  const updated = await db().update(users).set({ proOverride: on }).where(eq(users.id, id.data)).returning({ id: users.id });
+  if (updated.length === 0) return { error: "Usuario no encontrado." };
+  await audit({ action: "admin.pro_override", actorUserId: admin.id, targetUserId: id.data, ip: await getClientIp(), meta: { on } });
+  revalidatePath(`/admin/clientes/${id.data}`);
+  return { ok: true, message: on ? "Pro de cortesía activado." : "Pro de cortesía quitado." };
+}
+
 export async function revokeSessionsAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
   const admin = await requireAdmin();
   const id = uuid.safeParse(fd.get("userId"));

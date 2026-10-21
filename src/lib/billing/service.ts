@@ -14,8 +14,10 @@ import { billingConfigured, planForPriceId, priceIdFor, stripe } from "./stripe"
 /* ───────────── Lectura ───────────── */
 
 export async function getSubscription(userId: string): Promise<Subscription | null> {
-  const [sub] = await db().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
-  return sub ?? null;
+  const [row] = await db().select({ sub: subscriptions, pro: users.proOverride }).from(subscriptions).innerJoin(users, eq(users.id, subscriptions.userId)).where(eq(subscriptions.userId, userId)).limit(1);
+  if (!row) return null;
+  // Pro de cortesía: solo cambia lo que ve la app (los permisos); lo que se cobra en Stripe no se toca.
+  return row.pro ? { ...row.sub, plan: "pro" } : row.sub;
 }
 
 export type AccessInfo = {

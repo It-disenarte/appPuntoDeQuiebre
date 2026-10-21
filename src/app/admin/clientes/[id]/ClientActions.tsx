@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, Card, Field, FormError, FormSuccess } from "@/components/ui";
-import { deleteUserAction, resetPasswordAction, revokeSessionsAction, setUserStatusAction, type AdminState } from "@/lib/admin/actions";
+import { deleteUserAction, resetPasswordAction, revokeSessionsAction, setProOverrideAction, setUserStatusAction, type AdminState } from "@/lib/admin/actions";
 
 export function TempPasswordNotice({ password }: { password: string }) {
   return (
@@ -14,17 +14,18 @@ export function TempPasswordNotice({ password }: { password: string }) {
   );
 }
 
-export function ClientActions({ userId, disabled, email }: { userId: string; disabled: boolean; email: string }) {
+export function ClientActions({ userId, disabled, email, proOverride }: { userId: string; disabled: boolean; email: string; proOverride: boolean }) {
   const [reset, resetAction, resetting] = useActionState<AdminState, FormData>(resetPasswordAction, undefined);
   const [status, statusAction, changing] = useActionState<AdminState, FormData>(setUserStatusAction, undefined);
   const [revoke, revokeAction, revoking] = useActionState<AdminState, FormData>(revokeSessionsAction, undefined);
+  const [pro, proAction, proChanging] = useActionState<AdminState, FormData>(setProOverrideAction, undefined);
   const [del, delAction, deleting] = useActionState<AdminState, FormData>(deleteUserAction, undefined);
 
   return (
     <Card className="flex flex-col gap-4">
       <h2 className="text-sm font-extrabold">Acciones</h2>
-      <FormError message={reset?.error ?? status?.error ?? revoke?.error} />
-      <FormSuccess message={status?.message ?? revoke?.message} />
+      <FormError message={reset?.error ?? status?.error ?? revoke?.error ?? pro?.error} />
+      <FormSuccess message={status?.message ?? revoke?.message ?? pro?.message} />
       {reset?.tempPassword && <TempPasswordNotice password={reset.tempPassword} />}
       <div className="flex flex-wrap gap-3">
         <form
@@ -57,6 +58,15 @@ export function ClientActions({ userId, disabled, email }: { userId: string; dis
           </Button>
         </form>
       </div>
+      <form action={proAction} className="flex flex-col gap-2 rounded-xl bg-ink-100 p-3">
+        <input type="hidden" name="userId" value={userId} />
+        <input type="hidden" name="on" value={proOverride ? "0" : "1"} />
+        <p className="text-sm font-semibold">Plan Pro de cortesía: {proOverride ? "activado" : "apagado"}</p>
+        <p className="text-xs text-ink-600">Abre las funciones Pro (edición automática, voz en off, más cupos) para esta cuenta sin cambiar lo que paga en Stripe. Sirve para probar o regalar.</p>
+        <Button type="submit" variant={proOverride ? "outline" : "primary"} size="sm" disabled={proChanging} className="self-start">
+          {proOverride ? "Quitar Pro de cortesía" : "Dar Pro de cortesía"}
+        </Button>
+      </form>
       <p className="text-xs text-ink-500">Desactivar no cancela la suscripción en Stripe: hazlo desde “Ver en Stripe” si corresponde.</p>
 
       {disabled && (

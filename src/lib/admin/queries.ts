@@ -86,6 +86,7 @@ export async function getClient(id: string) {
       billingCustomerId: users.billingCustomerId,
       lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
+      proOverride: users.proOverride,
     })
     .from(users)
     .where(eq(users.id, id))

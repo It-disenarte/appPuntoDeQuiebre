@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "pro_override" boolean DEFAULT false NOT NULL;

@@ -29,6 +29,7 @@ export type AuditAction =
   | "admin.password_reset"
   | "admin.user_disabled"
   | "admin.user_enabled"
+  | "admin.pro_override"
   | "admin.sessions_revoked"
   | "admin.admin_created"
   | "admin.promo_created"

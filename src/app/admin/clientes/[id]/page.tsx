@@ -143,7 +143,7 @@ export default async function ClientePage({ params }: PageProps<"/admin/clientes
         </Card>
       </div>
 
-      {user.id !== admin.id && <ClientActions userId={user.id} disabled={user.status === "disabled"} email={user.email} />}
+      {user.id !== admin.id && <ClientActions userId={user.id} disabled={user.status === "disabled"} email={user.email} proOverride={user.proOverride} />}
     </div>
   );
 }
