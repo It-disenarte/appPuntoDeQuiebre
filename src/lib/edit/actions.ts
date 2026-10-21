@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
-import { answerDoubt, requestAdjust, requestEdit, requestRender, setSubtitle, setTitle, toggleCut } from "./service";
+import { answerDoubt, discardEdit, requestAdjust, requestEdit, requestRender, setSubtitle, setTitle, toggleCut } from "./service";
 
 export type EditActionState = { error?: string; ok?: boolean } | undefined;
 const uuid = z.string().uuid();
@@ -27,6 +27,7 @@ async function guarded(fd: FormData, run: (userId: string, pieceId: string) => P
 }
 
 export const requestEditAction = async (_p: EditActionState, fd: FormData) => guarded(fd, (u, p) => requestEdit(u, p, ({ mixto: "mixto", voz_en_off: "voz_en_off" } as const)[str(fd, "modo") as "mixto"] ?? "a_camara"), true);
+export const discardEditAction = async (_p: EditActionState, fd: FormData) => guarded(fd, discardEdit);
 export const requestRenderAction = async (_p: EditActionState, fd: FormData) => guarded(fd, requestRender, true);
 export const requestAdjustAction = async (_p: EditActionState, fd: FormData) => guarded(fd, (u, p) => requestAdjust(u, p, str(fd, "nota")), true);
 

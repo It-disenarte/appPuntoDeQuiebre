@@ -1,4 +1,5 @@
 import "server-only";
+import { claudeWithImages } from "@/lib/ai/claude";
 import { readFile } from "node:fs/promises";
 import { recordError } from "@/lib/errors";
 import { jsonrepair } from "jsonrepair";
@@ -62,6 +63,25 @@ export function extractJson(raw: string): unknown {
     // El modelo a veces deja una coma o una comilla suelta; se repara sin gastar otra llamada.
     return JSON.parse(jsonrepair(text));
   }
+}
+
+/**
+ * Llamada con imágenes que devuelve JSON. Si la IA contesta sin JSON se repite UNA vez; si sigue igual, el error lleva el
+ * inicio de lo que contestó (para saber si pidió datos, se negó o se cortó).
+ */
+export async function visionJson(system: string, userText: string, images: Buffer[], label: string): Promise<{ json: unknown; inputTokens?: number; outputTokens?: number }> {
+  let failure = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const r = await claudeWithImages(system, userText, images, { maxTokens: 16000 });
+    try {
+      return { json: extractJson(r.text), inputTokens: r.inputTokens, outputTokens: r.outputTokens };
+    } catch (err) {
+      const peek = r.text.replace(/s+/g, " ").trim().slice(0, 140);
+      failure = `${err instanceof Error ? err.message : "Sin JSON"} (fin: ${r.stopReason ?? "?"}, ${r.text.length} caracteres): «${peek}»`;
+      console.error(`[skills] ${label}: intento ${attempt} sin JSON válido. ${failure}`);
+    }
+  }
+  throw new Error(failure);
 }
 
 type AnthropicResponse = { content?: { type: string; text?: string }[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };

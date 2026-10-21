@@ -9,7 +9,7 @@ import type { ReadableStream as NodeWebStream } from "node:stream/web";
 import { randomUUID } from "node:crypto";
 import { and, count, eq, gte, ne } from "drizzle-orm";
 import { getLimits } from "@/lib/admin/limits";
-import { claudeConfigured, claudeWithImages } from "@/lib/ai/claude";
+import { claudeConfigured } from "@/lib/ai/claude";
 import { geminiConfigured, geminiGenerate, parseJson } from "@/lib/ai/gemini";
 import { getSubscription } from "@/lib/billing/service";
 import { getManual, getVoiceProfile } from "@/lib/brujula/service";
@@ -21,7 +21,7 @@ import { getPiece, parseScript } from "@/lib/plan/service";
 import { sendToUser } from "@/lib/push";
 import { getExport } from "@/lib/recording/join";
 import { probeVideo, runFfmpeg } from "@/lib/recording/ffmpeg";
-import { extractJson, runEdicion } from "@/lib/skills";
+import { runEdicion, visionJson } from "@/lib/skills";
 import type { VideoGuion } from "@/lib/skills/schemas";
 import { deleteObject, getObject, putObjectStream, storageConfigured } from "@/lib/storage";
 import { resolveKitFont, stageFonts } from "./fonts";
@@ -84,6 +84,16 @@ export async function requestEdit(userId: string, pieceId: string, mode: "a_cama
   }
   const [row] = await db().insert(videoEdits).values({ userId, pieceId, mode }).returning({ id: videoEdits.id });
   await enqueue("edicion.planear", userId, { editId: row!.id });
+  return { ok: true };
+}
+
+/** Descarta una edición con error o atorada para volver a elegir cómo editar (no devuelve el cupo del mes si ya se usó). */
+export async function discardEdit(userId: string, pieceId: string): Promise<Result> {
+  const e = await getEdit(userId, pieceId);
+  if (!e) return { ok: true };
+  if (!(e.status === "error" || isStuck(e))) return { ok: false, error: "Esta edición sigue en marcha." };
+  for (const k of [e.outputKey, e.coverKey]) if (k) await deleteObject(k).catch(() => undefined);
+  await db().delete(videoEdits).where(eq(videoEdits.id, e.id));
   return { ok: true };
 }
 
@@ -259,8 +269,8 @@ export async function runPlan(userId: string, editId: string): Promise<void> {
         const images = await Promise.all(frames.map((n) => readFile(path.join(dir, n))));
         const skillText = await readFile(path.join(process.cwd(), "skills", "edicion", "v1", "skill.md"), "utf8");
         const mixInput = { ...input13, modo: "mixto", clips: [{ id: "c1", duracion_s: Math.round(duration * 10) / 10, fotogramas: frames.map((_, k) => ({ segundo: k * 3, url: "imagen adjunta, en orden" })), transcripcion: null }] };
-        const resp = await claudeWithImages(skillText, `Entrada:\n${JSON.stringify(mixInput)}\n\nLas imágenes son los fotogramas del video, uno cada 3 segundos, en orden. Responde solo con el JSON de salida del modo mixto.`, images);
-        rawPlan = { ...planSchema.parse(extractJson(resp.text)), modo: "mixto" };
+        const resp = await visionJson(skillText, `Entrada:\n${JSON.stringify(mixInput)}\n\nLas imágenes son los fotogramas del video, uno cada 3 segundos, en orden. Responde solo con el JSON de salida del modo mixto.`, images, "edicion-mixto");
+        rawPlan = { ...planSchema.parse(resp.json), modo: "mixto" };
         await logCall(userId, "edicion-mixto", false, "ok", { i: resp.inputTokens, o: resp.outputTokens });
       } else {
         rawPlan = mockMixtoPlan(words, duration, ctx13);

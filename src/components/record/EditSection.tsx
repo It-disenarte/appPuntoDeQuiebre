@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Poller } from "@/components/metrics/Poller";
-import { AdjustForm, RenderButton, RequestEditButton, TextEditor } from "@/components/record/EditForms";
+import { AdjustForm, DiscardEditButton, RenderButton, RequestEditButton, TextEditor } from "@/components/record/EditForms";
 import { Button } from "@/components/ui";
 import { answerDoubtAction, toggleCutAction } from "@/lib/edit/actions";
 import { CUT_LABEL, MAX_ADJUSTMENTS, MAX_FINAL_SECONDS } from "@/lib/edit/schemas";
@@ -94,7 +94,9 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
           <p role="alert" className="text-sm text-alerta-100">
             {edit.status === "error" ? `No pudimos editarlo: ${edit.error ?? "algo falló"}.` : "La edición está tardando más de lo normal."}
           </p>
+          <p className="text-xs text-ink-300">Forma de edición: {edit.mode === "voz_en_off" ? "voz en off con tomas" : edit.mode === "mixto" ? "hablo y hay tomas" : "hablo a cámara"}.</p>
           <RequestEditButton pieceId={pieceId} label="Reintentar" modo={edit.mode} />
+          <DiscardEditButton pieceId={pieceId} />
         </div>
       )}
 

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, eq, sum } from "drizzle-orm";
-import { claudeConfigured, claudeWithImages } from "@/lib/ai/claude";
+import { claudeConfigured } from "@/lib/ai/claude";
 import { geminiConfigured } from "@/lib/ai/gemini";
 import { getManual, getVoiceProfile } from "@/lib/brujula/service";
 import { db } from "@/lib/db";
@@ -14,7 +14,7 @@ import { enqueue } from "@/lib/jobs";
 import { getPiece, parseScript } from "@/lib/plan/service";
 import { sendToUser } from "@/lib/push";
 import { probeVideo, runFfmpeg } from "@/lib/recording/ffmpeg";
-import { extractJson } from "@/lib/skills";
+import { visionJson } from "@/lib/skills";
 import type { VideoGuion } from "@/lib/skills/schemas";
 import { deleteObject, getObject, putObjectStream } from "@/lib/storage";
 import { resolveKitFont, stageFonts } from "./fonts";
@@ -193,8 +193,8 @@ export async function runVoPlan(userId: string, editId: string): Promise<void> {
         perfil_voz: { muletillas_propias: (voice?.content.muletillas ?? []).map((m) => m.texto) },
         ajuste: { numero: e.adjustments, anterior: previous, nota: e.adjustNote },
       };
-      const resp = await claudeWithImages(`${skillText}\n${VO_INSTRUCTIONS}`, `Entrada:\n${JSON.stringify(input)}\n\nLas imágenes son los fotogramas de las tomas, en el orden de la lista (c1, c2, …). Responde solo con el JSON de salida del modo voz_en_off.`, images);
-      raw = { ...planSchema.parse(extractJson(resp.text)), modo: "voz_en_off" };
+      const resp = await visionJson(`${skillText}\n${VO_INSTRUCTIONS}`, `Entrada:\n${JSON.stringify(input)}\n\nLas imágenes son los fotogramas de las tomas, en el orden de la lista (c1, c2, …). Responde solo con el JSON de salida del modo voz_en_off.`, images, "edicion-voz-en-off");
+      raw = { ...planSchema.parse(resp.json), modo: "voz_en_off" };
       await logCall(userId, "edicion-voz-en-off", false, "ok", { i: resp.inputTokens, o: resp.outputTokens });
     } else {
       raw = mockVoPlan(words, duration, clipSeconds, ctx);

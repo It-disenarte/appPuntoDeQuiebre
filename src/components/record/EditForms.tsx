@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, FormError, TextAreaField } from "@/components/ui";
-import { requestAdjustAction, requestEditAction, requestRenderAction, setSubtitleAction, setTitleAction, type EditActionState } from "@/lib/edit/actions";
+import { discardEditAction, requestAdjustAction, requestEditAction, requestRenderAction, setSubtitleAction, setTitleAction, type EditActionState } from "@/lib/edit/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 
 function Simple({ action, pieceId, label, busy, variant = "light", modo }: { action: (p: EditActionState, fd: FormData) => Promise<EditActionState>; pieceId: string; label: string; busy: string; variant?: "light" | "outline" | "ghost"; modo?: string }) {
@@ -24,6 +24,7 @@ function Simple({ action, pieceId, label, busy, variant = "light", modo }: { act
 }
 
 export const RequestEditButton = ({ pieceId, label = "Mandar a edición", modo }: { pieceId: string; label?: string; modo?: "a_camara" | "mixto" | "voz_en_off" }) => <Simple action={requestEditAction} pieceId={pieceId} label={label} busy="Enviando…" modo={modo} />;
+export const DiscardEditButton = ({ pieceId }: { pieceId: string }) => <Simple action={discardEditAction} pieceId={pieceId} label="Elegir otra forma de editar" busy="Un momento…" variant="ghost" />;
 export const RenderButton = ({ pieceId }: { pieceId: string }) => <Simple action={requestRenderAction} pieceId={pieceId} label="Se ve bien, armar mi video" busy="Enviando…" />;
 
 export function AdjustForm({ pieceId, left }: { pieceId: string; left: number }) {

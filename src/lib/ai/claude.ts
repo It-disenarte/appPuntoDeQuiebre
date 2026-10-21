@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 export const claudeConfigured = () => Boolean(env().ANTHROPIC_API_KEY);
 
 /** Llamada simple a Claude (texto) con sistema y mensaje; devuelve el texto de la respuesta. */
-export async function claudeText(system: string, user: string, opts: { maxTokens?: number; timeoutMs?: number } = {}): Promise<{ text: string; inputTokens?: number; outputTokens?: number }> {
+export async function claudeText(system: string, user: string, opts: { maxTokens?: number; timeoutMs?: number } = {}): Promise<{ text: string; inputTokens?: number; outputTokens?: number; stopReason?: string }> {
   const e = env();
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -13,12 +13,12 @@ export async function claudeText(system: string, user: string, opts: { maxTokens
     signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
   });
   if (!res.ok) throw new Error(`Anthropic respondió ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
-  const data = (await res.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
-  return { text: (data.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(""), inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens };
+  const data = (await res.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+  return { text: (data.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(""), inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens, stopReason: data.stop_reason };
 }
 
 /** Llamada a Claude con fotogramas (imágenes JPEG) y un texto: la usa la edición cuando hay que “ver” los videos. */
-export async function claudeWithImages(system: string, userText: string, images: Buffer[], opts: { maxTokens?: number; timeoutMs?: number } = {}): Promise<{ text: string; inputTokens?: number; outputTokens?: number }> {
+export async function claudeWithImages(system: string, userText: string, images: Buffer[], opts: { maxTokens?: number; timeoutMs?: number } = {}): Promise<{ text: string; inputTokens?: number; outputTokens?: number; stopReason?: string }> {
   const e = env();
   const content = [
     ...images.slice(0, 60).map((b) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: b.toString("base64") } })),
@@ -31,6 +31,6 @@ export async function claudeWithImages(system: string, userText: string, images:
     signal: AbortSignal.timeout(opts.timeoutMs ?? 240_000),
   });
   if (!res.ok) throw new Error(`Anthropic respondió ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
-  const data = (await res.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
-  return { text: (data.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(""), inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens };
+  const data = (await res.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+  return { text: (data.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(""), inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens, stopReason: data.stop_reason };
 }

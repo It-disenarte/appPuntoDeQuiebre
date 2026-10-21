@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeWebStream } from "node:stream/web";
 import { and, asc, count, eq } from "drizzle-orm";
-import { claudeConfigured, claudeWithImages } from "@/lib/ai/claude";
+import { claudeConfigured } from "@/lib/ai/claude";
 import { getManual, getVoiceProfile } from "@/lib/brujula/service";
 import { db } from "@/lib/db";
 import { aiCalls, capcutRecipes, looseClips } from "@/lib/db/schema";
@@ -15,7 +15,7 @@ import { enqueue } from "@/lib/jobs";
 import { getPiece, parseScript } from "@/lib/plan/service";
 import { sendToUser } from "@/lib/push";
 import { meanVolume, probeVideo, runFfmpeg } from "@/lib/recording/ffmpeg";
-import { extractJson } from "@/lib/skills";
+import { visionJson } from "@/lib/skills";
 import type { VideoGuion } from "@/lib/skills/schemas";
 import { deleteObject, getObject } from "@/lib/storage";
 import { frameArgs } from "./render-args";
@@ -170,8 +170,8 @@ export async function runRecipe(userId: string, recipeId: string): Promise<void>
         coach: null,
         ajuste: { numero: row.adjustments, anterior: parseRecipe(row.result), nota: row.adjustNote },
       };
-      const r = await claudeWithImages(skill, `Entrada:\n${JSON.stringify(input)}\n\nLas imágenes adjuntas son los fotogramas de los clips, en el orden de la lista (c1, c2, …). Responde solo con el JSON de salida del modo receta_capcut.`, images);
-      recipe = recipeSchema.parse(extractJson(r.text));
+      const r = await visionJson(skill, `Entrada:\n${JSON.stringify(input)}\n\nLas imágenes adjuntas son los fotogramas de los clips, en el orden de la lista (c1, c2, …). Responde solo con el JSON de salida del modo receta_capcut.`, images, "edicion-receta");
+      recipe = recipeSchema.parse(r.json);
       await logCall(userId, false, "ok", { i: r.inputTokens, o: r.outputTokens });
     } else {
       recipe = mockRecipe(info, { topic: piece.topic, hook: script?.gancho ?? "", cta: script?.cierre ?? "" });
