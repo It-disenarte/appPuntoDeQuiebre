@@ -62,6 +62,11 @@ export async function latestRun(userId: string): Promise<Run | null> {
   const [r] = await db().select().from(analyzerRuns).where(eq(analyzerRuns.userId, userId)).orderBy(desc(analyzerRuns.createdAt)).limit(1);
   return r ?? null;
 }
+/** El último análisis terminado bien: sus resultados se siguen mostrando aunque un intento posterior falle. */
+export async function latestDoneRun(userId: string): Promise<Run | null> {
+  const [r] = await db().select().from(analyzerRuns).where(and(eq(analyzerRuns.userId, userId), eq(analyzerRuns.status, "lista"))).orderBy(desc(analyzerRuns.createdAt)).limit(1);
+  return r ?? null;
+}
 export async function getRun(userId: string, id: string): Promise<Run | null> {
   const [r] = await db().select().from(analyzerRuns).where(and(eq(analyzerRuns.id, id), eq(analyzerRuns.userId, userId))).limit(1);
   return r ?? null;
@@ -205,9 +210,22 @@ async function analyzeVideo(userId: string, reel: ScrapedReel): Promise<VideoAna
 
 async function writeConcepts(userId: string, analysis: VideoAnalysis): Promise<Concepts> {
   const marca = await brandContext(userId);
-  const r = await claudeText(await skillText("analizador-conceptos"), `Entrada:\n${JSON.stringify({ analisis: analysis, marca })}\n\nResponde solo con el JSON de salida.`, { maxTokens: 2500 });
-  const concepts = conceptsSchema.parse(parseJson(r.text));
-  await logCall(userId, "analizador-conceptos", false, "ok", { i: r.inputTokens, o: r.outputTokens });
+  const system = await skillText("analizador-conceptos");
+  const user = `Entrada:\n${JSON.stringify({ analisis: analysis, marca })}\n\nResponde solo con el JSON de salida.`;
+  if (claudeConfigured()) {
+    try {
+      const r = await claudeText(system, user, { maxTokens: 2500 });
+      const concepts = conceptsSchema.parse(parseJson(r.text));
+      await logCall(userId, "analizador-conceptos", false, "ok", { i: r.inputTokens, o: r.outputTokens });
+      return concepts;
+    } catch (err) {
+      if (!geminiConfigured()) throw err;
+      console.error("[analizador] las ideas con Claude fallaron, se intenta con Gemini:", err instanceof Error ? err.message : err);
+    }
+  }
+  const raw = await geminiGenerate([{ text: system + "\n\n---\n" + user }], { json: true, timeoutMs: 120_000, maxRetries: 2 });
+  const concepts = conceptsSchema.parse(parseJson(raw));
+  await logCall(userId, "analizador-conceptos", false, "ok");
   return concepts;
 }
 
@@ -252,12 +270,14 @@ export async function runAnalyzer(userId: string, runId: string): Promise<void> 
       try {
         const analysis = real ? await analyzeVideo(userId, reel) : sampleAnalysis();
         let concepts: Concepts;
-        if (real && claudeConfigured()) {
+        if (real) {
           try {
             concepts = await writeConcepts(userId, analysis);
           } catch (e) {
+            // El análisis del reel vale aunque no salgan las ideas: se guarda y se avisa.
             await logCall(userId, "analizador-conceptos", false, "error");
-            throw e;
+            prog.errors.push(`@${reel.username}: el análisis salió pero no las ideas nuevas (${(e instanceof Error ? e.message : "falló").slice(0, 90)})`);
+            concepts = {} as Concepts;
           }
         } else concepts = sampleConcepts(marca.nicho);
         const thumbnailKey = real ? await saveThumbnail(userId, reel.thumbnail) : null;
@@ -272,7 +292,7 @@ export async function runAnalyzer(userId: string, runId: string): Promise<void> 
     }
 
     prog.phase = "listo";
-    if (saved === 0) throw new Error(prog.errors[0] ?? "No se pudo analizar ningún video");
+    if (saved === 0) throw new Error(prog.errors.length > 0 ? "No se pudo analizar ningún reel. " + prog.errors.slice(0, 3).join(" · ") : "No se pudo analizar ningún video");
     await db().update(analyzerRuns).set({ status: "lista", progress: prog, summary: { videos: saved, cuentas: list.length }, finishedAt: new Date() }).where(eq(analyzerRuns.id, runId));
     void sendToUser(userId, { title: "Tu análisis de la competencia está listo", body: `Revisamos ${saved} reel${saved === 1 ? "" : "s"} y te dejamos ideas nuevas para tu marca.`, url: "/analizador", tag: `analizador-${runId}` }).catch(() => undefined);
   } catch (err) {

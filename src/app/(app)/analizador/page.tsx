@@ -5,7 +5,7 @@ import { Poller } from "@/components/metrics/Poller";
 import { Button, Card, Chip, PageHeader } from "@/components/ui";
 import { removeCompetitorAction, toggleStarAction } from "@/lib/analyzer/actions";
 import { getLimits } from "@/lib/admin/limits";
-import { latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
+import { latestDoneRun, latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { formatCount } from "@/lib/metrics/schemas";
 
@@ -15,10 +15,11 @@ const dateEs = (d: Date) => d.toLocaleDateString("es-MX", { day: "numeric", mont
 
 export default async function AnalizadorPage() {
   const { user } = await requireCreatorAccess();
-  const [comps, run, wait] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id)]);
+  const [comps, run, wait, done] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id), latestDoneRun(user.id)]);
   const intervalDays = (await getLimits()).analyzerIntervalDays;
   const running = run && ["en_cola", "corriendo"].includes(run.status);
-  const lastDone = run?.status === "lista" ? run : null;
+  // Se muestran los resultados del último análisis que terminó bien, aunque el intento más reciente haya fallado.
+  const lastDone = done;
   const videos = await listVideos(user.id, lastDone?.id);
   const progress = run ? parseProgress(run.progress) : null;
   const pct = progress && progress.videosTotal > 0 ? Math.round((progress.videosDone / progress.videosTotal) * 100) : progress ? Math.round((progress.accountsDone / Math.max(1, progress.accountsTotal)) * 40) : 0;
@@ -70,8 +71,27 @@ export default async function AnalizadorPage() {
         </Card>
       ) : (
         <Card data-tour="correr" className="flex flex-col gap-3">
-          {run?.status === "error" && <p role="alert" className="text-sm text-alerta">El último intento falló: {run.error ?? "algo salió mal"}. No cuenta para tu límite semanal.</p>}
-          {wait ? <p className="text-sm text-ink-700">Ya hiciste tu análisis de esta semana. Podrás correr otro el <strong>{dateEs(wait)}</strong>.</p> : <StartRunForm disabled={comps.length === 0} />}
+          {run?.status === "error" && (
+            <div role="alert" className="flex flex-col gap-1 text-sm text-alerta">
+              <p>El último intento falló: {run.error ?? "algo salió mal"}. No cuenta para tu límite semanal.</p>
+              {parseProgress(run.progress).errors.length > 1 && (
+                <ul className="list-disc pl-5 text-xs">
+                  {parseProgress(run.progress)
+                    .errors.slice(0, 4)
+                    .map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {wait ? (
+            <p className="text-sm text-ink-700">
+              Ya hiciste tu análisis de esta semana{lastDone ? " (sus resultados están aquí abajo)" : ""}. Podrás correr otro el <strong>{dateEs(wait)}</strong>.
+            </p>
+          ) : (
+            <StartRunForm disabled={comps.length === 0} />
+          )}
         </Card>
       )}
 
