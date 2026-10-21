@@ -20,7 +20,7 @@ export function ScaledSlide(props: Props) {
   }, []);
   return (
     <div ref={box} className="relative w-full overflow-hidden rounded-lg bg-ink-100 shadow-card" style={{ aspectRatio: `${W} / ${H}` }}>
-      <div style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: W, height: H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
         <SlideCanvas {...props} />
       </div>
     </div>

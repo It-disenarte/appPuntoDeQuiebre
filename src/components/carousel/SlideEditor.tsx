@@ -60,8 +60,8 @@ export function SlideEditor({ carouselId, slide, total, kit, bg, handle, image, 
 
   const guide = slide.imagen.foto_guia;
   return (
-    <section className="grid gap-4 rounded-card bg-blanco p-4 shadow-card md:grid-cols-[minmax(0,260px)_1fr]" aria-label={`Slide ${slide.n}`}>
-      <div className="flex flex-col gap-2">
+    <section className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-card bg-blanco p-4 shadow-card md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]" aria-label={`Slide ${slide.n}`}>
+      <div className="flex min-w-0 flex-col gap-2">
         <ScaledSlide slide={slide} kit={kit} bg={bg} imageUrl={image?.url ?? null} focal={focal} total={total} handle={handle} />
         <div className="flex items-center justify-between text-xs text-ink-500">
           <span>

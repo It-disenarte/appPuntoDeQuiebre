@@ -17,7 +17,7 @@ export function Scaled({ w, h, children, className }: { w: number; h: number; ch
   }, [w]);
   return (
     <div ref={box} className={className ?? "relative w-full overflow-hidden"} style={{ aspectRatio: `${w} / ${h}` }}>
-      <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}>{children}</div>
+      <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}>{children}</div>
     </div>
   );
 }
