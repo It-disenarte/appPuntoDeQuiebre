@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contentPieces, recordings } from "@/lib/db/schema";
 import { todayIso } from "@/lib/plan/rules";
@@ -12,6 +12,17 @@ const addDaysIso = (iso: string, n: number) => new Date(Date.parse(`${iso}T12:00
 
 export const listRecordings = (userId: string, pieceId: string): Promise<Recording[]> =>
   db().select().from(recordings).where(and(eq(recordings.userId, userId), eq(recordings.pieceId, pieceId)));
+
+/** Cuántas de las 3 partes tiene grabadas cada pieza (para la lista de videos). */
+export async function recordedCounts(userId: string, pieceIds: string[]): Promise<Map<string, number>> {
+  if (pieceIds.length === 0) return new Map();
+  const rows = await db()
+    .select({ pieceId: recordings.pieceId, n: count() })
+    .from(recordings)
+    .where(and(eq(recordings.userId, userId), inArray(recordings.pieceId, pieceIds)))
+    .groupBy(recordings.pieceId);
+  return new Map(rows.map((r) => [r.pieceId, Number(r.n)]));
+}
 
 /** Videos de la parrilla por grabar: los de los últimos 14 días en adelante que no están publicados ni descartados. */
 export function recordablePieces(userId: string, today = todayIso()) {

@@ -19,7 +19,7 @@ export async function FullVideoSection({ userId, pieceId }: { userId: string; pi
     </form>
   );
   return (
-    <section className="flex flex-col gap-3 rounded-card bg-ink-800 p-4" aria-label="Video completo">
+    <section id="video" className="flex scroll-mt-4 flex-col gap-3 rounded-card bg-ink-800 p-4" aria-label="Video completo">
       {working && <Poller />}
       <h2 className="font-extrabold">Tu video completo</h2>
       {!exp && (

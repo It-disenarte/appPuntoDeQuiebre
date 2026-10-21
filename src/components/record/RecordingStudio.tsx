@@ -401,24 +401,27 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   return (
     // Sin selección de texto: al mantener pulsado, Chrome abría su buscador (“Tap to see search results”) en pleno estudio.
     <div className="flex flex-col gap-3 select-none [-webkit-touch-callout:none]" onContextMenu={(e) => e.preventDefault()}>
-      <ol className="grid grid-cols-3 gap-1.5" aria-label="Partes del guion">
-        {PARTS.map((p) => (
-          <li key={p}>
-            <button
-              type="button"
-              onClick={() => (phase === "apagada" || phase === "lista") && setPart(p)}
-              aria-current={p === part ? "step" : undefined}
-              className="flex w-full flex-col gap-1.5 text-left disabled:opacity-60"
-              disabled={phase === "cuenta" || phase === "grabando" || phase === "revision"}
-            >
-              <span className={cn("h-1 rounded-full", doneParts.has(p) ? "bg-exito" : pending.has(p) ? "bg-azul" : p === part ? "bg-naranja" : "bg-ink-700")} />
-              <span className={cn("text-xs", p === part ? "font-extrabold text-naranja" : "text-ink-300")}>
-                {PART_LABEL[p]}
-                {doneParts.has(p) ? " ✓" : pending.has(p) ? " ↑" : ""}
-              </span>
-            </button>
-          </li>
-        ))}
+      <ol className="grid grid-cols-3 gap-2" aria-label="Partes del guion">
+        {PARTS.map((p, i) => {
+          const ok = doneParts.has(p);
+          const up = pending.has(p);
+          const sel = p === part;
+          return (
+            <li key={p}>
+              <button
+                type="button"
+                onClick={() => (phase === "apagada" || phase === "lista") && setPart(p)}
+                aria-current={sel ? "step" : undefined}
+                disabled={phase === "cuenta" || phase === "grabando" || phase === "revision"}
+                className={cn("flex w-full flex-col items-center gap-0.5 rounded-xl border-2 px-2 py-3 text-center transition disabled:opacity-60", sel ? "border-naranja bg-naranja/10" : "border-ink-700 bg-ink-800 hover:border-ink-600")}
+              >
+                <span className={cn("grid size-6 place-items-center rounded-full text-xs font-extrabold", ok ? "bg-exito text-negro" : up ? "bg-azul text-blanco" : sel ? "bg-naranja text-negro" : "bg-ink-700 text-ink-200")}>{ok ? "✓" : up ? "↑" : i + 1}</span>
+                <span className={cn("text-sm font-extrabold", sel ? "text-blanco" : "text-ink-200")}>{PART_LABEL[p]}</span>
+                <span className="text-[0.6875rem] text-ink-400">{ok ? "Subida" : up ? "Subiendo" : "Pendiente"}</span>
+              </button>
+            </li>
+          );
+        })}
       </ol>
 
       {(status || error) && (
@@ -428,22 +431,37 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       )}
 
       {phase !== "revision" && (
-      <div className="flex flex-col gap-3 rounded-card bg-ink-800 p-4 text-sm">
-        <div>
-          <p className="font-extrabold">Grabar «{PART_LABEL[part]}»</p>
-          <p className="mt-1 text-xs text-ink-300">Se abre el teleprompter chiquito encima y luego la cámara de tu teléfono (con tu micrófono externo, a máxima calidad). Elige la parte arriba.</p>
+        <div className="flex flex-col gap-4 rounded-card bg-ink-800 p-4">
+          <div>
+            <p className="text-xs font-bold tracking-wide text-naranja uppercase">
+              Parte {PARTS.indexOf(part) + 1} de 3 · {doneParts.has(part) ? "ya la tienes (grabar otra vez la reemplaza)" : "por grabar"}
+            </p>
+            <h2 className="font-display mt-1 text-3xl">Grabar «{PART_LABEL[part]}»</h2>
+          </div>
+          <p className="line-clamp-4 rounded-xl bg-ink-900 p-3 text-sm whitespace-pre-line text-ink-100">{text || "Esta parte no tiene texto en el guion."}</p>
+          <ol className="flex flex-col gap-2 text-sm text-ink-200">
+            <li className="flex gap-3">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ink-700 text-xs font-extrabold">1</span> Se abre el teleprompter chiquito encima de la pantalla.
+            </li>
+            <li className="flex gap-3">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ink-700 text-xs font-extrabold">2</span> Se abre tu cámara: empieza a grabar y toca ▶ en la ventanita para leer.
+            </li>
+            <li className="flex gap-3">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ink-700 text-xs font-extrabold">3</span> Al terminar, vuelve aquí: el video se revisa y se sube.
+            </li>
+          </ol>
+          <ScriptReader key={part} floatingOnly openLabel={`Grabar «${PART_LABEL[part]}»`} text={text} onClose={() => undefined} onOpened={() => nativeRef.current?.click()} />
+          <div className="flex flex-col gap-2 border-t border-ink-700 pt-3 text-sm">
+            <label className="tap inline-flex cursor-pointer items-center justify-center rounded-full border border-ink-600 px-5 font-semibold">
+              <input ref={nativeRef} type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+              ¿No se abrió la cámara? Ábrela aquí
+            </label>
+            <label className="tap inline-flex cursor-pointer items-center justify-center text-xs font-semibold text-ink-300 underline underline-offset-4">
+              <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
+              O elegir un video de mi galería
+            </label>
+          </div>
         </div>
-        <ScriptReader key={part} floatingOnly openLabel={`Grabar «${PART_LABEL[part]}»`} text={text} onClose={() => undefined} onOpened={() => nativeRef.current?.click()} />
-        <label className="tap inline-flex cursor-pointer items-center self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
-          <input ref={nativeRef} type="file" accept="video/*" capture="user" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-          Abrir la cámara del teléfono
-        </label>
-        <p className="text-xs text-ink-300">Si la cámara no se abre sola, toca este botón. En la cámara empieza a grabar, toca ▶ en la ventana flotante y lee. Al terminar vuelve aquí: el video se sube solo.</p>
-        <label className="tap inline-flex cursor-pointer items-center self-start text-xs font-semibold underline underline-offset-4">
-          <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="sr-only" onChange={(e) => (void pickNative(e.target.files?.[0]), (e.target.value = ""))} />
-          O elegir un video de mi galería
-        </label>
-      </div>
       )}
 
       {/* Revisar el video (de la cámara del teléfono o de la galería) antes de subirlo. */}

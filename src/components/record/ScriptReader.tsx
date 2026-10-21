@@ -269,26 +269,28 @@ export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = 
   if (floatingOnly) {
     return (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 text-sm">
-          <label htmlFor="rd-vel" className="text-ink-300">
-            Velocidad
-          </label>
-          <input id="rd-vel" type="range" min={1} max={5} value={speed} onChange={(e) => setSpeed(clampSpeed(Number(e.target.value)))} className="flex-1 accent-blanco" disabled={pip} />
-          <span className="w-24 text-right font-extrabold">{SPEED_LABEL[speed - 1]}</span>
-        </div>
         {supportsPip ? (
           pip ? (
             <button type="button" onClick={closePip} className="tap self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
               Cerrar el teleprompter flotante
             </button>
           ) : (
-            <button type="button" onClick={() => void openPip()} className="tap self-start rounded-full bg-naranja px-5 text-sm font-semibold text-negro">
+            <button type="button" onClick={() => void openPip()} className="tap h-14 w-full rounded-full bg-naranja px-6 text-base font-extrabold text-negro shadow-card">
               {openLabel}
             </button>
           )
         ) : (
           <p className="text-xs text-ink-300">Tu navegador no permite la ventana flotante. Usa Chrome actualizado en Android.</p>
         )}
+        <details className="text-xs text-ink-300">
+          <summary className="cursor-pointer font-semibold">Velocidad del teleprompter: {SPEED_LABEL[speed - 1]}</summary>
+          <div className="mt-2 flex items-center gap-3">
+            <label htmlFor="rd-vel" className="sr-only">
+              Velocidad
+            </label>
+            <input id="rd-vel" type="range" min={1} max={5} value={speed} onChange={(e) => setSpeed(clampSpeed(Number(e.target.value)))} className="flex-1 accent-blanco" disabled={pip} />
+          </div>
+        </details>
         {note && (
           <p role="status" className="text-xs font-semibold text-naranja">
             {note}
