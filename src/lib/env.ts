@@ -46,6 +46,8 @@ const schema = z.object({
   GEMINI_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash"),
   // Skills de texto que se mandan primero a Gemini (más barato) y, si falla, a Claude. Las demás van primero a Claude y, si falla, a Gemini.
   SKILLS_GEMINI: optional(z.string()).default("carruseles,historias,textos,directos,tendencias,perfil"),
+  // Modelo de Gemini que crea las imágenes de los carruseles.
+  GEMINI_IMAGE_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash-image"),
   // Modelo de Gemini para esas skills (por defecto el mismo de GEMINI_MODEL).
   GEMINI_SKILLS_MODEL: optional(z.string().min(3)),
   // Reservadas para fases siguientes (hoy no se usan): analizador de competencia (5) e Instagram (3).

@@ -106,3 +106,41 @@ export function parseJson(raw: string): unknown {
     return JSON.parse(jsonrepair(text));
   }
 }
+
+/** Crea UNA imagen a partir de un texto (Gemini Imagen integrado). Devuelve los bytes y su tipo; lanza un error en español si no se pudo. */
+export async function geminiGenerateImage(prompt: string, opts: { aspectRatio?: string; model?: string; timeoutMs?: number } = {}): Promise<{ data: Buffer; mime: string }> {
+  const e = env();
+  const model = opts.model ?? e.GEMINI_IMAGE_MODEL;
+  const body = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { responseModalities: ["TEXT", "IMAGE"], ...(opts.aspectRatio ? { imageConfig: { aspectRatio: opts.aspectRatio } } : {}) },
+  });
+  let last: GeminiError | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${BASE}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": e.GEMINI_API_KEY!, "content-type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
+      });
+      if (res.ok) {
+        type Part = { inlineData?: { mimeType?: string; data?: string }; inline_data?: { mime_type?: string; data?: string }; text?: string };
+        const data = (await res.json()) as { candidates?: { content?: { parts?: Part[] }; finishReason?: string }[]; promptFeedback?: { blockReason?: string } };
+        for (const p of data.candidates?.[0]?.content?.parts ?? []) {
+          const inline = p.inlineData ?? (p.inline_data ? { mimeType: p.inline_data.mime_type, data: p.inline_data.data } : undefined);
+          if (inline?.data) return { data: Buffer.from(inline.data, "base64"), mime: inline.mimeType ?? "image/png" };
+        }
+        const why = data.promptFeedback?.blockReason ?? data.candidates?.[0]?.finishReason ?? "sin imagen";
+        throw new GeminiError("La IA no devolvió una imagen (" + why + "). Cambia un poco el prompt o sube una foto tuya.", 0);
+      }
+      last = new GeminiError(explain(res.status, await res.text().catch(() => "")), res.status);
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (err) {
+      if (err instanceof GeminiError && err.status === 0 && /no devolvió una imagen/.test(err.message)) throw err;
+      last = new GeminiError(err instanceof Error ? err.message : "Falló la conexión con Gemini", 0);
+    }
+    if (attempt < 1) await new Promise((r) => setTimeout(r, backoffMs(attempt)));
+  }
+  throw last ?? new GeminiError("Gemini falló", 0);
+}

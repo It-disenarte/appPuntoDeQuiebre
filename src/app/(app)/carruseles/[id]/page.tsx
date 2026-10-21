@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { ExportButtons } from "@/components/carousel/ExportButtons";
+import { GenerateAllImages } from "@/components/carousel/GenerateImages";
+import { imageQuota } from "@/lib/carousel/ai-images";
 import { SlideEditor } from "@/components/carousel/SlideEditor";
 import { IdeasStep, InterviewStep } from "@/components/carousel/Steps";
 import { RegenerateForm } from "@/components/carousel/RegenerateForm";
@@ -96,6 +98,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
 
 async function CarouselEditor({ userId, id, row, content }: { userId: string; id: string; row: CarouselRow; content: CarruselOut }) {
   const kitData = await getKit(userId);
+  const quota = await imageQuota(userId);
   const kit = canvasKitOf(kitData.final);
   const bg = canvasBgOf(content, row.background, kit);
   const images = parseImages(row.images);
@@ -106,6 +109,7 @@ async function CarouselEditor({ userId, id, row, content }: { userId: string; id
   });
   const warnings = imageWarnings(content);
   const missing = content.slides.filter((s) => s.imagen.fuente !== "ninguna" && !images[String(s.n)]).length;
+  const missingAi = content.slides.filter((s) => s.imagen.fuente === "ia" && s.imagen.prompt_ia && !images[String(s.n)]).length;
 
   return (
     <>
@@ -156,9 +160,16 @@ async function CarouselEditor({ userId, id, row, content }: { userId: string; id
         </Card>
       )}
 
+      {quota.enabled && missingAi > 0 && (
+        <Card className="flex flex-col gap-2">
+          <p className="font-extrabold">Imágenes con IA</p>
+          <GenerateAllImages id={id} missing={missingAi} left={quota.left} />
+        </Card>
+      )}
+
       <div className="flex flex-col gap-4">
         {slideProps.map((p) => (
-          <SlideEditor key={p.slide.n} carouselId={id} slide={p.slide} total={p.total} kit={kit} bg={bg} handle={handle} image={p.imageUrl ? { url: p.imageUrl, x: p.focal!.x, y: p.focal!.y } : null} attemptsLeft={attemptsLeft(row, p.slide.n)} />
+          <SlideEditor key={p.slide.n} carouselId={id} slide={p.slide} total={p.total} kit={kit} bg={bg} handle={handle} image={p.imageUrl ? { url: p.imageUrl, x: p.focal!.x, y: p.focal!.y } : null} attemptsLeft={attemptsLeft(row, p.slide.n)} aiImages={{ enabled: quota.enabled, left: quota.left }} />
         ))}
       </div>
 

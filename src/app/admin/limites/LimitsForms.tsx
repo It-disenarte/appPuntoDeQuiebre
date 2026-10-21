@@ -21,6 +21,8 @@ export function LimitsForm({ v }: { v: Limits }) {
         <Field label="Ediciones al mes · Pro" name="editsMonthlyPro" type="number" min={0} max={200} defaultValue={v.editsMonthlyPro} hint="Se usará con la edición automática." />
         <Field label="Tendencias por semana · Básico" name="trendsWeeklyBasico" type="number" min={0} max={50} defaultValue={v.trendsWeeklyBasico} />
         <Field label="Tendencias por semana · Pro" name="trendsWeeklyPro" type="number" min={0} max={50} defaultValue={v.trendsWeeklyPro} />
+        <Field label="Imágenes con IA al mes · Básico" name="aiImagesMonthlyBasico" type="number" min={0} max={500} defaultValue={v.aiImagesMonthlyBasico} hint="Se aplica ya (0 = no incluidas)." />
+        <Field label="Imágenes con IA al mes · Pro" name="aiImagesMonthlyPro" type="number" min={0} max={500} defaultValue={v.aiImagesMonthlyPro} />
       </div>
       <Button type="submit" disabled={pending} className="self-start">
         {pending ? "Guardando…" : "Guardar límites"}
@@ -41,6 +43,7 @@ export function PricesForm({ v }: { v: Prices }) {
         <Field label="Claude: USD por millón de tokens de entrada" name="claudeInUsdPerM" type="number" step="0.01" min={0} defaultValue={v.claudeInUsdPerM} />
         <Field label="Claude: USD por millón de tokens de salida" name="claudeOutUsdPerM" type="number" step="0.01" min={0} defaultValue={v.claudeOutUsdPerM} />
         <Field label="Gemini: USD por llamada (imagen o video)" name="geminiCallUsd" type="number" step="0.001" min={0} defaultValue={v.geminiCallUsd} />
+        <Field label="Gemini: USD por imagen creada" name="geminiImageUsd" type="number" step="0.001" min={0} defaultValue={v.geminiImageUsd} />
         <Field label="Apify: USD por cuenta analizada" name="apifyRunUsd" type="number" step="0.01" min={0} defaultValue={v.apifyRunUsd} />
         <Field label="Tipo de cambio USD → MXN" name="usdMxn" type="number" step="0.01" min={1} defaultValue={v.usdMxn} />
       </div>

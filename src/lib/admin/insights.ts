@@ -74,7 +74,7 @@ export async function usageSince(since: Date, userId?: string, prices?: Prices):
     const cur = out.get(id) ?? { calls: 0, costUsd: 0 };
     out.set(id, { calls: cur.calls + calls, costUsd: cur.costUsd + usd });
   };
-  for (const r of rows) add(r.userId, r.n, GEMINI_SKILLS.has(r.skill) ? r.n * p.geminiCallUsd : (r.inTok / 1e6) * p.claudeInUsdPerM + (r.outTok / 1e6) * p.claudeOutUsdPerM);
+  for (const r of rows) add(r.userId, r.n, r.skill === "imagen-carrusel" ? r.n * p.geminiImageUsd : GEMINI_SKILLS.has(r.skill) ? r.n * p.geminiCallUsd : (r.inTok / 1e6) * p.claudeInUsdPerM + (r.outTok / 1e6) * p.claudeOutUsdPerM);
   const runs = await d.select({ userId: analyzerRuns.userId, summary: analyzerRuns.summary }).from(analyzerRuns).where(and(gte(analyzerRuns.createdAt, since), eq(analyzerRuns.mock, false), eq(analyzerRuns.status, "lista"), userId ? eq(analyzerRuns.userId, userId) : undefined));
   for (const r of runs) add(r.userId, 0, p.apifyRunUsd * Math.max(1, Number((r.summary as { cuentas?: number } | null)?.cuentas ?? 1)));
   return out;

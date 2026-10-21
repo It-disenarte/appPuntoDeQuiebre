@@ -61,6 +61,11 @@ export const rewriteSlideAction = async (_p: CarouselActionState, fd: FormData) 
   const n = slideN.safeParse(str(fd, "n"));
   return n.success ? aiStep(str(fd, "id"), "slide", { n: n.data, nota: str(fd, "nota") }) : { error: "Slide no válido." };
 };
+export const generateImageAction = async (_p: CarouselActionState, fd: FormData) => {
+  const n = slideN.safeParse(str(fd, "n"));
+  return n.success ? aiStep(str(fd, "id"), "imagen", { n: n.data }) : { error: "Slide no válido." };
+};
+export const generateAllImagesAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), "imagenes", {});
 export const saveAnswersAction = async (_p: CarouselActionState, fd: FormData) =>
   aiStep(str(fd, "id"), "respuestas", {
     answers: {

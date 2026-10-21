@@ -217,7 +217,7 @@ const num = (fd: FormData, k: string) => {
 export async function saveLimitsAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
   const admin = await requireAdmin();
   const r = await saveLimits(
-    { analyzerIntervalDays: num(fd, "analyzerIntervalDays"), analyzerTopK: num(fd, "analyzerTopK"), coachMonthlyBasico: num(fd, "coachMonthlyBasico"), coachMonthlyPro: num(fd, "coachMonthlyPro"), editsMonthlyPro: num(fd, "editsMonthlyPro"), trendsWeeklyBasico: num(fd, "trendsWeeklyBasico"), trendsWeeklyPro: num(fd, "trendsWeeklyPro") },
+    { analyzerIntervalDays: num(fd, "analyzerIntervalDays"), analyzerTopK: num(fd, "analyzerTopK"), coachMonthlyBasico: num(fd, "coachMonthlyBasico"), coachMonthlyPro: num(fd, "coachMonthlyPro"), editsMonthlyPro: num(fd, "editsMonthlyPro"), trendsWeeklyBasico: num(fd, "trendsWeeklyBasico"), trendsWeeklyPro: num(fd, "trendsWeeklyPro"), aiImagesMonthlyBasico: num(fd, "aiImagesMonthlyBasico"), aiImagesMonthlyPro: num(fd, "aiImagesMonthlyPro") },
     admin.id,
   );
   if (!r.ok) return { error: r.error };
@@ -228,7 +228,7 @@ export async function saveLimitsAction(_prev: AdminState, fd: FormData): Promise
 
 export async function savePricesAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
   const admin = await requireAdmin();
-  const r = await savePrices({ claudeInUsdPerM: num(fd, "claudeInUsdPerM"), claudeOutUsdPerM: num(fd, "claudeOutUsdPerM"), geminiCallUsd: num(fd, "geminiCallUsd"), apifyRunUsd: num(fd, "apifyRunUsd"), usdMxn: num(fd, "usdMxn") }, admin.id);
+  const r = await savePrices({ claudeInUsdPerM: num(fd, "claudeInUsdPerM"), claudeOutUsdPerM: num(fd, "claudeOutUsdPerM"), geminiCallUsd: num(fd, "geminiCallUsd"), geminiImageUsd: num(fd, "geminiImageUsd"), apifyRunUsd: num(fd, "apifyRunUsd"), usdMxn: num(fd, "usdMxn") }, admin.id);
   if (!r.ok) return { error: r.error };
   await audit({ action: "admin.prices_updated", actorUserId: admin.id, ip: await getClientIp() });
   revalidatePath("/admin/limites");

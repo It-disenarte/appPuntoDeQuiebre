@@ -4,7 +4,8 @@ import { ArrowDown, ArrowUp, Copy, ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
 import { Button, Field, FormError, SelectField, TextAreaField } from "@/components/ui";
-import { editSlideAction, moveSlideAction, removeImageAction, rewriteSlideAction, setFocalAction, type CarouselActionState } from "@/lib/carousel/actions";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { editSlideAction, generateImageAction, moveSlideAction, removeImageAction, rewriteSlideAction, setFocalAction, type CarouselActionState } from "@/lib/carousel/actions";
 import { TEMPLATE_LABEL, TEMPLATES, usesImage, type Slide } from "@/lib/carousel/schemas";
 import { submitKeepingState } from "@/lib/form-submit";
 import { ScaledSlide } from "./ScaledSlide";
@@ -19,15 +20,18 @@ type Props = {
   handle?: string;
   image: { url: string; x: number; y: number } | null;
   attemptsLeft: number;
+  /** Crear la imagen con IA desde aquí (si la llave de Gemini está y le quedan imágenes este mes). */
+  aiImages?: { enabled: boolean; left: number };
 };
 
 const TEMPLATE_OPTIONS = Object.fromEntries(TEMPLATES.map((t) => [t, TEMPLATE_LABEL[t]]));
 
-export function SlideEditor({ carouselId, slide, total, kit, bg, handle, image, attemptsLeft }: Props) {
+export function SlideEditor({ carouselId, slide, total, kit, bg, handle, image, attemptsLeft, aiImages }: Props) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [edit, editAction, editPending] = useActionState<CarouselActionState, FormData>(editSlideAction, undefined);
   const [redo, redoAction, redoPending] = useActionState<CarouselActionState, FormData>(rewriteSlideAction, undefined);
+  const [gen, genAction, genPending] = useActionState<CarouselActionState, FormData>(generateImageAction, undefined);
   const [focalState, focalAction, focalPending] = useActionState<CarouselActionState, FormData>(setFocalAction, undefined);
   const [busy, setBusy] = useState(false);
   const [upError, setUpError] = useState("");
@@ -110,6 +114,22 @@ export function SlideEditor({ carouselId, slide, total, kit, bg, handle, image, 
                 <Button type="button" variant="outline" size="sm" onClick={() => copy(slide.imagen.prompt_ia!)} className="self-start">
                   <Copy className="size-4" aria-hidden /> {copied ? "Copiado" : "Copiar prompt"}
                 </Button>
+                {aiImages?.enabled && (
+                  <form action={genAction} className="flex flex-col gap-1">
+                    {genPending && <LoadingOverlay title="Pidiendo tu imagen…" hint="Un momento." />}
+                    <input type="hidden" name="id" value={carouselId} />
+                    <input type="hidden" name="n" value={slide.n} />
+                    <Button type="submit" size="sm" disabled={genPending || aiImages.left <= 0} className="self-start">
+                      {image ? "Crear otra con IA" : "Crear la imagen con IA"}
+                    </Button>
+                    <span className="text-xs text-ink-500">{aiImages.left > 0 ? `Te quedan ${aiImages.left} imágenes con IA este mes.` : "No te quedan imágenes con IA este mes: sube una foto."}</span>
+                    {gen?.error && (
+                      <span role="alert" className="text-xs text-alerta">
+                        {gen.error}
+                      </span>
+                    )}
+                  </form>
+                )}
               </div>
             )}
             {guide && (

@@ -145,7 +145,7 @@ export async function initialIdeas(userId: string, id: string): Promise<Result> 
 
 /* ───────────── Pasos con IA en segundo plano ───────────── */
 
-export type CarouselOp = "ideas" | "otras" | "elegir" | "respuestas" | "rehacer" | "slide";
+export type CarouselOp = "ideas" | "otras" | "elegir" | "respuestas" | "rehacer" | "slide" | "imagen" | "imagenes";
 export const OP_LABEL: Record<CarouselOp, { title: string; text: string }> = {
   ideas: { title: "Pensando ideas para tu carrusel…", text: "Estamos escribiendo varias ideas con tu marca y tu voz." },
   otras: { title: "Buscando otras ideas…", text: "Armando una nueva ronda a partir de lo que no te convenció." },
@@ -153,6 +153,8 @@ export const OP_LABEL: Record<CarouselOp, { title: string; text: string }> = {
   respuestas: { title: "Armando tu carrusel…", text: "Escribiendo cada slide con tu estilo." },
   rehacer: { title: "Rehaciendo tu carrusel…", text: "Escribiendo de nuevo todos los slides con tu nota." },
   slide: { title: "Reescribiendo el slide…", text: "Cambiando solo ese slide." },
+  imagen: { title: "Creando la imagen con IA…", text: "Dibujando la imagen de este slide y colocándola sola." },
+  imagenes: { title: "Creando tus imágenes con IA…", text: "Dibujando las imágenes de tus slides y colocándolas solas. Tarda unos minutos." },
 };
 const CAROUSEL_JOB_STALE_MS = 15 * 60 * 1000;
 
@@ -197,6 +199,8 @@ export async function runCarouselOp(userId: string, payload: { id: string; op: C
   else if (op === "respuestas") r = await saveAnswers(userId, id, a.answers);
   else if (op === "rehacer") r = await generateCarousel(userId, id, s("nota") || undefined);
   else if (op === "slide") r = await rewriteSlide(userId, id, Number(a.n), s("nota"));
+  else if (op === "imagen") r = await (await import("./ai-images")).generateSlideImage(userId, id, Number(a.n));
+  else if (op === "imagenes") r = await (await import("./ai-images")).generateAllImages(userId, id);
   else r = { ok: false, error: "Paso desconocido." };
   if (!r.ok) throw new Error(r.error);
 }
