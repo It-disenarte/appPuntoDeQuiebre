@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { jobs } from "@/lib/db/schema";
 
@@ -8,7 +8,7 @@ import { jobs } from "@/lib/db/schema";
  * `FOR UPDATE SKIP LOCKED`, así dos workers nunca toman el mismo. Un trabajo "corriendo" que lleva demasiado se considera
  * perdido (el worker murió) y vuelve a la fila hasta agotar sus intentos.
  */
-export type JobKind = "metricas.leer" | "analizador.correr" | "coach.revisar" | "video.unir" | "edicion.planear" | "edicion.renderizar" | "edicion.receta" | "brujula.generar";
+export type JobKind = "metricas.leer" | "analizador.correr" | "coach.revisar" | "video.unir" | "edicion.planear" | "edicion.renderizar" | "edicion.receta" | "brujula.generar" | "carrusel.paso" | "semana.generar";
 
 export const STALE_MS = 15 * 60 * 1000;
 
@@ -59,3 +59,18 @@ export async function failJob(id: string, message: string, retry = true): Promis
 
 /** Latido: un trabajo largo renueva su marca para que no se le dé por perdido mientras sigue corriendo. */
 export const touchJob = (id: string) => db().update(jobs).set({ lockedAt: new Date() }).where(and(eq(jobs.id, id), eq(jobs.status, "corriendo")));
+
+export type UserJob = { status: "pendiente" | "corriendo" | "lista" | "error"; error: string | null; payload: unknown; createdAt: Date; recent: boolean; active: boolean };
+
+/** El último trabajo de este tipo pedido por la persona (para mostrar su avance al volver a la pantalla). */
+export async function latestUserJob(userId: string, kind: JobKind, staleMs = 20 * 60 * 1000): Promise<UserJob | null> {
+  const [row] = await db()
+    .select({ status: jobs.status, error: jobs.error, payload: jobs.payload, createdAt: jobs.createdAt })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), eq(jobs.kind, kind)))
+    .orderBy(desc(jobs.createdAt))
+    .limit(1);
+  if (!row) return null;
+  const recent = Date.now() - row.createdAt.getTime() < staleMs;
+  return { ...row, recent, active: recent && (row.status === "pendiente" || row.status === "corriendo") };
+}

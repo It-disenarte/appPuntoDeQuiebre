@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
+import { enqueue, latestUserJob } from "@/lib/jobs";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
 import { addDays, mondayOf, targetWeek, todayIso } from "./rules";
-import { generatePlan, generateTexts, reviewTexts, setPieceStatus, updateStory } from "./service";
+import { generateTexts, reviewTexts, setPieceStatus, updateStory } from "./service";
 
 export type PlanActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -33,15 +34,12 @@ export async function generatePlanAction(_prev: PlanActionState, fd: FormData): 
   const week = /^\d{4}-\d{2}-\d{2}$/.test(requested) && mondayOf(requested) === requested && requested >= addDays(mondayOf(today), -7) && requested <= addDays(mondayOf(today), 14) ? requested : targetWeek();
   const hasta = addDays(week, 28);
   const tipos_apagados = fd.getAll("apagar").filter((t): t is string => typeof t === "string").slice(0, 8).map((tipo) => ({ tipo, hasta }));
-  try {
-    const r = await generatePlan(user.id, { weekStart: week, focus: { temas, tipos_apagados } });
-    if (!r.ok) return { error: r.error };
-    await audit({ action: "plan.generated", actorUserId: user.id, ip: await getClientIp(), meta: { semana: r.weekStart } });
-  } catch {
-    return { error: "No pudimos armar tu semana con la IA. Tus datos están a salvo: intenta de nuevo en un momento." };
-  }
+  // Corre en el worker: así sigue aunque cierres la app, y la pantalla muestra su avance al volver.
+  if ((await latestUserJob(user.id, "semana.generar"))?.active) return { error: "Ya estamos armando tu semana. Espera a que termine." };
+  await enqueue("semana.generar", user.id, { week, focus: { temas, tipos_apagados } }, { maxAttempts: 1 });
+  await audit({ action: "plan.generated", actorUserId: user.id, ip: await getClientIp(), meta: { semana: week, en_segundo_plano: true } });
   revalidatePath("/semana");
-  redirect("/semana");
+  return { ok: true };
 }
 
 export async function generateTextsAction(_prev: PlanActionState, fd: FormData): Promise<PlanActionState> {

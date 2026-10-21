@@ -1,10 +1,11 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { getManual, getVoiceProfile } from "@/lib/brujula/service";
 import { db } from "@/lib/db";
-import { carousels } from "@/lib/db/schema";
+import { carousels, jobs } from "@/lib/db/schema";
+import { enqueue } from "@/lib/jobs";
 import { getKit, normalizePhoto, PHOTO_MAX_BYTES, PHOTO_TYPES } from "@/lib/kit/service";
 import { getPiece } from "@/lib/plan/service";
 import { runCarrusel } from "@/lib/skills";
@@ -95,7 +96,7 @@ async function runIdeas(userId: string, brief: Brief, ctx: Awaited<ReturnType<ty
   return runCarrusel(userId, { modo: "ideas", creador_id: userId, ...ctx, brief, ...(nota ? { nota_refresh: nota, ideas_descartadas: rechazadas } : {}) }, ideasOutput, () => mockIdeas(brief));
 }
 
-export async function createCarousel(userId: string, raw: unknown, pieceId?: string | null): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+async function prepareBrief(userId: string, raw: unknown, pieceId?: string | null): Promise<{ ok: true; brief: Brief; linked: string | null } | { ok: false; error: string }> {
   const parsed = briefSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Revisa los datos del carrusel." };
   const brief = parsed.data;
@@ -106,12 +107,98 @@ export async function createCarousel(userId: string, raw: unknown, pieceId?: str
     if (!p || p.kind !== "carrusel") return { ok: false, error: "Esa pieza no existe." };
     linked = p.id;
   }
+  return { ok: true, brief, linked };
+}
+
+/** Crea el carrusel YA (para que exista aunque salgas de la app) y pide las ideas en segundo plano. */
+export async function startCarousel(userId: string, raw: unknown, pieceId?: string | null): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const p = await prepareBrief(userId, raw, pieceId);
+  if (!p.ok) return p;
+  const [{ n }] = await db().select({ n: count() }).from(carousels).where(eq(carousels.userId, userId));
+  const [row] = await db().insert(carousels).values({ userId, pieceId: p.linked, number: (n ?? 0) + 1, brief: p.brief, ideas: [] }).returning({ id: carousels.id });
+  await enqueue("carrusel.paso", userId, { id: row!.id, op: "ideas", args: {} }, { maxAttempts: 1 });
+  return { ok: true, id: row!.id };
+}
+
+export async function createCarousel(userId: string, raw: unknown, pieceId?: string | null): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const prep = await prepareBrief(userId, raw, pieceId);
+  if (!prep.ok) return prep;
+  const { brief, linked } = prep;
   const ctx = await context(userId);
   const r = await runIdeas(userId, brief, ctx);
   const [{ n }] = await db().select({ n: count() }).from(carousels).where(eq(carousels.userId, userId));
   const round: IdeaRound = { items: r.output.ideas, note: null, tipo_recomendado: r.output.tipo_recomendado, porque_tipo: r.output.porque_tipo };
   const [row] = await db().insert(carousels).values({ userId, pieceId: linked, number: (n ?? 0) + 1, brief, ideas: [round], mock: r.mock }).returning({ id: carousels.id });
   return { ok: true, id: row!.id };
+}
+
+/** Las ideas de un carrusel recién creado (corre en el worker). */
+export async function initialIdeas(userId: string, id: string): Promise<Result> {
+  const c = await getCarousel(userId, id);
+  const brief = c && parseBrief(c.brief);
+  if (!c || !brief) return { ok: false, error: "No encontramos ese carrusel." };
+  const r = await runIdeas(userId, brief, await context(userId));
+  const round: IdeaRound = { items: r.output.ideas, note: null, tipo_recomendado: r.output.tipo_recomendado, porque_tipo: r.output.porque_tipo };
+  await db().update(carousels).set({ ideas: [round], mock: r.mock }).where(eq(carousels.id, id));
+  return { ok: true };
+}
+
+/* ───────────── Pasos con IA en segundo plano ───────────── */
+
+export type CarouselOp = "ideas" | "otras" | "elegir" | "respuestas" | "rehacer" | "slide";
+export const OP_LABEL: Record<CarouselOp, { title: string; text: string }> = {
+  ideas: { title: "Pensando ideas para tu carrusel…", text: "Estamos escribiendo varias ideas con tu marca y tu voz." },
+  otras: { title: "Buscando otras ideas…", text: "Armando una nueva ronda a partir de lo que no te convenció." },
+  elegir: { title: "Preparando tu carrusel…", text: "Con la idea que elegiste armamos las preguntas o el carrusel completo." },
+  respuestas: { title: "Armando tu carrusel…", text: "Escribiendo cada slide con tu estilo." },
+  rehacer: { title: "Rehaciendo tu carrusel…", text: "Escribiendo de nuevo todos los slides con tu nota." },
+  slide: { title: "Reescribiendo el slide…", text: "Cambiando solo ese slide." },
+};
+const CAROUSEL_JOB_STALE_MS = 15 * 60 * 1000;
+
+export type CarouselJob = { status: "pendiente" | "corriendo" | "lista" | "error"; error: string | null; op: CarouselOp; createdAt: Date; active: boolean; recent: boolean };
+
+/** El último paso con IA pedido para este carrusel (null si no hay). */
+export async function latestCarouselJob(userId: string, id: string): Promise<CarouselJob | null> {
+  const [row] = await db()
+    .select({ status: jobs.status, error: jobs.error, payload: jobs.payload, createdAt: jobs.createdAt })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), eq(jobs.kind, "carrusel.paso"), sql`${jobs.payload}->>'id' = ${id}`))
+    .orderBy(desc(jobs.createdAt))
+    .limit(1);
+  if (!row) return null;
+  const recent = Date.now() - row.createdAt.getTime() < CAROUSEL_JOB_STALE_MS;
+  return { status: row.status, error: row.error, op: ((row.payload as { op?: CarouselOp }).op ?? "ideas") as CarouselOp, createdAt: row.createdAt, recent, active: recent && (row.status === "pendiente" || row.status === "corriendo") };
+}
+
+/** Pide un paso con IA para que corra en el worker (así sigue aunque cierres la app) y la página lo muestra con su avance. */
+export async function queueCarouselOp(userId: string, id: string, op: CarouselOp, args: Record<string, unknown> = {}): Promise<Result> {
+  const c = await getCarousel(userId, id);
+  if (!c) return { ok: false, error: "No encontramos ese carrusel." };
+  const [active] = await db()
+    .select({ id: jobs.id })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), eq(jobs.kind, "carrusel.paso"), sql`${jobs.payload}->>'id' = ${id}`, inArray(jobs.status, ["pendiente", "corriendo"]), gt(jobs.createdAt, new Date(Date.now() - CAROUSEL_JOB_STALE_MS))))
+    .limit(1);
+  if (active) return { ok: false, error: "Ya estamos trabajando en este carrusel. Espera a que termine." };
+  await enqueue("carrusel.paso", userId, { id, op, args }, { maxAttempts: 1 });
+  return { ok: true };
+}
+
+/** Lo que corre el worker: el mismo paso de siempre; si no se pudo, el trabajo queda en error con su motivo. */
+export async function runCarouselOp(userId: string, payload: { id: string; op: CarouselOp; args?: Record<string, unknown> }): Promise<void> {
+  const { id, op } = payload;
+  const a = payload.args ?? {};
+  const s = (k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
+  let r: Result;
+  if (op === "ideas") r = await initialIdeas(userId, id);
+  else if (op === "otras") r = await refreshIdeas(userId, id, s("nota"));
+  else if (op === "elegir") r = await chooseIdea(userId, id, { ideaId: s("idea"), own: s("propia") });
+  else if (op === "respuestas") r = await saveAnswers(userId, id, a.answers);
+  else if (op === "rehacer") r = await generateCarousel(userId, id, s("nota") || undefined);
+  else if (op === "slide") r = await rewriteSlide(userId, id, Number(a.n), s("nota"));
+  else r = { ok: false, error: "Paso desconocido." };
+  if (!r.ok) throw new Error(r.error);
 }
 
 export async function refreshIdeas(userId: string, id: string, nota: string): Promise<Result> {

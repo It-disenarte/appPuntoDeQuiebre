@@ -20,6 +20,8 @@ import { runPlan, runRender } from "@/lib/edit/service";
 import { runJoin } from "@/lib/recording/join";
 import { runAnalyzer } from "@/lib/analyzer/service";
 import { runManualJob } from "@/lib/brujula/service";
+import { runCarouselOp, type CarouselOp } from "@/lib/carousel/service";
+import { runWeekJob } from "@/lib/plan/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
 import { refreshExpiringTokens, syncAll } from "@/lib/instagram/service";
@@ -82,6 +84,15 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { reviewId?: string };
     if (!job.userId || !p.reviewId) throw new Error("Trabajo sin usuario o revisión");
     await runReview(job.userId, p.reviewId);
+  },
+  "semana.generar": async (job) => {
+    if (!job.userId) throw new Error("Trabajo sin usuario");
+    await runWeekJob(job.userId, job.payload as Parameters<typeof runWeekJob>[1]);
+  },
+  "carrusel.paso": async (job) => {
+    const p = job.payload as { id?: string; op?: CarouselOp; args?: Record<string, unknown> };
+    if (!job.userId || !p.id || !p.op) throw new Error("Trabajo sin usuario, carrusel o paso");
+    await runCarouselOp(job.userId, { id: p.id, op: p.op, args: p.args });
   },
   "brujula.generar": async (job) => {
     if (!job.userId) throw new Error("Trabajo sin usuario");

@@ -264,3 +264,9 @@ export function currentStory(row: StoryRow): { tipo: string; idea: string; texto
   const src = alt ?? d.data;
   return { tipo: src.tipo, idea: src.idea, texto: row.editedText ?? src.texto_sugerido ?? "", sticker: src.sticker ?? null, minutos: d.data.minutos, own: false, total: d.data.alternativas.length + 1 };
 }
+
+/** Lo que corre el worker para "Generar mi semana": igual que siempre, pero si no se pudo el trabajo queda en error con su motivo. */
+export async function runWeekJob(userId: string, payload: { week?: string; focus?: { temas: string[]; tipos_apagados: { tipo: string; hasta: string }[] } }): Promise<void> {
+  const r = await generatePlan(userId, { weekStart: payload.week, focus: payload.focus });
+  if (!r.ok) throw new Error(r.error);
+}

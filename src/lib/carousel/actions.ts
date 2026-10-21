@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
-import { chooseIdea, createCarousel, deleteCarousel, editSlide, generateCarousel, moveSlide, refreshIdeas, removeImage, rewriteSlide, saveAnswers, setBackground, setFocal } from "./service";
+import { deleteCarousel, editSlide, moveSlide, queueCarouselOp, removeImage, setBackground, setFocal, startCarousel, type CarouselOp } from "./service";
 
 export type CarouselActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -29,7 +29,7 @@ export async function createCarouselAction(_prev: CarouselActionState, fd: FormD
   const kw = str(fd, "palabra_clave").trim();
   let id: string;
   try {
-    const r = await createCarousel(
+    const r = await startCarousel(
       user.id,
       { tema: str(fd, "tema"), origen: piece.success ? "parrilla" : "propio", tipo: str(fd, "tipo"), objetivo: str(fd, "objetivo"), palabra_clave: kw || null, estilo_imagenes: str(fd, "estilo_imagenes"), animado: str(fd, "animado") === "1" },
       piece.success ? piece.data : null,
@@ -43,31 +43,27 @@ export async function createCarouselAction(_prev: CarouselActionState, fd: FormD
   redirect(page(id));
 }
 
-/** Acción para cualquier paso que llama a la IA: valida, corre y vuelve a la misma pantalla. */
-async function aiStep(id: string, run: (userId: string) => Promise<{ ok: true } | { ok: false; error: string }>): Promise<CarouselActionState> {
+/** Acción para cualquier paso que llama a la IA: valida y lo manda al worker (así no se pierde si sales de la app). */
+async function aiStep(id: string, op: CarouselOp, args: Record<string, unknown>): Promise<CarouselActionState> {
   const { user } = await requireCreatorAccess();
   if (!uuid.safeParse(id).success) return { error: "Carrusel no válido." };
   if (!(await guardAi(user.id))) return { error: AI_LIMIT };
-  try {
-    const r = await run(user.id);
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const r = await queueCarouselOp(user.id, id, op, args);
+  if (!r.ok) return { error: r.error };
   revalidatePath(page(id));
   return { ok: true };
 }
 
-export const refreshIdeasAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), (u) => refreshIdeas(u, str(fd, "id"), str(fd, "nota")));
-export const chooseIdeaAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), (u) => chooseIdea(u, str(fd, "id"), { ideaId: str(fd, "idea"), own: str(fd, "propia") }));
-export const regenerateAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), (u) => generateCarousel(u, str(fd, "id"), str(fd, "nota")));
+export const refreshIdeasAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), "otras", { nota: str(fd, "nota") });
+export const chooseIdeaAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), "elegir", { idea: str(fd, "idea"), propia: str(fd, "propia") });
+export const regenerateAction = async (_p: CarouselActionState, fd: FormData) => aiStep(str(fd, "id"), "rehacer", { nota: str(fd, "nota") });
 export const rewriteSlideAction = async (_p: CarouselActionState, fd: FormData) => {
   const n = slideN.safeParse(str(fd, "n"));
-  return n.success ? aiStep(str(fd, "id"), (u) => rewriteSlide(u, str(fd, "id"), n.data, str(fd, "nota"))) : { error: "Slide no válido." };
+  return n.success ? aiStep(str(fd, "id"), "slide", { n: n.data, nota: str(fd, "nota") }) : { error: "Slide no válido." };
 };
 export const saveAnswersAction = async (_p: CarouselActionState, fd: FormData) =>
-  aiStep(str(fd, "id"), (u) =>
-    saveAnswers(u, str(fd, "id"), {
+  aiStep(str(fd, "id"), "respuestas", {
+    answers: {
       estilo: str(fd, "estilo") || "elige_por_mi",
       ambiente: fd.getAll("ambiente").filter((v): v is string => typeof v === "string").slice(0, 4),
       aparece_creador: str(fd, "aparece_creador") || "no",
@@ -75,8 +71,8 @@ export const saveAnswersAction = async (_p: CarouselActionState, fd: FormData) =
       colores_otros: str(fd, "colores_otros").trim() || null,
       narracion: str(fd, "narracion"),
       herramienta: str(fd, "herramienta") || "no_se",
-    }),
-  );
+    },
+  });
 
 /* ───────────── Edición sin IA (gratis, sin límite) ───────────── */
 

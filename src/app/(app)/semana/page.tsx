@@ -2,7 +2,10 @@ import { Film, GalleryHorizontal } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ButtonLink, Card, Chip, cn, PageHeader } from "@/components/ui";
+import { GeneratingCard } from "@/components/brujula/GeneratingCard";
+import { Poller } from "@/components/metrics/Poller";
 import { GenerateWeek } from "@/components/plan/GenerateWeek";
+import { latestUserJob } from "@/lib/jobs";
 import { StoryCard } from "@/components/plan/StoryCard";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { getManual } from "@/lib/brujula/service";
@@ -30,6 +33,18 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
   const asked = typeof params.s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(params.s) ? params.s : null;
   const [data, readiness] = await Promise.all([asked ? getPlan(user.id, asked) : getCurrentPlan(user.id, today), planReadiness(user.id)]);
   const nextWeek = targetWeek(today);
+  const job = await latestUserJob(user.id, "semana.generar");
+  // Mientras el worker arma la semana, la pantalla muestra el avance y se refresca sola.
+  if (job?.active) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4">
+        <Poller everyMs={3000} />
+        <PageHeader eyebrow="Semana" title="Tu parrilla" />
+        <GeneratingCard since={job.createdAt.getTime()} title="Armando tu semana…" text="Escribimos el guion de cada pieza con tu voz y una idea de historia por día. Tarda un par de minutos." />
+      </div>
+    );
+  }
+  const jobFailed = Boolean(job && job.recent && job.status === "error");
 
   // Sin semana todavía: pedir lo que falta o generar.
   if (!data) {
@@ -38,6 +53,11 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <PageHeader eyebrow={`Semana del ${dayNum(nextWeek)} al ${dayNum(addDays(nextWeek, 6))} de ${monthName(addDays(nextWeek, 6))}`} title="Tu parrilla" />
+        {jobFailed && (
+          <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">
+            No pudimos armar tu semana: {job?.error ?? "algo falló"}. Inténtalo de nuevo.
+          </p>
+        )}
         {readiness.ready ? (
           <Card data-tour="generar" className="flex flex-col gap-4">
             <p className="font-extrabold">Armemos tu semana</p>

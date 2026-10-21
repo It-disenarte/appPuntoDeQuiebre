@@ -10,7 +10,9 @@ import { Button, Card, Chip, PageHeader } from "@/components/ui";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { deleteCarouselAction, setBackgroundAction } from "@/lib/carousel/actions";
 import { canvasBgOf, canvasKitOf } from "@/lib/carousel/kit";
-import { previousAnswers, attemptsLeft, type CarouselRow, getCarousel, imageWarnings, parseBrief, parseContent, parseIdeaRounds, parseImages, parseInterview, stepOf } from "@/lib/carousel/service";
+import { GeneratingCard } from "@/components/brujula/GeneratingCard";
+import { Poller } from "@/components/metrics/Poller";
+import { latestCarouselJob, OP_LABEL, previousAnswers, attemptsLeft, type CarouselRow, getCarousel, imageWarnings, parseBrief, parseContent, parseIdeaRounds, parseImages, parseInterview, stepOf } from "@/lib/carousel/service";
 import { MAX_FULL_REDO, MAX_IDEA_REFRESH, type CarruselOut, type Idea } from "@/lib/carousel/schemas";
 import { getKit } from "@/lib/kit/service";
 
@@ -27,6 +29,10 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
   const content = parseContent(row.content);
   const chosen = row.chosen as Idea | null;
   const previous = step === "entrevista" ? await previousAnswers(user.id, id) : null;
+  const job = await latestCarouselJob(user.id, id);
+  const busy = Boolean(job?.active);
+  // Un intento fallido solo se avisa si es posterior a lo último que cambió en el carrusel.
+  const failed = Boolean(job && job.recent && job.status === "error" && job.createdAt > row.updatedAt);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
@@ -39,7 +45,21 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
       </div>
       {row.mock && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Esto es una prueba sin IA: los textos son de ejemplo. Con la IA activa se escriben con tu voz y tu marca.</p>}
 
-      {step === "ideas" && (
+      {busy && job && (
+        <>
+          <Poller everyMs={3000} />
+          <GeneratingCard since={job.createdAt.getTime()} title={OP_LABEL[job.op].title} text={OP_LABEL[job.op].text} />
+        </>
+      )}
+      {failed && job && (
+        <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">
+          No pudimos completar este paso: {job.error ?? "algo falló"}. Inténtalo de nuevo.
+        </p>
+      )}
+
+      {!busy && step === "ideas" && parseIdeaRounds(row.ideas).length === 0 && !failed && <p className="text-sm text-ink-600">Todavía no hay ideas para este carrusel.</p>}
+
+      {!busy && step === "ideas" && parseIdeaRounds(row.ideas).length > 0 && (
         <>
           <h2 className="text-lg font-extrabold">Elige una idea</h2>
           <IdeasStep
@@ -51,7 +71,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
         </>
       )}
 
-      {step === "entrevista" && (
+      {!busy && step === "entrevista" && (
         <Card className="flex flex-col gap-4">
           <h2 className="text-lg font-extrabold">Cuéntanos cómo se verán tus imágenes</h2>
           {(() => {
@@ -61,7 +81,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
         </Card>
       )}
 
-      {step === "carrusel" && content && <CarouselEditor userId={user.id} id={id} row={row} content={content} />}
+      {!busy && step === "carrusel" && content && <CarouselEditor userId={user.id} id={id} row={row} content={content} />}
 
       <form action={deleteCarouselAction} className="self-start">
         <input type="hidden" name="id" value={id} />
