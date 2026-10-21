@@ -48,6 +48,13 @@ export async function FullVideoSection({ userId, pieceId }: { userId: string; pi
           <p className="text-xs text-ink-300">
             {exp.seconds ?? 0} s · {megabytes(exp.bytes ?? 0)} MB
           </p>
+          <p className="rounded-lg bg-ink-700 p-3 text-xs text-ink-200">
+            Este es tu video <strong>solo unido</strong>, sin editar. Para quitar silencios y muletillas, poner subtítulos, acercamientos y portada, usa{" "}
+            <a href="#edicion" className="font-semibold text-azul-100 underline underline-offset-4">
+              Edición automática
+            </a>{" "}
+            aquí abajo (plan Pro).
+          </p>
           <div className="flex flex-wrap items-center gap-3">
             <a href={`/api/grabaciones/video/${pieceId}?descargar=1`} className="tap inline-flex items-center rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
               Descargar video

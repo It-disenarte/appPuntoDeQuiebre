@@ -24,7 +24,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
 
   if (!quota.allowed) {
     return (
-      <section className="flex flex-col gap-2 rounded-card bg-ink-800 p-4" aria-label="Edición automática">
+      <section className="flex flex-col gap-2 rounded-card bg-ink-800 p-4" id="edicion" aria-label="Edición automática">
         <h2 className="font-extrabold">Edición automática · Pro</h2>
         <p className="text-sm text-ink-300">En el plan Pro cortamos silencios y muletillas, ponemos subtítulos con tu estilo, acercamientos y el gancho en pantalla, y te damos una portada. Hasta {quota.limit} videos al mes.</p>
         <Link href="/mi-marca" className="tap inline-flex items-center self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
@@ -35,7 +35,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-card bg-ink-800 p-4" aria-label="Edición automática">
+    <section className="flex flex-col gap-3 rounded-card bg-ink-800 p-4" id="edicion" aria-label="Edición automática">
       {working && <Poller />}
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-extrabold">Edición automática</h2>
