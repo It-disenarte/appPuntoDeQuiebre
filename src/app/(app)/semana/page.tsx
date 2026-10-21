@@ -121,7 +121,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
         {pieces.map((p) => {
           const idx = dowMon0(p.day);
           const isToday = p.day === today;
-          const st = STATUS[p.status];
+          const st = p.kind === "carrusel" && p.status === "grabado" ? { label: "Armado", tone: "azul" as const } : STATUS[p.status];
           const Icon = p.kind === "video" ? Film : GalleryHorizontal;
           return (
             <li key={p.id}>

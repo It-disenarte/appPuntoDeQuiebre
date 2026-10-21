@@ -118,7 +118,7 @@ export default async function PiezaPage({ params }: PageProps<"/semana/[id]">) {
             <input type="hidden" name="id" value={piece.id} />
             <input type="hidden" name="status" value={piece.status === "grabado" ? "pendiente" : "grabado"} />
             <Button type="submit" variant="outline" size="sm">
-              {piece.status === "grabado" ? "Marcar como pendiente" : "Ya la grabé"}
+              {piece.status === "grabado" ? "Marcar como pendiente" : piece.kind === "carrusel" ? "Ya lo armé" : "Ya lo grabé"}
             </Button>
           </form>
         </div>
