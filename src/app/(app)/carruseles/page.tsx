@@ -15,6 +15,8 @@ export default async function CarruselesPage({ searchParams }: PageProps<"/carru
   const params = await searchParams;
   const pieceId = typeof params.pieza === "string" && z.string().uuid().safeParse(params.pieza).success ? params.pieza : undefined;
   const piece = pieceId ? await getPiece(user.id, pieceId) : null;
+  // Viene del analizador (“Hacer un carrusel con esto”): el tema ya llega escrito.
+  const askedTema = typeof params.tema === "string" ? params.tema.trim().slice(0, 140) : "";
   const list = await listCarousels(user.id);
   const plan = (await getSubscription(user.id))?.plan ?? "basico";
 
@@ -24,7 +26,7 @@ export default async function CarruselesPage({ searchParams }: PageProps<"/carru
       <Card data-tour="nuevo" className="flex flex-col gap-4">
         <h2 className="text-lg font-extrabold">Crear un carrusel nuevo</h2>
         <p className="text-sm text-ink-700">Te proponemos la idea, escribimos cada slide con tu voz y lo armamos con tu kit visual. Sales con imágenes listas para subir, sin saber diseñar.</p>
-        <BriefForm tema={piece?.kind === "carrusel" ? piece.topic : ""} pieza={piece?.kind === "carrusel" ? piece.id : undefined} plan={plan} />
+        <BriefForm tema={piece?.kind === "carrusel" ? piece.topic : askedTema} pieza={piece?.kind === "carrusel" ? piece.id : undefined} plan={plan} />
       </Card>
 
       {list.length > 0 && (

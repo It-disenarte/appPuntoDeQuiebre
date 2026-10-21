@@ -2,7 +2,7 @@ import { Star, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { AddCompetitorForm, StartRunForm } from "@/components/analyzer/Forms";
 import { Poller } from "@/components/metrics/Poller";
-import { Button, Card, Chip, PageHeader } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
 import { removeCompetitorAction, toggleStarAction } from "@/lib/analyzer/actions";
 import { getLimits } from "@/lib/admin/limits";
 import { latestDoneRun, latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
@@ -160,6 +160,9 @@ export default async function AnalizadorPage() {
                         <p className="text-ink-700">“{x.gancho}”</p>
                         <p className="mt-1 text-ink-700">{x.idea}</p>
                         {x.guion_corto && <p className="mt-1 text-xs text-ink-600">{x.guion_corto}</p>}
+                        <ButtonLink href={`/carruseles?tema=${encodeURIComponent(x.titulo)}`} variant="outline" size="sm" className="mt-2">
+                          Hacer un carrusel con esta idea
+                        </ButtonLink>
                       </div>
                     ))}
                   </div>
