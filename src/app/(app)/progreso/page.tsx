@@ -61,7 +61,7 @@ export default async function ProgresoPage() {
             <BarChart3 className="size-6" />
           </span>
           <p className="font-extrabold">Todavía no tienes un informe</p>
-          <p className="text-sm text-ink-600">Sube las capturas de tus estadísticas de Instagram y te mostramos tu progreso con gráficas sencillas y comparado contigo misma.</p>
+          <p className="text-sm text-ink-600">Sube las capturas de tus estadísticas de Instagram y te mostramos tu progreso con gráficas sencillas y comparado con tus propios resultados.</p>
           <ButtonLink href="/progreso/metricas" size="sm">
             Empezar mi primer informe
           </ButtonLink>

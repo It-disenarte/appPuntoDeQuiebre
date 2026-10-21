@@ -41,7 +41,7 @@ export default async function MetricasPage({ searchParams }: PageProps<"/progres
         <>
           <Card className="flex flex-col gap-3">
             <p className="font-extrabold">Cuéntame cómo te fue en {label}</p>
-            <p className="text-sm text-ink-700">Mientras conectamos Instagram, nos pasas unas <strong>capturas de pantalla de tus estadísticas</strong> una vez al mes. Las leemos, te explicamos tus números en palabras sencillas y los comparamos contigo misma.</p>
+            <p className="text-sm text-ink-700">Mientras conectamos Instagram, nos pasas unas <strong>capturas de pantalla de tus estadísticas</strong> una vez al mes. Las leemos, te explicamos tus números en palabras sencillas y los comparamos con tus propios resultados.</p>
             <details>
               <summary className="cursor-pointer text-sm font-semibold text-azul">¿Dónde las encuentro? (paso a paso)</summary>
               <div className="mt-3">
