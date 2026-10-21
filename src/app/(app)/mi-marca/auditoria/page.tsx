@@ -6,6 +6,7 @@ import { voteCardAction } from "@/lib/audit-account/actions";
 import { getAudit, parseAudit, parseVotes } from "@/lib/audit-account/service";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { getConnection } from "@/lib/instagram/service";
+import { BgStatus } from "@/components/BgStatus";
 
 export const metadata: Metadata = { title: "Así te vemos" };
 
@@ -21,6 +22,7 @@ export default async function AuditoriaPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <PageHeader eyebrow="Mi marca" title="Así te vemos" />
+      <BgStatus userId={user.id} scope={"auditoria"} />
       {!conn ? (
         <Card className="flex flex-col gap-3">
           <p className="text-sm text-ink-700">Para revisar tu cuenta primero conéctala con el acceso oficial de Instagram (solo lectura).</p>

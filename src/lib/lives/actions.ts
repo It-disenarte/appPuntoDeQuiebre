@@ -5,7 +5,8 @@ import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { addDays, mondayOf, targetWeek, todayIso } from "@/lib/plan/rules";
-import { dismissNotice, generateWeek, markDone, requestSupport, resetNotice, resetSituation, saveAnswers } from "./service";
+import { queueBg } from "@/lib/bg";
+import { dismissNotice, markDone, resetNotice, resetSituation } from "./service";
 
 export type LiveActionState = { error?: string; ok?: boolean } | undefined;
 const str = (fd: FormData, k: string) => {
@@ -18,19 +19,17 @@ const AI_LIMIT = "Ya usaste la IA varias veces seguidas. Intenta de nuevo en una
 export async function saveAnswersAction(_p: LiveActionState, fd: FormData): Promise<LiveActionState> {
   const { user } = await requireCreatorAccess();
   if (!(await rateLimit(`directos-ia:user:${user.id}`, 20, HOUR))) return { error: AI_LIMIT };
-  try {
-    const r = await saveAnswers(user.id, {
+  const q = await queueBg(user.id, "directos", "directos.respuestas", {
+    answers: {
       situacion: str(fd, "situacion"),
       plataformas: fd.getAll("plataformas").filter((v): v is string => typeof v === "string"),
       dias: fd.getAll("dias").filter((v): v is string => typeof v === "string"),
       hora: str(fd, "hora") || null,
       frecuencia: str(fd, "frecuencia").trim() || null,
       compromiso: str(fd, "compromiso").trim() || null,
-    });
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+    },
+  });
+  if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
 }
@@ -41,12 +40,8 @@ export async function generateWeekAction(_p: LiveActionState, fd: FormData): Pro
   const requested = str(fd, "week");
   const today = todayIso();
   const week = /^\d{4}-\d{2}-\d{2}$/.test(requested) && mondayOf(requested) === requested && requested >= addDays(mondayOf(today), -7) && requested <= addDays(mondayOf(today), 14) ? requested : targetWeek();
-  try {
-    const r = await generateWeek(user.id, week);
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, "directos", "directos.semana", { week });
+  if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
 }
@@ -54,11 +49,8 @@ export async function generateWeekAction(_p: LiveActionState, fd: FormData): Pro
 export async function requestSupportAction(_p: LiveActionState, fd: FormData): Promise<LiveActionState> {
   const { user } = await requireCreatorAccess();
   if (!(await rateLimit(`directos-ia:user:${user.id}`, 20, HOUR))) return { error: AI_LIMIT };
-  try {
-    await requestSupport(user.id, str(fd, "tema"));
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, "directos", "directos.apoyo", { tema: str(fd, "tema") });
+  if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
 }

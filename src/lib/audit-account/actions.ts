@@ -4,19 +4,16 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
-import { runAudit, voteCard } from "./service";
+import { queueBg } from "@/lib/bg";
+import { voteCard } from "./service";
 
 export type AuditActionState = { error?: string; ok?: boolean } | undefined;
 
 export async function runAuditAction(): Promise<AuditActionState> {
   const { user } = await requireCreatorAccess();
   if (!(await rateLimit(`auditoria:user:${user.id}`, 4, HOUR))) return { error: "Ya la corriste varias veces. Intenta en una hora." };
-  try {
-    const r = await runAudit(user.id);
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, "auditoria", "auditoria");
+  if (!q.ok) return { error: q.error };
   revalidatePath("/mi-marca/auditoria");
   return { ok: true };
 }

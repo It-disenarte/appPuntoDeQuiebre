@@ -23,6 +23,7 @@ import { runManualJob } from "@/lib/brujula/service";
 import { runCarouselOp, type CarouselOp } from "@/lib/carousel/service";
 import { runWeekJob } from "@/lib/plan/service";
 import { runVideoFromIdea } from "@/lib/ideas/service";
+import { runBgOp, type BgOp } from "@/lib/bg";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
 import { refreshExpiringTokens, syncAll } from "@/lib/instagram/service";
@@ -85,6 +86,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { reviewId?: string };
     if (!job.userId || !p.reviewId) throw new Error("Trabajo sin usuario o revisión");
     await runReview(job.userId, p.reviewId);
+  },
+  "ia.paso": async (job) => {
+    const p = job.payload as { scope?: string; op?: BgOp; args?: Record<string, unknown> };
+    if (!job.userId || !p.scope || !p.op) throw new Error("Trabajo sin usuario o paso");
+    await runBgOp(job.userId, { scope: p.scope, op: p.op, args: p.args });
   },
   "idea.video": async (job) => {
     const p = job.payload as { ideaId?: string };

@@ -5,6 +5,7 @@ import { requireCreatorAccess } from "@/lib/auth/gates";
 import { MAX_REFRESH } from "@/lib/trends/schemas";
 import { useTrendAction } from "@/lib/trends/actions";
 import { currentList, listUses, parseRounds, selectableTrends, weeklyQuota } from "@/lib/trends/service";
+import { BgStatus } from "@/components/BgStatus";
 
 export const metadata: Metadata = { title: "Tendencias" };
 
@@ -19,6 +20,7 @@ export default async function TendenciasPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <PageHeader eyebrow="Inspiración" title="Tendencias" />
+      <BgStatus userId={user.id} scope={"tendencias"} />
       <Card data-tour="pedir" className="flex flex-col gap-3">
         <p className="text-sm text-ink-700">Tomamos lo que está de moda en TikTok México y lo convertimos en <strong>ideas listas para grabar con tu marca</strong>, con la fecha límite para que entren a tiempo.</p>
         <p className="rounded-lg bg-naranja-100 p-3 text-sm text-ink-900">Las tendencias duran pocos días. Úsalo cuando puedas grabar en las próximas 48 horas.</p>

@@ -9,6 +9,7 @@ import { getKit } from "@/lib/kit/service";
 import { removePhotoAction, toggleAppliedAction, votePartAction } from "@/lib/profile/actions";
 import { BIO_MAX, cropStyle, MAX_PHOTOS, MAX_REFRESH, NAME_MAX, RUBRIC, type ProfilePart } from "@/lib/profile/schemas";
 import { getProfile, parseApplied, parseChosen, parseCurrent, parseExtra, parsePhotos, parseResult, parseVotes, winner } from "@/lib/profile/service";
+import { BgStatus } from "@/components/BgStatus";
 
 export const metadata: Metadata = { title: "Optimiza tu perfil" };
 
@@ -58,6 +59,7 @@ export default async function PerfilPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <PageHeader eyebrow="Mi marca" title="Optimiza tu perfil" />
+      <BgStatus userId={user.id} scope={"perfil"} />
       <p className="text-ink-700">Tu perfil debe decir en 3 segundos <strong>quién eres, a quién ayudas y por qué seguirte</strong>. Te damos propuestas para copiar y pegar: nosotros no tocamos tu cuenta.</p>
       {row?.mock && result && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Son propuestas de ejemplo: con la IA activa se escriben con tu voz y tu marca.</p>}
 

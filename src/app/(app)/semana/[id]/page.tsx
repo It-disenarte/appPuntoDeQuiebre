@@ -10,6 +10,7 @@ import { CATEGORY_LABEL, DAY_NAMES, dowMon0 } from "@/lib/plan/rules";
 import { getPiece, parseReview, parseScript, parseTexts } from "@/lib/plan/service";
 import type { CarruselGuion, VideoGuion } from "@/lib/skills/schemas";
 import { z } from "zod";
+import { BgStatus } from "@/components/BgStatus";
 
 export const metadata: Metadata = { title: "Pieza" };
 
@@ -56,6 +57,7 @@ export default async function PiezaPage({ params }: PageProps<"/semana/[id]">) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <PageHeader eyebrow={`${day} · ${piece.publishTime} h`} title={piece.topic} />
+      <BgStatus userId={user.id} scope={`textos:${piece.id}`} />
       <div className="flex flex-wrap gap-2">
         <Chip tone="azul">{piece.kind === "video" ? "Video" : "Carrusel"}</Chip>
         <Chip>{CATEGORY_LABEL[piece.category]}</Chip>

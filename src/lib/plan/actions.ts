@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
+import { queueBg } from "@/lib/bg";
 import { enqueue, latestUserJob } from "@/lib/jobs";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
 import { addDays, mondayOf, targetWeek, todayIso } from "./rules";
-import { generateTexts, reviewTexts, setPieceStatus, updateStory } from "./service";
+import { reviewTexts, setPieceStatus, updateStory } from "./service";
 
 export type PlanActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -47,12 +48,8 @@ export async function generateTextsAction(_prev: PlanActionState, fd: FormData):
   const id = uuid.safeParse(str(fd, "id"));
   if (!id.success) return { error: "Pieza no válida." };
   if (!(await rateLimit(`textos-ia:user:${user.id}`, 40, HOUR))) return { error: "Demasiados textos seguidos. Intenta en un rato." };
-  try {
-    const r = await generateTexts(user.id, id.data);
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "No pudimos escribir los textos con la IA. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, `textos:${id.data}`, "textos", { pieceId: id.data });
+  if (!q.ok) return { error: q.error };
   revalidatePath(`/semana/${id.data}`);
   return { ok: true };
 }

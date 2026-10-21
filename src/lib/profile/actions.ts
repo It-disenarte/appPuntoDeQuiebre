@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
-import { choosePart, generateProfile, refreshPart, removePhoto, saveCurrent, toggleApplied, votePart } from "./service";
+import { queueBg } from "@/lib/bg";
+import { choosePart, removePhoto, saveCurrent, toggleApplied, votePart } from "./service";
 import { PARTS } from "./schemas";
 
 export type ProfileActionState = { error?: string; ok?: boolean; warning?: string } | undefined;
@@ -23,12 +24,8 @@ export async function saveAndGenerateAction(_p: ProfileActionState, fd: FormData
   const destacadas = str(fd, "destacadas").split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
   const s = await saveCurrent(user.id, { usuario: str(fd, "usuario").replace(/^@/, ""), nombre: str(fd, "nombre"), biografia: str(fd, "biografia"), enlace: str(fd, "enlace").trim() || null, categoria: str(fd, "categoria").trim() || null, destacadas });
   if (!s.ok) return { error: s.error };
-  try {
-    const g = await generateProfile(user.id);
-    if (!g.ok) return { error: g.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, "perfil", "perfil.generar");
+  if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
 }
@@ -38,12 +35,8 @@ export async function refreshPartAction(_p: ProfileActionState, fd: FormData): P
   const p = z.enum(["nombre", "biografia"]).safeParse(str(fd, "parte"));
   if (!p.success) return { error: "Parte no válida." };
   if (!(await rateLimit(`perfil-ia:user:${user.id}`, 12, HOUR))) return { error: "Ya usaste la IA varias veces seguidas. Intenta en una hora." };
-  try {
-    const r = await refreshPart(user.id, p.data, str(fd, "nota"));
-    if (!r.ok) return { error: r.error };
-  } catch {
-    return { error: "La IA no respondió. Intenta de nuevo en un momento." };
-  }
+  const q = await queueBg(user.id, "perfil", "perfil.parte", { parte: p.data, nota: str(fd, "nota") });
+  if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
 }

@@ -6,6 +6,7 @@ import { changeAnswerAction, dismissNoticeAction, enableNoticeAction, markDoneAc
 import { PLATFORMS, SITUATIONS, type Live } from "@/lib/lives/schemas";
 import { getLiveProfile, getWeekGuide, listSupport, parseAnswers, parseDone, parseGuide, parseRecommendation, showMonthlyNotice, type GuideRow } from "@/lib/lives/service";
 import { DAY_NAMES, dowMon0, targetWeek } from "@/lib/plan/rules";
+import { BgStatus } from "@/components/BgStatus";
 
 export const metadata: Metadata = { title: "Directos" };
 
@@ -98,6 +99,7 @@ export default async function DirectosPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <PageHeader eyebrow="Publicar" title="Tus directos" />
+      <BgStatus userId={user.id} scope={"directos"} />
 
       {!answers ? (
         <Card data-tour="respuestas">
