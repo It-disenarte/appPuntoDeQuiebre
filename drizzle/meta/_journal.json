@@ -183,6 +183,13 @@
       "when": 1792596450027,
       "tag": "0025_pro_cortesia",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792607479573,
+      "tag": "0026_banco_ideas",
+      "breakpoints": true
     }
   ]
 }

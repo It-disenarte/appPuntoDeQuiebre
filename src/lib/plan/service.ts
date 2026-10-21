@@ -5,6 +5,7 @@ import { getIntake, getManual, getSchedule, getVoiceProfile } from "@/lib/brujul
 import { db } from "@/lib/db";
 import { contentPieces, igConnections, storyIdeas, users, weekPlans } from "@/lib/db/schema";
 import { getSubscription } from "@/lib/billing/service";
+import { ideasForWeek, markIdeasUsed, type BankIdea } from "@/lib/ideas/bank";
 import { runHistorias, runParrilla, runTextos } from "@/lib/skills";
 import { carruselGuionSchema, videoGuionSchema, type CarruselGuion, type HistoriasV2, type TextosV2, type VideoGuion } from "@/lib/skills/schemas";
 import { textosV2Output } from "@/lib/skills/schemas";
@@ -68,6 +69,35 @@ export async function planReadiness(userId: string) {
 
 /* ───────────── Generación de la semana ───────────── */
 
+const bankItem = (i: BankIdea) => ({ titulo: i.title, gancho: i.hook, idea: i.idea, guion_corto: i.shortScript, inspirada_en: i.creator });
+const bankNote = (bank: BankIdea[]) => (bank.length === 0 ? null : "Ideas guardadas por el creador para esta semana (toma cada una como base de un guion con su gancho): " + bank.map((b, k) => String(k + 1) + ") " + b.title).join("; "));
+
+/**
+ * Guion de video completo para UNA idea (la del banco): usa la misma skill de la parrilla con una semana de una sola pieza.
+ * No agrega nada a la base: eso lo hace quien llama.
+ */
+export async function singleVideoScript(userId: string, idea: { title: string; hook: string; idea: string; shortScript?: string | null }): Promise<{ ok: true; pillar: string; script: VideoGuion; mock: boolean } | { ok: false; error: string }> {
+  const r = await planReadiness(userId);
+  if (!r.ready || !r.manual || !r.voice) return { ok: false, error: "Termina primero tu brújula, tu perfil de voz y tu horario." };
+  const m = r.manual.content;
+  const v = r.voice.content;
+  const recent = await db().select({ topic: contentPieces.topic }).from(contentPieces).where(eq(contentPieces.userId, userId)).orderBy(desc(contentPieces.createdAt)).limit(24);
+  const input: ParrillaInput = {
+    creador_id: userId,
+    brujula: { nicho: m.nicho, publico: m.publico, pilares: m.pilares, tono: m.tono, palabras_si: m.palabras_si, palabras_no: m.palabras_no, postura: m.postura, estilo_grabacion: m.estilo_grabacion, lives: m.lives },
+    perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: v.reglas_para_guiones, preferencias_aprendidas: v.preferencias_aprendidas },
+    semana: [{ n: 1, dia: DAY_CODES[0]!, formato: "video", categoria: "nicho", tipo: "probado", variante_de: null, prueba: null }],
+    temas_recientes: recent.map((x) => x.topic),
+    enfoque: "Escribe el guion completo de UN video basado en esta idea guardada por el creador: «" + idea.title + "». Gancho de referencia: «" + idea.hook + "». " + idea.idea,
+    ideas_guardadas: [{ titulo: idea.title, gancho: idea.hook, idea: idea.idea, guion_corto: idea.shortScript ?? null, inspirada_en: null }],
+  };
+  const out = await runParrilla(userId, input);
+  const piece = out.output.piezas[0];
+  const parsed = piece ? videoGuionSchema.safeParse(piece.guion) : null;
+  if (!piece || !parsed?.success) return { ok: false, error: "La IA no devolvió un guion de video. Inténtalo de nuevo." };
+  return { ok: true, pillar: String(piece.pilar ?? ""), script: parsed.data, mock: out.mock };
+}
+
 export type GenerateResult = { ok: true; weekStart: string } | { ok: false; error: string };
 
 export async function generatePlan(userId: string, opts: { weekStart?: string; focus?: { temas: string[]; tipos_apagados: { tipo: string; hasta: string }[] } } = {}): Promise<GenerateResult> {
@@ -89,6 +119,8 @@ export async function generatePlan(userId: string, opts: { weekStart?: string; f
   const mix: Mix = mixFor(stage, hasOffer);
   const publishTime = r.schedule?.result.publicar.hora ?? "18:00";
   const slots = planSlots({ plan: tier, weekStart, mix });
+  // Ideas guardadas en el banco: la parrilla las toma como base de algún guion (hasta 3 por semana).
+  const bank = await ideasForWeek(userId, 3);
 
   const recent = await db()
     .select({ topic: contentPieces.topic })
@@ -105,7 +137,8 @@ export async function generatePlan(userId: string, opts: { weekStart?: string; f
     perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: v.reglas_para_guiones, preferencias_aprendidas: v.preferencias_aprendidas },
     semana: slots.map((s) => ({ n: s.n, dia: s.day, formato: s.kind, categoria: s.category, tipo: s.type, variante_de: s.variantOf, prueba: s.testKind })),
     temas_recientes: recent.map((x) => x.topic),
-    enfoque: opts.focus?.temas.join(", ") || null,
+    enfoque: [opts.focus?.temas.join(", ") || null, bankNote(bank)].filter(Boolean).join(". ") || null,
+    ...(bank.length > 0 ? { ideas_guardadas: bank.map(bankItem) } : {}),
   };
   const parrilla = await runParrilla(userId, parrillaInput);
   const byN = new Map(parrilla.output.piezas.map((p) => [p.n, p]));
@@ -159,6 +192,8 @@ export async function generatePlan(userId: string, opts: { weekStart?: string; f
     });
     await tx.insert(storyIdeas).values(stories);
   });
+  // Las ideas del banco ya se tomaron en cuenta para esta semana.
+  await markIdeasUsed(bank.map((b) => b.id));
   return { ok: true, weekStart };
 }
 

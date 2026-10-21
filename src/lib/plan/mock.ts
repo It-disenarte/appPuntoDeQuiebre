@@ -14,6 +14,8 @@ export type ParrillaInput = {
   semana: { n: number; dia: string; formato: "video" | "carrusel"; categoria: Category; tipo: "probado" | "prueba"; variante_de: number | null; prueba: "gancho" | "angulo" | null }[];
   temas_recientes: string[];
   enfoque: string | null;
+  /** Ideas que el creador guardó (p. ej. del analizador de competencia) para que sean la base de algún guion. */
+  ideas_guardadas?: { titulo: string; gancho: string; idea: string; guion_corto: string | null; inspirada_en: string | null }[];
 };
 
 export type TextosInput = {

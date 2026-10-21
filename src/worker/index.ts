@@ -22,6 +22,7 @@ import { runAnalyzer } from "@/lib/analyzer/service";
 import { runManualJob } from "@/lib/brujula/service";
 import { runCarouselOp, type CarouselOp } from "@/lib/carousel/service";
 import { runWeekJob } from "@/lib/plan/service";
+import { runVideoFromIdea } from "@/lib/ideas/service";
 import { claimNext, completeJob, failJob, touchJob, type ClaimedJob, type JobKind } from "@/lib/jobs";
 import { runExtraction } from "@/lib/metrics/service";
 import { refreshExpiringTokens, syncAll } from "@/lib/instagram/service";
@@ -84,6 +85,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     const p = job.payload as { reviewId?: string };
     if (!job.userId || !p.reviewId) throw new Error("Trabajo sin usuario o revisión");
     await runReview(job.userId, p.reviewId);
+  },
+  "idea.video": async (job) => {
+    const p = job.payload as { ideaId?: string };
+    if (!job.userId || !p.ideaId) throw new Error("Trabajo sin usuario o idea");
+    await runVideoFromIdea(job.userId, p.ideaId);
   },
   "semana.generar": async (job) => {
     if (!job.userId) throw new Error("Trabajo sin usuario");

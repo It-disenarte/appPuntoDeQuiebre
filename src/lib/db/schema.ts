@@ -442,6 +442,29 @@ export const contentPieces = pgTable(
   (t) => [uniqueIndex("content_pieces_plan_n_idx").on(t.planId, t.n), index("content_pieces_user_day_idx").on(t.userId, t.day)],
 );
 
+/** Banco de ideas del creador (p. ej. las que le dejó el analizador de competencia): se usan al armar la semana o se vuelven un video. */
+export const ideaBank = pgTable(
+  "idea_bank",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    hook: text("hook").notNull().default(""),
+    idea: text("idea").notNull().default(""),
+    shortScript: text("short_script"),
+    /** Cuenta de la que salió la inspiración (si viene del analizador). */
+    creator: text("creator"),
+    status: text("status", { enum: ["guardada", "usada"] }).notNull().default("guardada"),
+    /** Pieza que se armó con esta idea (si se volvió un video). */
+    pieceId: uuid("piece_id").references(() => contentPieces.id, { onDelete: "set null" }),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idea_bank_user_title_idx").on(t.userId, t.title), index("idea_bank_user_status_idx").on(t.userId, t.status, t.createdAt)],
+);
+
 /** Una idea de historia por día. */
 export const storyIdeas = pgTable(
   "story_ideas",

@@ -1,8 +1,12 @@
 import { Star, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { AddCompetitorForm, StartRunForm } from "@/components/analyzer/Forms";
+import { BankVideoButton, IdeaActions } from "@/components/analyzer/IdeaActions";
+import { removeIdeaAction } from "@/lib/ideas/actions";
+import { listIdeas } from "@/lib/ideas/bank";
+import Link from "next/link";
 import { Poller } from "@/components/metrics/Poller";
-import { Button, ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
+import { Button, Card, Chip, PageHeader } from "@/components/ui";
 import { removeCompetitorAction, toggleStarAction } from "@/lib/analyzer/actions";
 import { getLimits } from "@/lib/admin/limits";
 import { latestDoneRun, latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
@@ -15,7 +19,10 @@ const dateEs = (d: Date) => d.toLocaleDateString("es-MX", { day: "numeric", mont
 
 export default async function AnalizadorPage() {
   const { user } = await requireCreatorAccess();
-  const [comps, run, wait, done] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id), latestDoneRun(user.id)]);
+  const [comps, run, wait, done, bank] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id), latestDoneRun(user.id), listIdeas(user.id)]);
+  const savedIdeas = bank.filter((i) => i.status === "guardada");
+  const asVideo = bank.filter((i) => i.pieceId).slice(0, 5);
+  const savedTitles = new Set(bank.map((i) => i.title));
   const intervalDays = (await getLimits()).analyzerIntervalDays;
   const running = run && ["en_cola", "corriendo"].includes(run.status);
   // Se muestran los resultados del último análisis que terminó bien, aunque el intento más reciente haya fallado.
@@ -57,6 +64,47 @@ export default async function AnalizadorPage() {
         </ul>
         <AddCompetitorForm />
       </Card>
+
+      {(savedIdeas.length > 0 || asVideo.length > 0) && (
+        <Card className="flex flex-col gap-3">
+          <p className="font-extrabold">Mi banco de ideas ({savedIdeas.length})</p>
+          {savedIdeas.length > 0 && <p className="text-xs text-ink-500">Cuando armes tu próxima semana tomo hasta 3 de estas ideas (las más antiguas) como base de tus guiones. O conviértelas en video ahora mismo.</p>}
+          <ul className="flex flex-col divide-y divide-ink-100">
+            {savedIdeas.map((i) => (
+              <li key={i.id} className="flex flex-col gap-2 py-3">
+                <div>
+                  <p className="font-semibold">{i.title}</p>
+                  {i.hook && <p className="text-sm text-ink-700">“{i.hook}”</p>}
+                  {i.creator && <p className="text-xs text-ink-500">Inspirada en @{i.creator}</p>}
+                </div>
+                <div className="flex flex-wrap items-start gap-2">
+                  <BankVideoButton ideaId={i.id} />
+                  <form action={removeIdeaAction}>
+                    <input type="hidden" name="id" value={i.id} />
+                    <Button type="submit" variant="ghost" size="sm">
+                      Quitar
+                    </Button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {asVideo.length > 0 && (
+            <div className="text-xs text-ink-600">
+              <p className="font-semibold">Ya son video en tu semana:</p>
+              <ul className="list-disc pl-5">
+                {asVideo.map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/semana/${i.pieceId}`} className="font-semibold text-azul underline underline-offset-4">
+                      {i.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
 
       {running && progress ? (
         <Card className="flex flex-col gap-2" aria-live="polite">
@@ -160,9 +208,7 @@ export default async function AnalizadorPage() {
                         <p className="text-ink-700">“{x.gancho}”</p>
                         <p className="mt-1 text-ink-700">{x.idea}</p>
                         {x.guion_corto && <p className="mt-1 text-xs text-ink-600">{x.guion_corto}</p>}
-                        <ButtonLink href={`/carruseles?tema=${encodeURIComponent(x.titulo)}`} variant="outline" size="sm" className="mt-2">
-                          Hacer un carrusel con esta idea
-                        </ButtonLink>
+                        <IdeaActions idea={{ titulo: x.titulo, gancho: x.gancho, idea: x.idea, guion: x.guion_corto ?? null, creador: v.creator }} saved={savedTitles.has(x.titulo.trim().slice(0, 140))} />
                       </div>
                     ))}
                   </div>
