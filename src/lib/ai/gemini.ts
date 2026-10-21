@@ -32,7 +32,7 @@ function explain(status: number, body: string): string {
 }
 
 /** Genera texto a partir de partes (texto, imágenes en línea o archivos subidos). */
-export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean; maxRetries?: number; timeoutMs?: number } = {}): Promise<string> {
+export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean; maxRetries?: number; timeoutMs?: number; model?: string } = {}): Promise<string> {
   const e = env();
   const max = opts.maxRetries ?? 3;
   const body = JSON.stringify({
@@ -47,7 +47,7 @@ export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean
   let last: GeminiError | null = null;
   for (let attempt = 0; attempt < max; attempt++) {
     try {
-      const res = await fetch(`${BASE}/v1beta/models/${encodeURIComponent(e.GEMINI_MODEL)}:generateContent`, {
+      const res = await fetch(`${BASE}/v1beta/models/${encodeURIComponent(opts.model ?? e.GEMINI_MODEL)}:generateContent`, {
         method: "POST",
         headers: { "x-goog-api-key": e.GEMINI_API_KEY!, "content-type": "application/json" },
         body,

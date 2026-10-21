@@ -8,6 +8,7 @@ import type { ZodType } from "zod";
 import { db } from "@/lib/db";
 import { aiCalls } from "@/lib/db/schema";
 import { env } from "@/lib/env";
+import { geminiGenerate } from "@/lib/ai/gemini";
 import { mockApplyAdjustment, mockBrujulaV2, mockPerfilVozV1, type BrujulaInput, type PerfilVozInput } from "./mock";
 import { mockKitFinal, mockKitRound, type KitInput } from "@/lib/kit/mock";
 import { mockHistorias, mockParrilla, mockTextos, type HistoriasInput, type ParrillaInput, type TextosInput } from "@/lib/plan/mock";
@@ -39,13 +40,24 @@ type SkillKey = keyof typeof SKILLS;
 
 export type SkillResult<T> = { output: T; mock: boolean; skillVersion: string };
 
-export const aiConfigured = () => Boolean(env().ANTHROPIC_API_KEY);
+export const aiConfigured = () => Boolean(env().ANTHROPIC_API_KEY || env().GEMINI_API_KEY);
 
-async function logCall(userId: string, key: SkillKey, r: { mock: boolean; status: "ok" | "error"; inputTokens?: number; outputTokens?: number }) {
+type Provider = "claude" | "gemini";
+
+async function logCall(userId: string, key: SkillKey, r: { mock: boolean; status: "ok" | "error"; inputTokens?: number; outputTokens?: number; provider?: Provider }) {
   await db()
     .insert(aiCalls)
-    .values({ userId, skill: key, skillVersion: SKILLS[key].version, mock: r.mock, status: r.status, costCents: 0, inputTokens: r.inputTokens ?? null, outputTokens: r.outputTokens ?? null })
+    // Las llamadas que resolvió Gemini llevan "@gemini" en la versión (el costo por tokens del panel es de Claude).
+    .values({ userId, skill: key, skillVersion: r.provider === "gemini" ? SKILLS[key].version + "@gemini" : SKILLS[key].version, mock: r.mock, status: r.status, costCents: 0, inputTokens: r.inputTokens ?? null, outputTokens: r.outputTokens ?? null })
     .catch((err) => console.error("[skills] no se pudo registrar la llamada", err));
+}
+
+/** Qué IA se prueba primero para cada skill y cuál queda de respaldo (solo las que tienen llave). */
+export function providersFor(key: string): Provider[] {
+  const e = env();
+  const preferGemini = (e.SKILLS_GEMINI ?? "").split(",").map((x) => x.trim()).includes(key);
+  const order: Provider[] = preferGemini ? ["gemini", "claude"] : ["claude", "gemini"];
+  return order.filter((p) => (p === "claude" ? Boolean(e.ANTHROPIC_API_KEY) : Boolean(e.GEMINI_API_KEY)));
 }
 
 /** Saca el JSON de la respuesta del modelo (tolera que lo envuelva en ```json). */
@@ -76,7 +88,7 @@ export async function visionJson(system: string, userText: string, images: Buffe
     try {
       return { json: extractJson(r.text), inputTokens: r.inputTokens, outputTokens: r.outputTokens };
     } catch (err) {
-      const peek = r.text.replace(/s+/g, " ").trim().slice(0, 140);
+      const peek = r.text.replace(/\s+/g, " ").trim().slice(0, 140);
       failure = `${err instanceof Error ? err.message : "Sin JSON"} (fin: ${r.stopReason ?? "?"}, ${r.text.length} caracteres): «${peek}»`;
       console.error(`[skills] ${label}: intento ${attempt} sin JSON válido. ${failure}`);
     }
@@ -110,6 +122,43 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
   return { raw, inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens, stopReason: data.stop_reason };
 }
 
+type ModelReply = { raw: string; inputTokens?: number; outputTokens?: number; stopReason?: string };
+
+async function callGemini(key: SkillKey, input: unknown): Promise<ModelReply> {
+  const e = env();
+  const system = await readFile(path.join(process.cwd(), "skills", SKILLS[key].dir, "skill.md"), "utf8");
+  const raw = await geminiGenerate([{ text: system + "\n\n---\nEntrada:\n" + JSON.stringify(input) + "\n\nResponde solo con el JSON de salida." }], { json: true, timeoutMs: 240_000, maxRetries: 2, model: e.GEMINI_SKILLS_MODEL });
+  return { raw };
+}
+
+/** Una skill con UNA IA: llamada, JSON (con una repetición si viene roto) y validación del esquema. Lanza si algo falla. */
+async function attempt<T>(provider: Provider, key: SkillKey, input: unknown, schema: ZodType<T>): Promise<{ output: T; inputTokens?: number; outputTokens?: number }> {
+  const call = () => (provider === "gemini" ? callGemini(key, input) : callClaude(key, input));
+  let res = await call();
+  let json: unknown;
+  try {
+    json = extractJson(res.raw);
+  } catch {
+    // Una sola repetición si el JSON vino roto y no se pudo reparar (salida cortada o mal formada).
+    console.error("[skills] " + key + " (" + provider + "): JSON no válido (motivo de fin: " + res.stopReason + ", " + res.raw.length + " caracteres), se repite la llamada una vez. Inicio: " + res.raw.slice(0, 240) + " … Final: " + res.raw.slice(-160));
+    res = await call();
+    try {
+      json = extractJson(res.raw);
+    } catch (err) {
+      console.error("[skills] " + key + " (" + provider + "): la respuesta sigue sin JSON válido (motivo de fin: " + res.stopReason + ", " + res.raw.length + " caracteres). Inicio: " + res.raw.slice(0, 240) + " … Final: " + res.raw.slice(-160));
+      // El error lleva el inicio de lo que contestó el modelo (queda en Admin → Errores y en la pantalla de quien lo pidió).
+      const peek = res.raw.replace(/\s+/g, " ").trim().slice(0, 140);
+      throw new Error((err instanceof Error ? err.message : "Sin JSON") + " (fin: " + (res.stopReason ?? "?") + ", " + res.raw.length + " caracteres): «" + peek + "»");
+    }
+  }
+  const parsed = schema.safeParse(json);
+  if (!parsed.success) {
+    console.error("[skills] " + key + " (" + provider + "): la salida no cumple el esquema:", JSON.stringify(parsed.error.issues.slice(0, 6).map((i) => ({ ruta: i.path.join("."), mensaje: i.message }))));
+    throw new Error("La salida de " + key + " no cumple el esquema");
+  }
+  return { output: parsed.data, inputTokens: res.inputTokens, outputTokens: res.outputTokens };
+}
+
 async function run<T>(userId: string, key: SkillKey, input: unknown, schema: ZodType<T>, mock: () => unknown): Promise<SkillResult<T>> {
   const skillVersion = SKILLS[key].version;
   if (!aiConfigured()) {
@@ -117,38 +166,21 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
     await logCall(userId, key, { mock: true, status: "ok" });
     return { output, mock: true, skillVersion };
   }
-  try {
-    let res = await callClaude(key, input);
-    let json: unknown;
+  // Se prueba la IA que toca para esta skill y, si falla (sin créditos, límite, respuesta inválida), la otra.
+  let lastError: unknown = new Error("Ninguna IA está configurada");
+  for (const provider of providersFor(key)) {
     try {
-      json = extractJson(res.raw);
-    } catch {
-      // Una sola repetición si el JSON vino roto y no se pudo reparar (salida cortada o mal formada).
-      console.error(`[skills] ${key}: JSON no válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres), se repite la llamada una vez. Inicio: ${res.raw.slice(0, 240)} … Final: ${res.raw.slice(-160)}`);
-      res = await callClaude(key, input);
-      try {
-        json = extractJson(res.raw);
-      } catch (err) {
-        console.error(`[skills] ${key}: la respuesta sigue sin JSON válido (motivo de fin: ${res.stopReason}, ${res.raw.length} caracteres). Inicio: ${res.raw.slice(0, 240)} … Final: ${res.raw.slice(-160)}`);
-        // El error lleva el inicio de lo que contestó el modelo (queda en Admin → Errores y en la pantalla de quien lo pidió).
-        const peek = res.raw.replace(/s+/g, " ").trim().slice(0, 140);
-        throw new Error(`${err instanceof Error ? err.message : "Sin JSON"} (fin: ${res.stopReason ?? "?"}, ${res.raw.length} caracteres): «${peek}»`);
-      }
+      const r = await attempt(provider, key, input, schema);
+      await logCall(userId, key, { mock: false, status: "ok", inputTokens: r.inputTokens, outputTokens: r.outputTokens, provider });
+      return { output: r.output, mock: false, skillVersion };
+    } catch (err) {
+      lastError = err;
+      console.error("[skills] " + key + " falló con " + provider + ":", err instanceof Error ? err.message : err);
+      await recordError({ source: "ia", message: key + " (" + provider + "): " + (err instanceof Error ? err.message : "falló") });
     }
-    const { inputTokens, outputTokens } = res;
-    const parsed = schema.safeParse(json);
-    if (!parsed.success) {
-      console.error(`[skills] ${key}: la salida no cumple el esquema:`, JSON.stringify(parsed.error.issues.slice(0, 6).map((i) => ({ ruta: i.path.join("."), mensaje: i.message }))));
-      throw new Error(`La salida de ${key} no cumple el esquema`);
-    }
-    await logCall(userId, key, { mock: false, status: "ok", inputTokens, outputTokens });
-    return { output: parsed.data, mock: false, skillVersion };
-  } catch (err) {
-    console.error(`[skills] ${key} falló:`, err instanceof Error ? err.message : err);
-    await logCall(userId, key, { mock: false, status: "error" });
-    await recordError({ source: "ia", message: `${key}: ${err instanceof Error ? err.message : "falló"}` });
-    throw err;
   }
+  await logCall(userId, key, { mock: false, status: "error" });
+  throw lastError;
 }
 
 export const runBrujula = (userId: string, input: BrujulaInput) =>
