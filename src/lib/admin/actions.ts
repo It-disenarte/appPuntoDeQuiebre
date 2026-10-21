@@ -18,6 +18,8 @@ import { saveCommunity } from "@/lib/community";
 import { resolveAll, resolveError } from "@/lib/errors";
 import { deleteDisabledUser } from "./delete-user";
 import { saveLimits, savePrices } from "./limits";
+import { MODEL_KINDS, testModel, type ModelKind } from "./model-test";
+import { saveModels, SKILL_ROUTES } from "./models";
 
 export type AdminState = { error?: string; ok?: boolean; tempPassword?: string; message?: string } | undefined;
 
@@ -278,4 +280,37 @@ export async function resolveAllErrorsAction(): Promise<void> {
   await resolveAll();
   revalidatePath("/admin/errores");
   revalidatePath("/admin");
+}
+
+/* ───────────── Modelos de IA ───────────── */
+
+export async function saveModelsAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const text = (k: string) => String(fd.get(k) ?? "").trim();
+  const r = await saveModels(
+    {
+      claude: text("claude"),
+      geminiText: text("geminiText"),
+      geminiMedia: text("geminiMedia"),
+      geminiImage: text("geminiImage"),
+      geminiImagePro: text("geminiImagePro"),
+      routing: Object.fromEntries(SKILL_ROUTES.map((s) => [s.key, text("route_" + s.key) === "gemini" ? "gemini" : "claude"])),
+    },
+    admin.id,
+  );
+  if (!r.ok) return { error: r.error };
+  await audit({ action: "admin.models_updated", actorUserId: admin.id, ip: await getClientIp() });
+  revalidatePath("/admin/modelos");
+  return { ok: true, message: "Modelos guardados. Se aplican en unos segundos (también en el worker)." };
+}
+
+/** “Probar” junto a un modelo: una llamada mínima para saber si existe y responde. */
+export async function testModelAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  await requireAdmin();
+  const kind = String(fd.get("kind") ?? "") as ModelKind;
+  if (!MODEL_KINDS.includes(kind)) return { error: "Modelo no válido." };
+  const model = String(fd.get(kind) ?? "").trim();
+  if (!model) return { error: "Escribe el nombre del modelo." };
+  const r = await testModel(kind, model);
+  return r.ok ? { ok: true, message: "✓ " + model + ": " + r.note + " (" + (r.ms / 1000).toFixed(1) + " s)" } : { error: model + ": " + r.error };
 }

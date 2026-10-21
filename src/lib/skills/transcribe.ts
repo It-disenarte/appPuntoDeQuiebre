@@ -1,4 +1,5 @@
 import "server-only";
+import { getModels } from "@/lib/admin/models";
 import { env } from "@/lib/env";
 
 export class NoSpeechError extends Error {
@@ -28,7 +29,7 @@ export function transcriptionPrompt(ctx: { name: string; brand?: string | null }
 /** Transcribe un audio con Gemini (inline, hasta ~8 MB). Lanza NoSpeechError si no hay voz. */
 export async function transcribeWithGemini(input: { data: Buffer; mime: string; name: string; brand?: string | null }): Promise<string> {
   const e = env();
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(e.GEMINI_MODEL)}:generateContent`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent((await getModels()).geminiMedia)}:generateContent`, {
     method: "POST",
     headers: { "x-goog-api-key": e.GEMINI_API_KEY!, "content-type": "application/json" },
     body: JSON.stringify({

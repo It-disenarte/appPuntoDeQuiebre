@@ -14,6 +14,7 @@ const SECTIONS = [
   { label: "Alertas", href: "/admin/alertas" },
   { label: "Errores", href: "/admin/errores" },
   { label: "Límites y costos", href: "/admin/limites" },
+  { label: "Modelos de IA", href: "/admin/modelos" },
   { label: "Ajustes", href: "/admin/ajustes" },
 ] as const;
 

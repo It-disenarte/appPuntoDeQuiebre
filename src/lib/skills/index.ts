@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { aiCalls } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { geminiGenerate } from "@/lib/ai/gemini";
+import { getModels } from "@/lib/admin/models";
 import { mockApplyAdjustment, mockBrujulaV2, mockPerfilVozV1, type BrujulaInput, type PerfilVozInput } from "./mock";
 import { mockKitFinal, mockKitRound, type KitInput } from "@/lib/kit/mock";
 import { mockHistorias, mockParrilla, mockTextos, type HistoriasInput, type ParrillaInput, type TextosInput } from "@/lib/plan/mock";
@@ -52,10 +53,10 @@ async function logCall(userId: string, key: SkillKey, r: { mock: boolean; status
     .catch((err) => console.error("[skills] no se pudo registrar la llamada", err));
 }
 
-/** Qué IA se prueba primero para cada skill y cuál queda de respaldo (solo las que tienen llave). */
-export function providersFor(key: string): Provider[] {
+/** Qué IA se prueba primero para cada skill y cuál queda de respaldo (solo las que tienen llave). Lo configura el admin en Modelos de IA. */
+export async function providersFor(key: string): Promise<Provider[]> {
   const e = env();
-  const preferGemini = (e.SKILLS_GEMINI ?? "").split(",").map((x) => x.trim()).includes(key);
+  const preferGemini = (await getModels()).routing[key] === "gemini";
   const order: Provider[] = preferGemini ? ["gemini", "claude"] : ["claude", "gemini"];
   return order.filter((p) => (p === "claude" ? Boolean(e.ANTHROPIC_API_KEY) : Boolean(e.GEMINI_API_KEY)));
 }
@@ -105,7 +106,7 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
     method: "POST",
     headers: { "x-api-key": e.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
-      model: e.SKILLS_MODEL,
+      model: (await getModels()).claude,
       max_tokens: 16000,
       system,
       messages: [{ role: "user", content: `Entrada:\n${JSON.stringify(input)}\n\nResponde solo con el JSON de salida.` }],
@@ -125,9 +126,8 @@ async function callClaude(key: SkillKey, input: unknown): Promise<{ raw: string;
 type ModelReply = { raw: string; inputTokens?: number; outputTokens?: number; stopReason?: string };
 
 async function callGemini(key: SkillKey, input: unknown): Promise<ModelReply> {
-  const e = env();
   const system = await readFile(path.join(process.cwd(), "skills", SKILLS[key].dir, "skill.md"), "utf8");
-  const raw = await geminiGenerate([{ text: system + "\n\n---\nEntrada:\n" + JSON.stringify(input) + "\n\nResponde solo con el JSON de salida." }], { json: true, timeoutMs: 240_000, maxRetries: 2, model: e.GEMINI_SKILLS_MODEL });
+  const raw = await geminiGenerate([{ text: system + "\n\n---\nEntrada:\n" + JSON.stringify(input) + "\n\nResponde solo con el JSON de salida." }], { json: true, timeoutMs: 240_000, maxRetries: 2, model: (await getModels()).geminiText });
   return { raw };
 }
 
@@ -168,7 +168,7 @@ async function run<T>(userId: string, key: SkillKey, input: unknown, schema: Zod
   }
   // Se prueba la IA que toca para esta skill y, si falla (sin créditos, límite, respuesta inválida), la otra.
   let lastError: unknown = new Error("Ninguna IA está configurada");
-  for (const provider of providersFor(key)) {
+  for (const provider of await providersFor(key)) {
     try {
       const r = await attempt(provider, key, input, schema);
       await logCall(userId, key, { mock: false, status: "ok", inputTokens: r.inputTokens, outputTokens: r.outputTokens, provider });

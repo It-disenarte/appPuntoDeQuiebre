@@ -2,6 +2,7 @@ import "server-only";
 import { and, count, eq, gte } from "drizzle-orm";
 import { getLimits } from "@/lib/admin/limits";
 import { geminiConfigured, geminiGenerateImage } from "@/lib/ai/gemini";
+import { getModels } from "@/lib/admin/models";
 import { getSubscription } from "@/lib/billing/service";
 import { db } from "@/lib/db";
 import { aiCalls } from "@/lib/db/schema";
@@ -56,7 +57,10 @@ export async function generateSlideImage(userId: string, id: string, n: number):
   const q = await imageQuota(userId);
   if (q.left <= 0) return { ok: false, error: q.limit === 0 ? "Las imágenes con IA no están incluidas en tu plan." : "Ya usaste tus " + q.limit + " imágenes con IA de este mes. Puedes subir fotos propias o esperar al día 1." };
   try {
-    const img = await geminiGenerateImage(buildImagePrompt(content, slide, parseAnswers(row.answers)?.aparece_creador ?? null), { aspectRatio: "4:5" });
+    // El plan Pro puede usar un modelo de imágenes propio (p. ej. el más potente); si no, el mismo de todos.
+    const [models, sub] = await Promise.all([getModels(), getSubscription(userId)]);
+    const model = sub?.plan === "pro" && models.geminiImagePro ? models.geminiImagePro : models.geminiImage;
+    const img = await geminiGenerateImage(buildImagePrompt(content, slide, parseAnswers(row.answers)?.aparece_creador ?? null), { aspectRatio: "4:5", model });
     await log(userId, "ok");
     return await addImage(userId, id, n, img.data, img.mime);
   } catch (err) {

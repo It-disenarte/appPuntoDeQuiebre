@@ -41,15 +41,15 @@ describe("reparto de IAs por skill", () => {
   it("las skills ligeras van primero a Gemini y las pesadas a Claude; solo cuentan las IAs con llave", async () => {
     withKeys(true, true);
     const { providersFor } = await import("@/lib/skills");
-    expect(providersFor("carruseles")).toEqual(["gemini", "claude"]);
-    expect(providersFor("brujula")).toEqual(["claude", "gemini"]);
-    expect(providersFor("edicion")).toEqual(["claude", "gemini"]);
+    expect(await providersFor("carruseles")).toEqual(["gemini", "claude"]);
+    expect(await providersFor("brujula")).toEqual(["claude", "gemini"]);
+    expect(await providersFor("edicion")).toEqual(["claude", "gemini"]);
     withKeys(true, false);
     vi.resetModules();
-    expect((await import("@/lib/skills")).providersFor("carruseles")).toEqual(["claude"]);
+    expect(await (await import("@/lib/skills")).providersFor("carruseles")).toEqual(["claude"]);
     withKeys(false, true);
     vi.resetModules();
-    expect((await import("@/lib/skills")).providersFor("brujula")).toEqual(["gemini"]);
+    expect(await (await import("@/lib/skills")).providersFor("brujula")).toEqual(["gemini"]);
   });
 
   it("si Claude no tiene créditos, la skill se resuelve con Gemini", async () => {

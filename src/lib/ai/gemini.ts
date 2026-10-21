@@ -1,5 +1,6 @@
 import "server-only";
 import { jsonrepair } from "jsonrepair";
+import { getModels } from "@/lib/admin/models";
 import { env } from "@/lib/env";
 
 /**
@@ -26,7 +27,7 @@ export class GeminiError extends Error {
 function explain(status: number, body: string): string {
   const detail = body.slice(0, 300);
   if (status === 429) return `Gemini alcanzó su límite de uso (429). Intenta de nuevo más tarde. ${detail}`;
-  if (status === 404) return `Gemini no encontró el modelo ${env().GEMINI_MODEL} (404). Cámbialo con GEMINI_MODEL. ${detail}`;
+  if (status === 404) return `Gemini no encontró ese modelo (404). Cámbialo en Admin → Modelos de IA. ${detail}`;
   if (status === 400 && /API key/i.test(body)) return "Gemini rechazó la llave (GEMINI_API_KEY).";
   return `Gemini respondió ${status}: ${detail}`;
 }
@@ -34,6 +35,7 @@ function explain(status: number, body: string): string {
 /** Genera texto a partir de partes (texto, imágenes en línea o archivos subidos). */
 export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean; maxRetries?: number; timeoutMs?: number; model?: string } = {}): Promise<string> {
   const e = env();
+  const model = opts.model ?? (await getModels()).geminiMedia;
   const max = opts.maxRetries ?? 3;
   const body = JSON.stringify({
     contents: [
@@ -47,7 +49,7 @@ export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean
   let last: GeminiError | null = null;
   for (let attempt = 0; attempt < max; attempt++) {
     try {
-      const res = await fetch(`${BASE}/v1beta/models/${encodeURIComponent(opts.model ?? e.GEMINI_MODEL)}:generateContent`, {
+      const res = await fetch(`${BASE}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
         method: "POST",
         headers: { "x-goog-api-key": e.GEMINI_API_KEY!, "content-type": "application/json" },
         body,
@@ -110,7 +112,7 @@ export function parseJson(raw: string): unknown {
 /** Crea UNA imagen a partir de un texto (Gemini Imagen integrado). Devuelve los bytes y su tipo; lanza un error en español si no se pudo. */
 export async function geminiGenerateImage(prompt: string, opts: { aspectRatio?: string; model?: string; timeoutMs?: number } = {}): Promise<{ data: Buffer; mime: string }> {
   const e = env();
-  const model = opts.model ?? e.GEMINI_IMAGE_MODEL;
+  const model = opts.model ?? (await getModels()).geminiImage;
   const body = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { responseModalities: ["TEXT", "IMAGE"], ...(opts.aspectRatio ? { imageConfig: { aspectRatio: opts.aspectRatio } } : {}) },

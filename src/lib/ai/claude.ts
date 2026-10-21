@@ -1,4 +1,5 @@
 import "server-only";
+import { getModels } from "@/lib/admin/models";
 import { env } from "@/lib/env";
 
 export const claudeConfigured = () => Boolean(env().ANTHROPIC_API_KEY);
@@ -9,7 +10,7 @@ export async function claudeText(system: string, user: string, opts: { maxTokens
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": e.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: e.SKILLS_MODEL, max_tokens: opts.maxTokens ?? 4000, system, messages: [{ role: "user", content: user }] }),
+    body: JSON.stringify({ model: (await getModels()).claude, max_tokens: opts.maxTokens ?? 4000, system, messages: [{ role: "user", content: user }] }),
     signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
   });
   if (!res.ok) throw new Error(`Anthropic respondió ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
@@ -27,7 +28,7 @@ export async function claudeWithImages(system: string, userText: string, images:
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": e.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: e.SKILLS_MODEL, max_tokens: opts.maxTokens ?? 12000, system, messages: [{ role: "user", content }] }),
+    body: JSON.stringify({ model: (await getModels()).claude, max_tokens: opts.maxTokens ?? 12000, system, messages: [{ role: "user", content }] }),
     signal: AbortSignal.timeout(opts.timeoutMs ?? 240_000),
   });
   if (!res.ok) throw new Error(`Anthropic respondió ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);

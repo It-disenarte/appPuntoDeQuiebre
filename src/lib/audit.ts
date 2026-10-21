@@ -30,6 +30,7 @@ export type AuditAction =
   | "admin.user_disabled"
   | "admin.user_enabled"
   | "admin.pro_override"
+  | "admin.models_updated"
   | "admin.sessions_revoked"
   | "admin.admin_created"
   | "admin.promo_created"
