@@ -18,7 +18,7 @@ import { saveCommunity } from "@/lib/community";
 import { resolveAll, resolveError } from "@/lib/errors";
 import { deleteDisabledUser } from "./delete-user";
 import { saveLimits, savePrices } from "./limits";
-import { MODEL_KINDS, testModel, type ModelKind } from "./model-test";
+import { listGeminiModels, MODEL_KINDS, testModel, type ModelKind } from "./model-test";
 import { saveModels, SKILL_ROUTES } from "./models";
 
 export type AdminState = { error?: string; ok?: boolean; tempPassword?: string; message?: string } | undefined;
@@ -313,4 +313,13 @@ export async function testModelAction(_prev: AdminState, fd: FormData): Promise<
   if (!model) return { error: "Escribe el nombre del modelo." };
   const r = await testModel(kind, model);
   return r.ok ? { ok: true, message: "✓ " + model + ": " + r.note + " (" + (r.ms / 1000).toFixed(1) + " s)" } : { error: model + ": " + r.error };
+}
+
+export type ModelListState = { error?: string; text?: string[]; image?: string[] } | undefined;
+
+/** “Ver los modelos disponibles”: lo que Google deja usar hoy con tu llave. */
+export async function listModelsAction(): Promise<ModelListState> {
+  await requireAdmin();
+  const r = await listGeminiModels();
+  return r.ok ? { text: r.text, image: r.image } : { error: r.error };
 }

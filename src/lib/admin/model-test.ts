@@ -32,3 +32,20 @@ export async function testModel(kind: ModelKind, model: string): Promise<{ ok: t
     return { ok: false, error: err instanceof Error ? err.message : "No respondió." };
   }
 }
+
+/** Los modelos de Gemini que tu llave puede usar para generar contenido (los nombres cambian y Google retira modelos viejos). */
+export async function listGeminiModels(): Promise<{ ok: true; text: string[]; image: string[] } | { ok: false; error: string }> {
+  const key = env().GEMINI_API_KEY;
+  if (!key) return { ok: false, error: "Falta GEMINI_API_KEY." };
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) return { ok: false, error: `Google respondió ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}` };
+    const data = (await res.json()) as { models?: { name?: string; supportedGenerationMethods?: string[] }[] };
+    const names = (data.models ?? []).filter((m) => m.supportedGenerationMethods?.includes("generateContent")).map((m) => (m.name ?? "").replace(/^models\//, "")).filter(Boolean);
+    const image = names.filter((n) => /image/i.test(n));
+    const text = names.filter((n) => /^gemini/i.test(n) && !/image|tts|embed|live|audio|robotics|computer-use|aqa/i.test(n));
+    return { ok: true, text: [...new Set(text)].sort().reverse(), image: [...new Set(image)].sort().reverse() };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "No respondió." };
+  }
+}

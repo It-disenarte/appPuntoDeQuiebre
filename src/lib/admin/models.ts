@@ -55,7 +55,7 @@ export function defaultModels(): Models {
 
 export const MODEL_SUGGESTIONS = {
   claude: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-fable-5-1"],
-  gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
+  gemini: ["gemini-3.8-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
   image: ["gemini-2.5-flash-image", "gemini-3-pro-image-preview"],
 } as const;
 

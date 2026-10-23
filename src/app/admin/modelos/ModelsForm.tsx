@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, FormError, FormSuccess } from "@/components/ui";
-import { saveModelsAction, testModelAction, type AdminState } from "@/lib/admin/actions";
+import { listModelsAction, saveModelsAction, testModelAction, type AdminState, type ModelListState } from "@/lib/admin/actions";
 import type { ModelKind } from "@/lib/admin/model-test";
 
 type Skill = { key: string; label: string };
@@ -52,6 +52,49 @@ function ModelField({ kind, label, hint, value, options, costs = false }: { kind
   );
 }
 
+function AvailableModels() {
+  const [list, action, pending] = useActionState<ModelListState, FormData>(listModelsAction, undefined);
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-ink-100 p-3">
+      <p className="text-sm font-semibold">¿Qué nombre pongo? Mira lo que tu llave de Gemini puede usar hoy</p>
+      <p className="text-xs text-ink-600">Google retira modelos viejos con el tiempo (por eso un nombre puede dejar de funcionar de un día para otro). Esta lista sale directo de Google.</p>
+      <Button type="submit" variant="outline" size="sm" formAction={action} disabled={pending} className="self-start">
+        {pending ? "Consultando…" : "Ver los modelos disponibles"}
+      </Button>
+      {list?.error && (
+        <p role="alert" className="text-xs font-semibold text-alerta">
+          {list.error}
+        </p>
+      )}
+      {list?.text && (
+        <div className="grid gap-3 text-xs md:grid-cols-2">
+          <div>
+            <p className="font-semibold">Para texto, audio y video</p>
+            <ul className="mt-1 list-disc pl-5 text-ink-700">
+              {list.text.map((n) => (
+                <li key={n} className="select-text">
+                  {n}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">Para crear imágenes</p>
+            <ul className="mt-1 list-disc pl-5 text-ink-700">
+              {(list.image ?? []).map((n) => (
+                <li key={n} className="select-text">
+                  {n}
+                </li>
+              ))}
+              {(list.image ?? []).length === 0 && <li>Ninguno disponible con tu llave.</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ModelsForm({ v, skills, suggestions }: { v: Models; skills: readonly Skill[]; suggestions: Suggestions }) {
   const [state, action, pending] = useActionState<AdminState, FormData>(saveModelsAction, undefined);
   return (
@@ -61,6 +104,7 @@ export function ModelsForm({ v, skills, suggestions }: { v: Models; skills: read
           <h2 className="text-sm font-extrabold">Modelos</h2>
           <p className="mt-1 text-xs text-ink-500">Escribe el nombre exacto del modelo (o elige uno de la lista). “Probar” hace una llamada mínima para confirmar que existe y responde. Los cambios se aplican en unos segundos, también en el worker.</p>
         </div>
+        <AvailableModels />
         <div className="grid gap-5 md:grid-cols-2">
           <ModelField kind="claude" label="Claude (escritura y edición con imágenes)" hint="Brújula, guiones, edición con imágenes, métricas y analizador. Es el más caro por uso." value={v.claude} options={suggestions.claude} />
           <ModelField kind="geminiText" label="Gemini para texto" hint="Para las skills que mandas primero a Gemini (tabla de abajo). Más barato." value={v.geminiText} options={suggestions.gemini} />

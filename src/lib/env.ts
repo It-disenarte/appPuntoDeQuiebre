@@ -43,7 +43,7 @@ const schema = z.object({
   // Gemini: transcripción de audio (fase 2) y, más adelante, calificador de foto y coach de video.
   // Google usa formatos distintos según la antigüedad de la llave ("AIza…" las antiguas, "AQ.…" las nuevas): solo se exige un largo mínimo.
   GEMINI_API_KEY: optional(z.string().min(20)),
-  GEMINI_MODEL: optional(z.string().min(3)).default("gemini-2.5-flash"),
+  GEMINI_MODEL: optional(z.string().min(3)).default("gemini-3.8-flash"),
   // Skills de texto que se mandan primero a Gemini (más barato) y, si falla, a Claude. Las demás van primero a Claude y, si falla, a Gemini.
   SKILLS_GEMINI: optional(z.string()).default("carruseles,historias,textos,directos,tendencias,perfil"),
   // Modelo de Gemini que crea las imágenes de los carruseles.
