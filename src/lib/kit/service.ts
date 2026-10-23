@@ -25,7 +25,7 @@ import {
   type PieceId,
   type TitleOption,
 } from "./schemas";
-import { ALL_FONTS, TEXT_FONTS, textFont, titleFont } from "./fonts";
+import { ALL_FONTS, FONT_STYLES, TEXT_FONTS, textFont, titleFont } from "./fonts";
 
 export const MAX_REFRESH = 2;
 export const MIN_PHOTOS = 3;
@@ -122,6 +122,7 @@ async function buildInput(userId: string, name: string, k: KitData, round: numbe
     elecciones_previas: previas,
     calificaciones_revelacion: votes,
     refresh: { numero: refresh.numero, nota: refresh.nota, opciones_rechazadas: refresh.rechazadas },
+    tipografias_disponibles: { titulos_por_estilo: FONT_STYLES, texto: TEXT_FONTS },
   };
 }
 

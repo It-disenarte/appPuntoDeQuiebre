@@ -16,6 +16,8 @@ export type KitInput = {
   elecciones_previas: { ronda: number; eligio: string; opcion: unknown }[];
   calificaciones_revelacion: { pieza: PieceId; voto: "si" | "no"; motivos: string[]; nota: string | null }[];
   refresh: { numero: number; nota: string | null; opciones_rechazadas: unknown[] };
+  /** Las únicas tipografías que la app sabe usar: de títulos por estilo y de texto. */
+  tipografias_disponibles?: { titulos_por_estilo: Record<string, readonly string[]>; texto: readonly string[] };
 };
 
 type Preset = { nombre: string; porque: string; principal: string; acento: string; fondo: string; texto: string; tonos: string[] };

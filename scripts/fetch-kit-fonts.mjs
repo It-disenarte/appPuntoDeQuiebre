@@ -14,15 +14,28 @@ const FAMILIES = [
   ["Anton", [400]], ["Montserrat", [700, 800]], ["Poppins", [600, 700]], ["Bricolage Grotesque", [700]], ["Archivo Black", [400]],
   ["Oswald", [600]], ["Space Grotesk", [700]], ["Syne", [700]], ["Lora", [700]], ["Merriweather", [700]],
   ["Rubik", [700]], ["Unbounded", [700]], ["Righteous", [400]], ["Pacifico", [400]], ["Caveat", [700]],
+  // Con estilo: góticas, metal, tech/retro, impacto, elegantes y manuscritas (todas con acentos y ñ).
+  ["UnifrakturMaguntia", [400]], ["Pirata One", [400]], ["New Rocker", [400]], ["MedievalSharp", [400]], ["Uncial Antiqua", [400]],
+  ["Metal Mania", [400]], ["Eater", [400]], ["Creepster", [400]], ["Jolly Lodger", [400]], ["Rubik Wet Paint", [400]],
+  ["Rubik Spray Paint", [400]], ["Rubik Dirt", [400]], ["Rubik Burned", [400]],
+  ["Orbitron", [700]], ["Press Start 2P", [400]], ["Monoton", [400]], ["Black Ops One", [400]], ["Chakra Petch", [700]], ["Russo One", [400]],
+  ["Staatliches", [400]], ["Teko", [700]], ["Bungee", [400]], ["Bangers", [400]], ["Luckiest Guy", [400]], ["Bowlby One", [400]],
+  ["Alfa Slab One", [400]], ["Big Shoulders Display", [700]],
+  ["Cinzel", [700]], ["Cinzel Decorative", [700]], ["Yeseva One", [400]], ["Cormorant Garamond", [700]],
+  ["Permanent Marker", [400]], ["Rock Salt", [400]], ["Special Elite", [400]], ["Lobster", [400]], ["Dancing Script", [700]],
+  ["Shrikhand", [400]], ["Kaushan Script", [400]], ["Great Vibes", [400]],
   ["Inter", [400, 700]], ["DM Sans", [400, 700]], ["Nunito", [400, 700]], ["Open Sans", [400, 700]], ["Lato", [400, 700]],
   ["Work Sans", [400, 700]], ["Source Sans 3", [400, 700]], ["Karla", [400, 700]], ["Manrope", [400, 700]], ["Outfit", [400, 700]],
   ["Mulish", [400, 700]], ["Bricolage Grotesque Text", [400]],
 ].filter(([f]) => f !== "Bricolage Grotesque Text");
 
+// ONLY="Familia A,Familia B" descarga solo esas y las suma a lo que ya hay (no toca los archivos existentes).
+const ONLY = (process.env.ONLY ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+const ALL = FAMILIES.map(([f]) => f);
 const css = [];
 const seenUrls = new Map();
 const report = [];
-for (const [family, weights] of FAMILIES) {
+for (const [family, weights] of FAMILIES.filter(([f]) => ONLY.length === 0 || ONLY.includes(f))) {
   const q = encodeURIComponent(family).replace(/%20/g, "+");
   let res = await fetch(`https://fonts.googleapis.com/css2?family=${q}:wght@${weights.join(";")}&display=swap`, { headers: { "User-Agent": UA } });
   if (!res.ok) res = await fetch(`https://fonts.googleapis.com/css2?family=${q}&display=swap`, { headers: { "User-Agent": UA } });
@@ -49,7 +62,9 @@ for (const [family, weights] of FAMILIES) {
   }
   report.push(`${family}: ${kept} bloques`);
 }
-fs.writeFileSync(path.join(OUT, "kit-fonts.css"), `/* Generado por scripts/fetch-kit-fonts.mjs. Familias de Google Fonts (licencia OFL) alojadas en el propio servidor. */\n\n${css.join("\n\n")}\n`);
-fs.writeFileSync(path.join(OUT, "families.json"), JSON.stringify(FAMILIES.map(([f]) => f)));
+const cssFile = path.join(OUT, "kit-fonts.css");
+if (ONLY.length > 0) fs.appendFileSync(cssFile, `\n${css.join("\n\n")}\n`);
+else fs.writeFileSync(cssFile, `/* Generado por scripts/fetch-kit-fonts.mjs. Familias de Google Fonts (licencia OFL) alojadas en el propio servidor. */\n\n${css.join("\n\n")}\n`);
+fs.writeFileSync(path.join(OUT, "families.json"), JSON.stringify(ALL));
 console.log(report.join("\n"));
 console.log("archivos:", fs.readdirSync(OUT).length, "| peso total:", Math.round(fs.readdirSync(OUT).reduce((s, f) => s + fs.statSync(path.join(OUT, f)).size, 0) / 1024), "KB");

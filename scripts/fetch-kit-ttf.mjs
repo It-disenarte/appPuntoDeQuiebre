@@ -13,12 +13,25 @@ const FAMILIES = [
   ["Anton", [400]], ["Montserrat", [700, 800]], ["Poppins", [600, 700]], ["Bricolage Grotesque", [700]], ["Archivo Black", [400]],
   ["Oswald", [600]], ["Space Grotesk", [700]], ["Syne", [700]], ["Lora", [700]], ["Merriweather", [700]],
   ["Rubik", [700]], ["Unbounded", [700]], ["Righteous", [400]], ["Pacifico", [400]], ["Caveat", [700]],
+  // Con estilo: góticas, metal, tech/retro, impacto, elegantes y manuscritas (todas con acentos y ñ).
+  ["UnifrakturMaguntia", [400]], ["Pirata One", [400]], ["New Rocker", [400]], ["MedievalSharp", [400]], ["Uncial Antiqua", [400]],
+  ["Metal Mania", [400]], ["Eater", [400]], ["Creepster", [400]], ["Jolly Lodger", [400]], ["Rubik Wet Paint", [400]],
+  ["Rubik Spray Paint", [400]], ["Rubik Dirt", [400]], ["Rubik Burned", [400]],
+  ["Orbitron", [700]], ["Press Start 2P", [400]], ["Monoton", [400]], ["Black Ops One", [400]], ["Chakra Petch", [700]], ["Russo One", [400]],
+  ["Staatliches", [400]], ["Teko", [700]], ["Bungee", [400]], ["Bangers", [400]], ["Luckiest Guy", [400]], ["Bowlby One", [400]],
+  ["Alfa Slab One", [400]], ["Big Shoulders Display", [700]],
+  ["Cinzel", [700]], ["Cinzel Decorative", [700]], ["Yeseva One", [400]], ["Cormorant Garamond", [700]],
+  ["Permanent Marker", [400]], ["Rock Salt", [400]], ["Special Elite", [400]], ["Lobster", [400]], ["Dancing Script", [700]],
+  ["Shrikhand", [400]], ["Kaushan Script", [400]], ["Great Vibes", [400]],
   ["Inter", [400, 700]], ["DM Sans", [400, 700]], ["Nunito", [400, 700]], ["Open Sans", [400, 700]], ["Lato", [400, 700]],
   ["Work Sans", [400, 700]], ["Source Sans 3", [400, 700]], ["Karla", [400, 700]], ["Manrope", [400, 700]], ["Outfit", [400, 700]],
   ["Mulish", [400, 700]],
 ];
-const index = {};
-for (const [family, weights] of FAMILIES) {
+// ONLY="Familia A,Familia B" descarga solo esas y las suma al index.json existente.
+const ONLY = (process.env.ONLY ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+const indexFile = path.join(OUT, "index.json");
+const index = ONLY.length > 0 && fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, "utf8")) : {};
+for (const [family, weights] of FAMILIES.filter(([f]) => ONLY.length === 0 || ONLY.includes(f))) {
   for (const w of weights) {
     const q = encodeURIComponent(family).replace(/%20/g, "+");
     const res = await fetch(`https://fonts.googleapis.com/css?family=${q}:${w}`, { headers: { "User-Agent": UA } });
@@ -31,5 +44,5 @@ for (const [family, weights] of FAMILIES) {
     console.log("ok", family, w);
   }
 }
-fs.writeFileSync(path.join(OUT, "index.json"), JSON.stringify(index, null, 1));
+fs.writeFileSync(indexFile, JSON.stringify(index, null, 1));
 console.log("archivos:", fs.readdirSync(OUT).length, "| MB:", (fs.readdirSync(OUT).reduce((s, f) => s + fs.statSync(path.join(OUT, f)).size, 0) / 1048576).toFixed(1));

@@ -7,7 +7,25 @@ export const TITLE_FONTS = [
   "DM Serif Display", "Playfair Display", "Fraunces", "Abril Fatface", "Bebas Neue", "Anton", "Montserrat", "Poppins",
   "Bricolage Grotesque", "Archivo Black", "Oswald", "Space Grotesk", "Syne", "Lora", "Merriweather", "Rubik", "Unbounded",
   "Righteous", "Pacifico", "Caveat",
+  // Con estilo (todas con acentos y ñ): ver FONT_STYLES.
+  "UnifrakturMaguntia", "Pirata One", "New Rocker", "MedievalSharp", "Uncial Antiqua",
+  "Metal Mania", "Eater", "Creepster", "Jolly Lodger", "Rubik Wet Paint", "Rubik Spray Paint", "Rubik Dirt", "Rubik Burned",
+  "Orbitron", "Press Start 2P", "Monoton", "Black Ops One", "Chakra Petch", "Russo One",
+  "Staatliches", "Teko", "Bungee", "Bangers", "Luckiest Guy", "Bowlby One", "Alfa Slab One", "Big Shoulders Display",
+  "Cinzel", "Cinzel Decorative", "Yeseva One", "Cormorant Garamond",
+  "Permanent Marker", "Rock Salt", "Special Elite", "Lobster", "Dancing Script", "Shrikhand", "Kaushan Script", "Great Vibes",
 ] as const;
+
+/** Las de título agrupadas por estilo: se le pasan a la IA para que, si pides “góticas” o “metal”, elija de aquí. */
+export const FONT_STYLES: Record<string, readonly string[]> = {
+  gotica: ["UnifrakturMaguntia", "Pirata One", "New Rocker", "MedievalSharp", "Uncial Antiqua"],
+  metal_oscuro: ["Metal Mania", "Eater", "Creepster", "Jolly Lodger", "Rubik Wet Paint", "Rubik Spray Paint", "Rubik Dirt", "Rubik Burned"],
+  tech_retro: ["Orbitron", "Press Start 2P", "Monoton", "Black Ops One", "Chakra Petch", "Russo One"],
+  impacto: ["Anton", "Bebas Neue", "Archivo Black", "Staatliches", "Teko", "Bungee", "Bangers", "Luckiest Guy", "Bowlby One", "Alfa Slab One", "Big Shoulders Display", "Oswald"],
+  elegante: ["DM Serif Display", "Playfair Display", "Fraunces", "Cinzel", "Cinzel Decorative", "Yeseva One", "Cormorant Garamond", "Abril Fatface"],
+  manuscrita: ["Pacifico", "Caveat", "Permanent Marker", "Rock Salt", "Special Elite", "Lobster", "Dancing Script", "Shrikhand", "Kaushan Script", "Great Vibes"],
+  moderna: ["Montserrat", "Poppins", "Bricolage Grotesque", "Space Grotesk", "Syne", "Rubik", "Unbounded", "Righteous", "Lora", "Merriweather"],
+};
 
 /** Familias muy legibles para el texto y los subtítulos. */
 export const TEXT_FONTS = ["Bricolage Grotesque", "Inter", "DM Sans", "Nunito", "Open Sans", "Lato", "Work Sans", "Source Sans 3", "Karla", "Manrope", "Outfit", "Mulish"] as const;
@@ -23,7 +41,7 @@ export const titleFont = (name: string) => byName(ALL_FONTS, name);
 export const textFont = (name: string) => byName(TEXT_FONTS, name);
 
 /** Cursivas o inclinadas, que algunas creadoras descartan: sirve para avisarlo en pantalla. */
-export const SCRIPT_FONTS = new Set(["Pacifico", "Caveat"]);
+export const SCRIPT_FONTS = new Set(["Pacifico", "Caveat", "Permanent Marker", "Rock Salt", "Lobster", "Dancing Script", "Shrikhand", "Kaushan Script", "Great Vibes"]);
 
 /** Pila CSS segura (el nombre ya viene validado contra la lista). */
 export const fontStack = (name: string) => `"${name}", system-ui, sans-serif`;

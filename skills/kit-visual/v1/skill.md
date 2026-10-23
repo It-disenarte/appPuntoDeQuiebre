@@ -145,7 +145,7 @@ Cuatro opciones (A a D).
 3. **Respeta las notas de las tarjetas.** Si el creador pidió algo ("quiero algo estable", "más creativo"), tiene prioridad sobre lo detectado.
 4. **El acento es escaso:** solo para resaltar (palabra clave de subtítulo, detalle). Nunca de fondo.
 5. **Contraste:** texto sobre fondo y título sobre caja deben poder leerse en un celular. Moy lo valida con código (mínimo 4.5:1); si no pasa, la opción se descarta.
-6. **Tipografías:** solo Google Fonts con acentos y ñ. Un par = una para títulos con carácter + una para texto muy legible. Nunca dos decorativas.
+6. **Tipografías:** solo Google Fonts con acentos y ñ. Un par = una para títulos con carácter + una para texto muy legible. Nunca dos decorativas. **Elige solo de `tipografias_disponibles` del input** (títulos agrupados por estilo: gótica, metal_oscuro, tech_retro, impacto, elegante, manuscrita, moderna). Si la nota o las respuestas piden un estilo (“góticas”, “metal”, “retro”), toma las de ese grupo; cualquier otra se descarta.
 7. **Subtítulos** siempre en la tipografía de texto, peso alto, máximo 3 o 4 palabras por línea.
 8. Nombres de opciones cálidos y cortos ("Bugambilia de día"), no técnicos.
 9. El kit es **estable**: no se vuelve a proponer cambiarlo salvo que el creador lo pida.
