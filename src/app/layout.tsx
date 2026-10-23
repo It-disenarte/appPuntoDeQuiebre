@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Archivo } from "next/font/google";
 import { connection } from "next/server";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { KeyboardAssist } from "@/components/ui/KeyboardAssist";
 import "./globals.css";
 
 const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin", "latin-ext"], display: "swap" });
@@ -37,6 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         {children}
         <ServiceWorkerRegister />
+        <KeyboardAssist />
       </body>
     </html>
   );

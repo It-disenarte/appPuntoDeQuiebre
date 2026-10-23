@@ -16,7 +16,7 @@ export default async function BienvenidaPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <PageHeader eyebrow={`Te damos la bienvenida, ${user.name.split(" ")[0]}`} title="Antes de empezar" />
-      <Welcome slides={COMMITMENT_SLIDES.map((s) => ({ ...s }))} hasVideo={Boolean(video)} />
+      <Welcome slides={COMMITMENT_SLIDES.map((s) => ({ ...s, resalta: [...s.resalta] }))} hasVideo={Boolean(video)} />
     </div>
   );
 }
