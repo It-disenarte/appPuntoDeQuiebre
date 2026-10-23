@@ -93,9 +93,14 @@ Todas se ponen **solo en Easypanel → `pdq-app` → Environment** (nunca en el 
 
 | Variable | Para qué | Estado |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` (`sk-ant-…`) | Skills con Claude: brújula, perfil de voz y los ajustes | En uso |
-| `GEMINI_API_KEY` (`AQ.…` o `AIza…`) | Transcripción de audio (fase 2); después calificador de foto y coach de video | En uso (transcripción verificada en el VPS) |
-| `APIFY_TOKEN` | Analizador de competencia y tendencias | Fase 5, reservada |
+| `ANTHROPIC_API_KEY` (`sk-ant-…`) | Skills con Claude: brújula, guiones, edición con imágenes, métricas y analizador. Pon un tope de gasto y créditos suficientes (sin créditos las skills pasan a Gemini) | En uso |
+| `GEMINI_API_KEY` (`AQ.…` o `AIza…`) | Transcripción de audio y video, lectura de capturas, El Lente, análisis de reels, **imágenes de carruseles (Nano Banana)** y las skills que se mandan primero a Gemini | En uso |
+| `APIFY_TOKEN` | Analizador de competencia y tendencias | En uso (regenéralo si se compartió) |
+| `APIFY_TRENDS_ACTOR` | Actor de Apify que baja las tendencias de TikTok (`usuario~actor`); sin él se usa una lista de ejemplo | Opcional |
+| `SKILLS_MODEL`, `GEMINI_MODEL`, `GEMINI_SKILLS_MODEL`, `GEMINI_IMAGE_MODEL` | Valores de fábrica de los modelos; se cambian sin Deploy en **Admin → Modelos de IA** | Opcionales |
+| `SKILLS_GEMINI` | Skills que van primero a Gemini (más barato), separadas por comas; el resto va primero a Claude y cada una tiene respaldo en la otra IA. Se cambia en Admin → Modelos de IA | Opcional |
+| `TOKEN_ENC_KEY` | Cifra los tokens de Instagram (AES-256-GCM) | Con Instagram |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Notificaciones push | En uso |
 | `META_APP_ID`, `META_APP_SECRET` | Conexión de Instagram | Fase 3, reservadas |
 
 Sin una llave, la función correspondiente responde con una versión de prueba marcada como tal. Pon un **tope de gasto** en la consola de cada proveedor.
@@ -107,6 +112,9 @@ Sin una llave, la función correspondiente responde con una versión de prueba m
 - **`DATABASE_POOL_MAX`** no se define en producción (por defecto 10). Si aparece en 1, la app lo advierte en el log.
 - **Monitoreo:** `GET /api/health` sin token solo indica que el proceso vive. Para revisar también la base de datos, define `HEALTH_TOKEN` (24+ caracteres) y llama con `Authorization: Bearer <token>`.
 - **Bitácora:** se conserva `AUDIT_RETENTION_DAYS` días (365 por defecto); el worker la purga a diario.
+- **Worker obligatorio:** `pdq-worker` corre los pasos largos con IA (brújula, semana, carruseles, textos, tendencias…), la edición con ffmpeg y los avisos. Si no está desplegado con la misma versión que `pdq-app`, esas funciones se quedan en “Armando…”. Haz Deploy de los dos servicios juntos.
+- **Errores:** los clientes ven mensajes claros; el detalle técnico (proveedor, créditos, ffmpeg…) está en **Admin → Errores** y en los logs.
+- **Retención:** videos, tomas y voces en off se borran a los 30 días; los trabajos terminados, a los 30 días.
 
 ## Estructura
 

@@ -4,7 +4,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 
 **Estados:** ✅ construido y verificado · 🟡 construido, falta verificar en el VPS o con datos reales · 🧪 construido con respuestas de prueba (sin IA o sin servicio externo) · ⬜ pendiente · ⛔ bloqueado por algo externo (ver "Bloqueos").
 
-> Última actualización: 2026-10-17 (Fase 6 construida).
+> Última actualización: 2026-10-23 (pulido: asistente de inicio, voz en off, banco de ideas, imágenes con IA, modelos de IA configurables, pasos de IA en segundo plano y revisión de seguridad).
 
 ## Bloqueos externos (lo que necesito de ti, de Mishell o de Moy)
 
@@ -26,7 +26,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A2 | Suscribirse con Stripe (plan Básico o Pro), código de prueba gratis o descuento | 1 | ✅ | Pagar con `4242…` con y sin código |
 | A3 | Cobro fallido: gracia de 7 días y luego sesión suspendida | 1 | 🟡 (solo pruebas de lógica) | Forzar `past_due` desde el Shell de Stripe |
 | A4 | Portal de Stripe: cambiar tarjeta, plan o cancelar; solicitar factura | 1 | 🟡 | "Gestionar pago"; pedir factura |
-| A5 | Presentación y compromiso (video de Erick, 4 preguntas) | 1 | ✅ | Subir el video desde Ajustes y aceptarlo |
+| A5 | Bienvenida por pasos (video de Erick, una idea por pantalla) y un solo compromiso al final; alta corta (sin confirmar contraseña, código opcional) | 1 | ✅ | Registrar una cuenta nueva y recorrer la bienvenida |
 | A6 | Tu historia: 7 preguntas por voz o texto (mínimos, repregunta, saltar) | 2A | ✅ | Responder con voz real en iPhone y Android |
 | A7 | Brújula de marca con IA, calificada por 5 secciones (👍 ✏️ 👎) y PDF | 2A | ✅ | Generar, ajustar y descargar el PDF |
 | A8 | Perfil de voz | 2A | ✅ | Revisar que suene a la persona |
@@ -34,20 +34,24 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | A10 | Kit visual: 5 rondas + revelación con sus fotos | 2B | 🧪 / 🟡 | Subir fotos reales (MinIO + sharp) y correr con IA real |
 | A11 | Conectar Instagram (inicio de sesión oficial, desconectar cuando quiera) y guía de cuenta profesional | 3 | 🟡 ⛔B1 | Código listo y probado con API simulada; falta crear la app de Meta (docs/instagram-setup.md) y probar con una cuenta evaluadora |
 | A12 | Auditoría de su cuenta y tarjetas "Así te vemos" | 3 | 🟡 ⛔B1 | Código listo (modo sin contenido con menos de 9 publicaciones); falta probar con una cuenta real. No analiza miniaturas ni colores todavía |
-| A13 | Optimización de perfil (capturas → nombre, bio por red, destacadas) y calificador de foto | 4 | ⬜ | — |
+| A13 | Optimización de perfil (capturas → nombre, bio por red, destacadas) y calificador de foto | 4 | 🧪 | Mi marca → Optimiza tu perfil: generar propuestas, elegir, copiar; corre en segundo plano |
 | A14 | Analizador de competencia (1 vez cada 7 días, con contador) | 5 | 🧪 | Con APIFY_TOKEN y Gemini: correr sobre 2 cuentas reales; sin llaves corre con ejemplos |
 | A15 | Parrilla semanal (4 videos + 3 carruseles en Básico; 5 + 2 en Pro) con categoría, probado/prueba y tarjeta de prueba | 6 | 🧪 | Generar la semana en Básico y en Pro; revisar mezcla y variante |
 | A16 | Guion completo y textos distintos por red (Instagram, TikTok, Facebook) con 3 ganchos | 6 | 🧪 | Abrir una pieza, escribir textos, elegir gancho, 👍 ✏️, copiar |
 | A17 | Idea de historia diaria (otra idea, voto, idea propia) | 6 | 🧪 | Usar las 7 tarjetas de la semana y la de Hoy |
-| A18 | Grabar: teleprompter, grabación por partes (gancho, cuerpo, cierre), repetir una parte, guía de encuadre | 7 | 🧪 | Probar en iPhone y Android: permisos, teleprompter, repetir parte, reproducir lo subido |
+| A18 | Grabar: cámara nativa del teléfono con teleprompter flotante (Picture-in-Picture, Android/Chrome), grabación por 3 partes (gancho, cuerpo, cierre), repetir una parte, recorrido por pasos y tarjeta “Ahora toca” | 7 | 🟡 | Probar en Android: abrir el teleprompter flotante, grabar con la cámara nativa (y micrófono externo), revisar y subir. La cámara dentro del navegador quedó apagada (`IN_APP_CAMERA`); iPhone no tiene ventana flotante |
 | A19 | Subir con aviso de WiFi, compresión y cola con reintentos | 7 | 🧪 | Subir con WiFi, con datos móviles (Android avisa; iPhone no informa el tipo de red) y cortando el internet a media subida ; video completo con ffmpeg en el worker (probar con partes reales) |
-| A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia y exportar PNG | 8 | 🧪 | Estático (PNG 1080×1350) listo; animado (MP4) pendiente. Probar vista previa y exportación en iPhone/Android ; Animado gris en Básico con invitación a Pro; “Lo quiero en Canva” baja un PPTX editable (aproximación) |
+| A20 | Carruseles: texto por diapositiva en plantillas con su kit, edición propia, exportar PNG e **imágenes creadas con IA (Gemini) y colocadas solas**, por slide o todas, con cupo mensual por plan | 8 | 🧪 | Estático (PNG 1080×1350) listo; animado (MP4) pendiente. Probar vista previa y exportación en iPhone/Android ; Animado gris en Básico con invitación a Pro; “Lo quiero en Canva” baja un PPTX editable (aproximación) |
 | A21 | Publicar y programar en Instagram; descargar y copiar para TikTok y Facebook | 9 | ⬜ ⛔B1 | — |
 | A22 | Racha automática, modo pausa (hasta 7 días), recordatorios por notificación, frases motivacionales | 10 | 🧪 | Falta VAPID en Easypanel; racha por API y frases motivacionales siguen ⬜ |
 | A23 | Comunidad: sesión en vivo, Discord, WhatsApp | 10 | ⬜ ⛔B5 | — |
 | A24 | Progreso: métricas en lenguaje sencillo, comparadas contra sí mismo, hallazgos como hipótesis | 11 | 🧪 | Por capturas mensuales (sin API de Meta); probar con capturas reales |
-| A25 | Coach de video, tendencias, edición automática (solo Pro) | V2 | 🟡 | Coach (🧪), tendencias (🧪) y edición automática a cámara con ffmpeg (🧪) construidos; faltan modo mixto y receta CapCut de la edición, y probar con IA y videos reales |
+| A25 | Coach de video (El Lente), tendencias, edición automática (solo Pro): a cámara, mixta, receta para CapCut y **voz en off con tomas** | V2 | 🟡 | Todo construido; falta probarlo con IA y videos reales y con ffmpeg en el VPS (Alpine). Se abre con el plan Pro o con “Pro de cortesía” desde el admin |
 | A26 | Instalar como app en el teléfono (PWA), modo sin conexión básico | 0 | ✅ | Instalar en iPhone y Android |
+| A27 | Asistente de inicio: guías cortas por pantalla que señalan cada parte y piden tocar de verdad; recorrido de la primera configuración (historia, brújula, kit, horario); botón ? para repetir y reiniciar desde Mi marca | 10 | 🟡 | Cuenta nueva: recorrer Hoy → pestañas → configuración; repetir con el ? |
+| A28 | Voz en off: subir hasta 12 tomas (≤20 s) y grabar o subir la voz; la IA acomoda las tomas sobre la voz y la app arma el video con subtítulos y portada | V2 | 🟡 | Pieza de video → “¿Tu video es voz en off con tomas?”; requiere Pro, worker con ffmpeg, Claude y Gemini |
+| A29 | Analizador → **banco de ideas** (máx. 20), “Hacer un video con esta idea” (guion completo en la semana actual), “Hacer un carrusel” y la parrilla de la próxima semana toma hasta 3 ideas guardadas | 5 | 🧪 | Correr el analizador, guardar ideas, pedir un video y generar la semana siguiente |
+| A30 | Pasos largos con IA en segundo plano (brújula, semana, carruseles, textos, tendencias, directos, perfil, auditoría, idea→video) con avance al volver y motivo claro si falla | T | 🟡 | Iniciar un paso, cerrar la app y volver: debe seguir o estar terminado |
 
 ## B. Lo que hace el administrador
 
@@ -66,6 +70,9 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | M11 | Métricas del negocio: tiempo por fase, % que termina cada fase, conversión de prueba a pago, permanencia al mes 2 y 3 | 7 | 🧪 | /admin/metricas con datos reales de clientes |
 | M12 | Alertas de abandono: rachas rotas y usuarios inactivos | 7 | 🧪 | /admin/alertas; no envía correos ni avisos, solo lista ; /admin/errores: errores del sistema con contador y aviso en el resumen y el menú |
 | M13 | Bitácora de auditoría | 0 | ✅ | Revisar tras acciones |
+| M14 | **Pro de cortesía** por cliente (abre las funciones Pro sin cambiar el cobro de Stripe) | — | ✅ | Ficha del cliente → “Dar Pro de cortesía” |
+| M15 | **Modelos de IA**: modelo de Claude y de Gemini (texto, audio/video, imágenes Básico y Pro), qué IA va primero en cada tarea y botón “Probar” | — | 🟡 | /admin/modelos: probar cada modelo y guardar; se aplica en ~15 s también en el worker |
+| M16 | Límites de imágenes con IA por plan y precio por imagen para el costo estimado | — | ✅ | /admin/limites |
 
 ## C. Piezas técnicas transversales
 
@@ -77,3 +84,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | T4 | Respaldo de la base de datos | ⬜ (lo activas en Easypanel) |
 | T5 | Cifrado de tokens de Instagram | ✅ (AES-256-GCM, `TOKEN_ENC_KEY`) |
 | T6 | Registro de costo de IA en pesos | ⬜ (hoy se guardan tokens) |
+| T7 | Pasos con IA en el worker: tabla `jobs` (tipos `brujula.generar`, `carrusel.paso`, `semana.generar`, `ia.paso`, `idea.video`…), un paso activo por pantalla; limpieza de trabajos de más de 30 días | ✅ |
+| T8 | Reparto Claude / Gemini por tarea con respaldo automático en las dos direcciones (sin créditos, límite o respuesta inválida) | ✅ (tests con IA simulada; falta probar con las llaves reales) |
+| T9 | Seguridad: los clientes ven mensajes claros y el detalle técnico solo lo ve el admin (Admin → Errores); Next 16.4.3 (corrige vulnerabilidades críticas de 16.4.0); revisión de rutas de subida (origen, sesión, firma de archivo, tamaño, límites) | ✅ |
+| T10 | Pendiente de dependencias: `image-size` (vía `pptxgenjs`, solo la exportación “Lo quiero en Canva” en el navegador) tiene un aviso de DoS sin parche compatible; riesgo bajo | 🟡 |
