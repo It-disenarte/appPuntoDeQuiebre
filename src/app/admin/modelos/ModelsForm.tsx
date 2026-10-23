@@ -2,14 +2,14 @@
 
 import { useActionState } from "react";
 import { Button, FormError, FormSuccess } from "@/components/ui";
-import { listModelsAction, saveModelsAction, testModelAction, type AdminState, type ModelListState } from "@/lib/admin/actions";
+import { saveModelsAction, testModelAction, type AdminState } from "@/lib/admin/actions";
 import type { ModelKind } from "@/lib/admin/model-test";
 
 type Skill = { key: string; label: string };
 type Models = { claude: string; geminiText: string; geminiMedia: string; geminiImage: string; geminiImagePro: string; routing: Record<string, "claude" | "gemini"> };
 type Suggestions = { claude: readonly string[]; gemini: readonly string[]; image: readonly string[] };
 
-function ModelField({ kind, label, hint, value, options, costs = false }: { kind: ModelKind; label: string; hint: string; value: string; options: readonly string[]; costs?: boolean }) {
+function ModelField({ kind, label, hint, value, options, costs = false, optional = false }: { kind: ModelKind; label: string; hint: string; value: string; options: readonly string[]; costs?: boolean; optional?: boolean }) {
   const [test, testAction, testing] = useActionState<AdminState, FormData>(testModelAction, undefined);
   return (
     <div className="flex flex-col gap-1.5">
@@ -17,12 +17,14 @@ function ModelField({ kind, label, hint, value, options, costs = false }: { kind
         {label}
       </label>
       <div className="flex gap-2">
-        <input id={kind} name={kind} list={`${kind}-opciones`} defaultValue={value} autoComplete="off" spellCheck={false} className="h-12 min-w-0 flex-1 rounded-xl border border-ink-300 bg-blanco px-4 text-base text-ink-900 outline-none focus:border-azul focus:ring-4 focus:ring-azul/15" />
-        <datalist id={`${kind}-opciones`}>
-          {options.map((o) => (
-            <option key={o} value={o} />
+        <select id={kind} name={kind} defaultValue={value} className="h-12 min-w-0 flex-1 rounded-xl border border-ink-300 bg-blanco px-3 text-base text-ink-900 outline-none focus:border-azul focus:ring-4 focus:ring-azul/15">
+          {optional && <option value="">Igual que Básico</option>}
+          {[...new Set([value, ...options])].filter(Boolean).map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
           ))}
-        </datalist>
+        </select>
         <Button
           type="submit"
           variant="outline"
@@ -53,49 +55,6 @@ function ModelField({ kind, label, hint, value, options, costs = false }: { kind
   );
 }
 
-function AvailableModels() {
-  const [list, action, pending] = useActionState<ModelListState, FormData>(listModelsAction, undefined);
-  return (
-    <div className="flex flex-col gap-2 rounded-xl bg-ink-100 p-3">
-      <p className="text-sm font-semibold">¿Qué nombre pongo? Mira lo que tu llave de Gemini puede usar hoy</p>
-      <p className="text-xs text-ink-600">Google retira modelos viejos con el tiempo (por eso un nombre puede dejar de funcionar de un día para otro). Esta lista sale directo de Google.</p>
-      <Button type="submit" variant="outline" size="sm" formAction={action} disabled={pending} className="self-start">
-        {pending ? "Consultando…" : "Ver los modelos disponibles"}
-      </Button>
-      {list?.error && (
-        <p role="alert" className="text-xs font-semibold text-alerta">
-          {list.error}
-        </p>
-      )}
-      {list?.text && (
-        <div className="grid gap-3 text-xs md:grid-cols-2">
-          <div>
-            <p className="font-semibold">Para texto, audio y video</p>
-            <ul className="mt-1 list-disc pl-5 text-ink-700">
-              {list.text.map((n) => (
-                <li key={n} className="select-text">
-                  {n}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">Para crear imágenes</p>
-            <ul className="mt-1 list-disc pl-5 text-ink-700">
-              {(list.image ?? []).map((n) => (
-                <li key={n} className="select-text">
-                  {n}
-                </li>
-              ))}
-              {(list.image ?? []).length === 0 && <li>Ninguno disponible con tu llave.</li>}
-            </ul>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function ModelsForm({ v, skills, suggestions }: { v: Models; skills: readonly Skill[]; suggestions: Suggestions }) {
   const [state, action, pending] = useActionState<AdminState, FormData>(saveModelsAction, undefined);
   return (
@@ -103,15 +62,14 @@ export function ModelsForm({ v, skills, suggestions }: { v: Models; skills: read
       <section className="flex flex-col gap-4 rounded-card bg-blanco p-5 shadow-card">
         <div>
           <h2 className="text-sm font-extrabold">Modelos</h2>
-          <p className="mt-1 text-xs text-ink-500">Escribe el nombre exacto del modelo (o elige uno de la lista). “Probar” hace una llamada mínima para confirmar que existe y responde. Los cambios se aplican en unos segundos, también en el worker.</p>
+          <p className="mt-1 text-xs text-ink-500">Elige el modelo de la lista (sale directo de cada proveedor, así solo ves los que sí puedes usar). “Probar” hace una llamada mínima para confirmar que existe y responde. Los cambios se aplican en unos segundos, también en el worker.</p>
         </div>
-        <AvailableModels />
         <div className="grid gap-5 md:grid-cols-2">
           <ModelField kind="claude" label="Claude (escritura y edición con imágenes)" hint="Brújula, guiones, edición con imágenes, métricas y analizador. Es el más caro por uso." value={v.claude} options={suggestions.claude} />
           <ModelField kind="geminiText" label="Gemini para texto" hint="Para las skills que mandas primero a Gemini (tabla de abajo). Más barato." value={v.geminiText} options={suggestions.gemini} />
           <ModelField kind="geminiMedia" label="Gemini para audio, capturas y video" hint="Transcribe tu voz y los videos, lee capturas de métricas, analiza reels y revisa tu video (El Lente)." value={v.geminiMedia} options={suggestions.gemini} />
           <ModelField kind="geminiImage" label="Imágenes con IA (Básico)" hint="Crea las imágenes de los carruseles. Nano Banana: gemini-2.5-flash-image." value={v.geminiImage} options={suggestions.image} costs />
-          <ModelField kind="geminiImagePro" label="Imágenes con IA (Pro)" hint="Opcional: un modelo más potente solo para el plan Pro, p. ej. Nano Banana Pro. Vacío = el mismo de Básico. Sube su precio en Límites y costos." value={v.geminiImagePro} options={suggestions.image} costs />
+          <ModelField kind="geminiImagePro" label="Imágenes con IA (Pro)" hint="Opcional: un modelo más potente solo para el plan Pro, p. ej. Nano Banana Pro. Vacío = el mismo de Básico. Sube su precio en Límites y costos." value={v.geminiImagePro} options={suggestions.image} costs optional />
         </div>
       </section>
 

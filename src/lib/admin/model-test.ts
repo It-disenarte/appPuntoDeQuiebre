@@ -33,6 +33,20 @@ export async function testModel(kind: ModelKind, model: string): Promise<{ ok: t
   }
 }
 
+/** Los modelos de Claude que tu llave puede usar. */
+export async function listClaudeModels(): Promise<{ ok: true; models: string[] } | { ok: false; error: string }> {
+  const key = env().ANTHROPIC_API_KEY;
+  if (!key) return { ok: false, error: "Falta ANTHROPIC_API_KEY." };
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/models?limit=100", { headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) return { ok: false, error: `Anthropic respondió ${res.status}.` };
+    const data = (await res.json()) as { data?: { id?: string }[] };
+    return { ok: true, models: (data.data ?? []).map((m) => m.id ?? "").filter(Boolean) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "No respondió." };
+  }
+}
+
 /** Los modelos de Gemini que tu llave puede usar para generar contenido (los nombres cambian y Google retira modelos viejos). */
 export async function listGeminiModels(): Promise<{ ok: true; text: string[]; image: string[] } | { ok: false; error: string }> {
   const key = env().GEMINI_API_KEY;
