@@ -26,9 +26,10 @@ function ModelField({ kind, label, hint, value, options, costs = false }: { kind
         <Button
           type="submit"
           variant="outline"
-          formAction={testAction}
-          name="kind"
-          value={kind}
+          formAction={(fd: FormData) => {
+            fd.set("kind", kind);
+            testAction(fd);
+          }}
           disabled={testing}
           onClick={(e) => {
             if (costs && !confirm("Esta prueba crea una imagen real y cuesta unos centavos. ¿Continuar?")) e.preventDefault();
