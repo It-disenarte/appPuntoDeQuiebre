@@ -151,7 +151,7 @@ export default async function AnalizadorPage() {
             <h2 className="text-lg font-extrabold">Lo que encontramos</h2>
             {lastDone.mock && <Chip>Ejemplo</Chip>}
           </div>
-          {lastDone.mock && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Son videos de ejemplo: el análisis real se activa al conectar las llaves de Apify y Gemini.</p>}
+          {lastDone.mock && <p className="rounded-lg bg-naranja-100 p-3 text-xs text-ink-900">Son videos de ejemplo: el análisis real todavía no está activado en esta cuenta.</p>}
           {videos.map((v) => {
             const a = parseAnalysis(v.analysis);
             const c = parseConcepts(v.concepts);

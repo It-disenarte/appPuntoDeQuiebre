@@ -147,7 +147,7 @@ export function InterviewStep({ id, interview, previous }: { id: string; intervi
     <form onSubmit={submitKeepingState(action)} className="flex flex-col gap-5">
       <FormError message={state?.error} />
       <input type="hidden" name="id" value={id} />
-      <p className="text-sm text-ink-700">Nosotros <strong>no generamos las imágenes</strong>: te damos los prompts para que las crees en tu propia cuenta de Gemini o ChatGPT y las subas aquí.</p>
+      <p className="text-sm text-ink-700">Las imágenes las puedes <strong>crear con IA desde la app</strong> (un toque por slide), copiar el prompt para hacerlas en tu cuenta de Gemini o ChatGPT, o subir tus propias fotos.</p>
       {previous && previous.estilo !== "elige_por_mi" && <p className="rounded-lg bg-azul-50 p-3 text-sm">La última vez elegiste <strong>{previous.estilo}</strong>. Ya lo dejamos marcado: cámbialo si quieres otra cosa. Tu línea visual es solo tuya y no se comparte con nadie más.</p>}
       {estilo && (
         <fieldset className="flex flex-col gap-2">
