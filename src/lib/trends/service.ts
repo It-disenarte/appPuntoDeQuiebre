@@ -7,7 +7,8 @@ import { db } from "@/lib/db";
 import { trendsUsed, trendUses } from "@/lib/db/schema";
 import { addDays, mondayOf, todayIso } from "@/lib/plan/rules";
 import { runTendencias } from "@/lib/skills";
-import { latestList, refreshTrends } from "./list";
+import { env } from "@/lib/env";
+import { deferTrendsRetry, latestList, refreshTrends } from "./list";
 import { IDEAS_PER_USE, MAX_REFRESH, shapeIdeas, trendsOutput, usable, type Trend, type TrendIdea, type TrendsOut } from "./schemas";
 
 export type Use = typeof trendUses.$inferSelect;
@@ -19,7 +20,12 @@ export const parseRounds = (raw: unknown): Round[] => (Array.isArray(raw) ? (raw
 /** La lista del día. Si todavía no hay ninguna, se guarda la de ejemplo (o la del actor) en el momento. */
 export async function currentList(): Promise<{ day: string; items: Trend[]; source: "apify" | "muestra" }> {
   const cur = await latestList();
-  if (cur && cur.items.length) return cur;
+  // Si hoy solo hay la lista de ejemplo y ya se configuró el actor de Apify, se intenta con tendencias reales (cada 30 min a lo más,
+  // para no esperar al aviso diario de las 6:00 ni repetir un actor que falla en cada visita).
+  const e = env();
+  const wantsReal = cur?.source === "muestra" && Boolean(e.APIFY_TOKEN && e.APIFY_TRENDS_ACTOR) && Date.now() - cur.createdAt.getTime() > 30 * 60 * 1000;
+  if (cur && cur.items.length && !wantsReal) return cur;
+  if (wantsReal) await deferTrendsRetry(cur!.day);
   await refreshTrends().catch(() => undefined);
   return (await latestList()) ?? { day: todayIso(), items: [], source: "muestra" };
 }

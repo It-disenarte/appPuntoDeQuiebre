@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { desc, lt } from "drizzle-orm";
+import { desc, eq, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { trendLists } from "@/lib/db/schema";
 import { env } from "@/lib/env";
@@ -82,11 +82,16 @@ export function normalizeItems(raw: unknown[], previous: Trend[]): Trend[] {
   return out.slice(0, 30);
 }
 
-export async function latestList(): Promise<{ day: string; items: Trend[]; source: "apify" | "muestra" } | null> {
+export async function latestList(): Promise<{ day: string; items: Trend[]; source: "apify" | "muestra"; createdAt: Date } | null> {
   const [r] = await db().select().from(trendLists).orderBy(desc(trendLists.day)).limit(1);
   if (!r) return null;
   const items = (Array.isArray(r.items) ? r.items : []).map((x) => trendSchema.safeParse(x)).flatMap((p) => (p.success ? [p.data] : []));
-  return { day: r.day, items, source: r.source };
+  return { day: r.day, items, source: r.source, createdAt: r.createdAt };
+}
+
+/** Posponer el siguiente intento de bajar tendencias reales (si el actor falla, no se reintenta en cada visita). */
+export async function deferTrendsRetry(day: string): Promise<void> {
+  await db().update(trendLists).set({ createdAt: new Date() }).where(eq(trendLists.day, day));
 }
 
 /** Baja la lista del día con el actor configurado (o guarda la de ejemplo) y la guarda. La corre el worker 1 vez al día. */
