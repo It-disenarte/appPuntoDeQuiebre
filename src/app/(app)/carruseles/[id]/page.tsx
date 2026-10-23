@@ -17,6 +17,7 @@ import { Poller } from "@/components/metrics/Poller";
 import { latestCarouselJob, OP_LABEL, previousAnswers, attemptsLeft, type CarouselRow, getCarousel, imageWarnings, parseBrief, parseContent, parseIdeaRounds, parseImages, parseInterview, stepOf } from "@/lib/carousel/service";
 import { MAX_FULL_REDO, MAX_IDEA_REFRESH, type CarruselOut, type Idea } from "@/lib/carousel/schemas";
 import { getKit } from "@/lib/kit/service";
+import { shownError } from "@/lib/shown-error";
 
 export const metadata: Metadata = { title: "Carrusel" };
 
@@ -33,6 +34,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
   const previous = step === "entrevista" ? await previousAnswers(user.id, id) : null;
   const job = await latestCarouselJob(user.id, id);
   const busy = Boolean(job?.active);
+  const jobError = job ? await shownError(user.id, job.error, "algo falló") : "";
   // Un intento fallido solo se avisa si es posterior a lo último que cambió en el carrusel.
   const failed = Boolean(job && job.recent && job.status === "error" && job.createdAt > row.updatedAt);
 
@@ -55,7 +57,7 @@ export default async function CarruselPage({ params }: PageProps<"/carruseles/[i
       )}
       {failed && job && (
         <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">
-          No pudimos completar este paso: {job.error ?? "algo falló"}. Inténtalo de nuevo.
+          No pudimos completar este paso: {jobError} Inténtalo de nuevo.
         </p>
       )}
 

@@ -7,11 +7,11 @@
  * Fase 1: cada hora libera reservas de códigos abandonadas (si no llegó el webhook de expiración).
  * Fases siguientes: recordatorios Web Push, transcripción, analizador, guiones, métricas, racha.
  */
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { PgBoss } from "pg-boss";
 import postgres from "postgres";
-import { auditLog, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
+import { auditLog, jobs as jobsTable, loginAttempts, promoCodes, promoRedemptions, rateEvents, sessions } from "@/lib/db/schema";
 import { recordError } from "@/lib/errors";
 import { runReview } from "@/lib/coach/service";
 import { purgeOldVideos } from "@/lib/recording/retention";
@@ -163,7 +163,12 @@ async function cleanup() {
     .delete(rateEvents)
     .where(lt(rateEvents.createdAt, new Date(now.getTime() - 2 * DAY_MS)))
     .returning({ id: rateEvents.id });
-  const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length, rateEvents: rates.length };
+  // Trabajos ya terminados (bien o con error) de hace más de 30 días: ya no sirven para mostrar avance.
+  const oldJobs = await db
+    .delete(jobsTable)
+    .where(and(inArray(jobsTable.status, ["lista", "error"]), lt(jobsTable.updatedAt, new Date(now.getTime() - 30 * DAY_MS))))
+    .returning({ id: jobsTable.id });
+  const meta = { sessions: expired.length, loginAttempts: attempts.length, auditLog: audits.length, rateEvents: rates.length, jobs: oldJobs.length };
   await db.insert(auditLog).values({ action: "worker.cleanup", meta });
   console.log("[worker] limpieza", meta);
   const videos = await purgeOldVideos();

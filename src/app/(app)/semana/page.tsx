@@ -11,6 +11,7 @@ import { requireCreatorAccess } from "@/lib/auth/gates";
 import { getManual } from "@/lib/brujula/service";
 import { addDays, CATEGORY_LABEL, DAY_NAMES, DAY_SHORT, dowMon0, STAGE_LABEL, targetWeek, todayIso } from "@/lib/plan/rules";
 import { currentStory, getCurrentPlan, getPlan, listWeeks, mixSchema, planReadiness } from "@/lib/plan/service";
+import { shownError } from "@/lib/shown-error";
 
 export const metadata: Metadata = { title: "Semana" };
 
@@ -45,6 +46,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
     );
   }
   const jobFailed = Boolean(job && job.recent && job.status === "error");
+  const jobFailedText = jobFailed ? await shownError(user.id, job?.error, "algo falló") : "";
 
   // Sin semana todavía: pedir lo que falta o generar.
   if (!data) {
@@ -55,7 +57,7 @@ export default async function SemanaPage({ searchParams }: PageProps<"/semana">)
         <PageHeader eyebrow={`Semana del ${dayNum(nextWeek)} al ${dayNum(addDays(nextWeek, 6))} de ${monthName(addDays(nextWeek, 6))}`} title="Tu parrilla" />
         {jobFailed && (
           <p role="alert" className="rounded-xl bg-alerta-100 p-4 text-sm font-semibold text-alerta">
-            No pudimos armar tu semana: {job?.error ?? "algo falló"}. Inténtalo de nuevo.
+            No pudimos armar tu semana: {jobFailedText} Inténtalo de nuevo.
           </p>
         )}
         {readiness.ready ? (

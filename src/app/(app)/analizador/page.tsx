@@ -12,6 +12,7 @@ import { getLimits } from "@/lib/admin/limits";
 import { latestDoneRun, latestRun, listCompetitors, listVideos, nextAllowedAt, parseAnalysis, parseConcepts, parseProgress } from "@/lib/analyzer/service";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { formatCount } from "@/lib/metrics/schemas";
+import { isAdminUser, showFor } from "@/lib/shown-error";
 
 export const metadata: Metadata = { title: "Analizador de competencia" };
 
@@ -20,6 +21,7 @@ const dateEs = (d: Date) => d.toLocaleDateString("es-MX", { day: "numeric", mont
 export default async function AnalizadorPage() {
   const { user } = await requireCreatorAccess();
   const [comps, run, wait, done, bank] = await Promise.all([listCompetitors(user.id), latestRun(user.id), nextAllowedAt(user.id), latestDoneRun(user.id), listIdeas(user.id)]);
+  const admin = await isAdminUser(user.id);
   const savedIdeas = bank.filter((i) => i.status === "guardada");
   const asVideo = bank.filter((i) => i.pieceId).slice(0, 5);
   const savedTitles = new Set(bank.map((i) => i.title));
@@ -121,13 +123,13 @@ export default async function AnalizadorPage() {
         <Card data-tour="correr" className="flex flex-col gap-3">
           {run?.status === "error" && (
             <div role="alert" className="flex flex-col gap-1 text-sm text-alerta">
-              <p>El último intento falló: {run.error ?? "algo salió mal"}. No cuenta para tu límite semanal.</p>
+              <p>El último intento falló: {showFor(admin, run.error, "algo salió mal")} No cuenta para tu límite semanal.</p>
               {parseProgress(run.progress).errors.length > 1 && (
                 <ul className="list-disc pl-5 text-xs">
                   {parseProgress(run.progress)
                     .errors.slice(0, 4)
                     .map((e, i) => (
-                      <li key={i}>{e}</li>
+                      <li key={i}>{showFor(admin, e)}</li>
                     ))}
                 </ul>
               )}

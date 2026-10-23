@@ -8,6 +8,7 @@ import { checkEdit, editQuota, getEdit, isStuck, parseOverrides, parsePlan } fro
 import { getRecipe } from "@/lib/edit/recipe";
 import { RecipeSection } from "@/components/record/RecipeSection";
 import { getExport } from "@/lib/recording/join";
+import { shownError } from "@/lib/shown-error";
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -92,7 +93,7 @@ export async function EditSection({ userId, pieceId, mode }: { userId: string; p
       {edit && (edit.status === "error" || isStuck(edit)) && (
         <div className="flex flex-col gap-2">
           <p role="alert" className="text-sm text-alerta-100">
-            {edit.status === "error" ? `No pudimos editarlo: ${edit.error ?? "algo falló"}.` : "La edición está tardando más de lo normal."}
+            {edit.status === "error" ? `No pudimos editarlo: ${await shownError(userId, edit.error, "algo falló")}` : "La edición está tardando más de lo normal."}
           </p>
           <p className="text-xs text-ink-300">Forma de edición: {edit.mode === "voz_en_off" ? "voz en off con tomas" : edit.mode === "mixto" ? "hablo y hay tomas" : "hablo a cámara"}.</p>
           <RequestEditButton pieceId={pieceId} label="Reintentar" modo={edit.mode} />

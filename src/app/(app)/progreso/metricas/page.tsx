@@ -9,6 +9,7 @@ import { WhereToFind } from "@/components/metrics/WhereToFind";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { resetReportAction, retryReportAction } from "@/lib/metrics/actions";
 import { getReport, isStuck, isValidPeriod, parseConfirmed, parseExplanation, parseExtracted, periodOptions } from "@/lib/metrics/service";
+import { isAdminUser, showFor } from "@/lib/shown-error";
 
 export const metadata: Metadata = { title: "Mis métricas" };
 
@@ -18,6 +19,7 @@ export default async function MetricasPage({ searchParams }: PageProps<"/progres
   const options = periodOptions();
   const period = typeof params.mes === "string" && isValidPeriod(params.mes) ? params.mes : options[0]!.period;
   const report = await getReport(user.id, period);
+  const admin = await isAdminUser(user.id);
   const label = options.find((o) => o.period === period)!.label;
   const extracted = report ? parseExtracted(report.extracted) : null;
   const confirmed = report ? parseConfirmed(report.confirmed) : null;
@@ -52,14 +54,14 @@ export default async function MetricasPage({ searchParams }: PageProps<"/progres
           <Card>
             <ShotUploader period={period} count={shots} />
           </Card>
-          {report?.status === "captura" && report.error && <p className="text-sm text-alerta">{report.error}</p>}
+          {report?.status === "captura" && report.error && <p className="text-sm text-alerta">{showFor(admin, report.error)}</p>}
         </>
       )}
 
       {status === "error" && (
         <Card className="flex flex-col gap-3">
           <p role="alert" className="font-extrabold text-alerta">No pudimos leer tus capturas</p>
-          <p className="text-sm text-ink-700">{report?.error ?? "Algo falló."} Tus capturas siguen guardadas: intenta de nuevo o sube otras.</p>
+          <p className="text-sm text-ink-700">{showFor(admin, report?.error, "Algo falló.")} Tus capturas siguen guardadas: intenta de nuevo o sube otras.</p>
           <ShotUploader period={period} count={shots} />
         </Card>
       )}

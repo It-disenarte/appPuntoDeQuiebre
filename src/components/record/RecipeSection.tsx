@@ -7,6 +7,7 @@ import { isRecipeStuck, listClips, getRecipe, parseRecipe } from "@/lib/edit/rec
 import { MAX_CLIPS } from "@/lib/edit/recipe-schemas";
 import { moveClipAction, removeClipAction } from "@/lib/edit/recipe-actions";
 import { MAX_ADJUSTMENTS } from "@/lib/edit/schemas";
+import { shownError } from "@/lib/shown-error";
 
 /** Modo “tomas sueltas”: la app no edita; la IA arma una receta paso a paso para CapCut. */
 export async function RecipeSection({ userId, pieceId, showUploader }: { userId: string; pieceId: string; showUploader: boolean }) {
@@ -61,7 +62,7 @@ export async function RecipeSection({ userId, pieceId, showUploader }: { userId:
       {recipe && (recipe.status === "error" || isRecipeStuck(recipe)) && (
         <div className="flex flex-col gap-2">
           <p role="alert" className="text-sm text-alerta-100">
-            {recipe.status === "error" ? `No pudimos armar la receta: ${recipe.error ?? "algo falló"}.` : "La receta está tardando más de lo normal."}
+            {recipe.status === "error" ? `No pudimos armar la receta: ${await shownError(userId, recipe.error, "algo falló")}` : "La receta está tardando más de lo normal."}
           </p>
           <RecipeButton pieceId={pieceId} label="Reintentar" />
         </div>

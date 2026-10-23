@@ -4,6 +4,7 @@ import { Button } from "@/components/ui";
 import { megabytes } from "@/lib/recording/rules";
 import { getExport, isOutdated } from "@/lib/recording/join";
 import { requestJoinAction } from "@/lib/recording/actions";
+import { shownError } from "@/lib/shown-error";
 
 /** Video completo (las 3 partes unidas en un MP4 vertical) para descargar y subir a Instagram, TikTok o Facebook. */
 export async function FullVideoSection({ userId, pieceId }: { userId: string; pieceId: string }) {
@@ -36,7 +37,7 @@ export async function FullVideoSection({ userId, pieceId }: { userId: string; pi
       {exp?.status === "error" && (
         <div className="flex flex-col gap-2">
           <p role="alert" className="text-sm text-alerta-100">
-            No pudimos armarlo: {exp.error ?? "algo falló"}.
+            No pudimos armarlo: {await shownError(userId, exp.error, "algo falló")}
           </p>
           {join("Reintentar")}
         </div>
