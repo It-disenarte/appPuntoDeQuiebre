@@ -61,13 +61,16 @@ export function normalizeItems(raw: unknown[], previous: Trend[]): Trend[] {
     const isTag = Boolean(pick(o, ["hashtagName", "hashtag"])) || name.startsWith("#");
     const tipo: Trend["tipo"] = isSong ? "cancion" : isTag ? "hashtag" : "formato";
     const id = `t-${createHash("sha1").update(`${tipo}:${name.toLowerCase()}`).digest("hex").slice(0, 10)}`;
-    const posicion = num(o, ["rank", "position", "posicion"]) || i + 1;
+    // Algunos actores (p. ej. el de hashtags por industria) repiten el rank en cada grupo: ahí vale el orden en que vienen.
+    const stage = (pick(o, ["trendStage", "stage", "estado"]) ?? "").toLowerCase();
+    const posicion = stage ? i + 1 : num(o, ["rank", "position", "posicion"]) || i + 1;
     const before = prev.get(id);
-    const estado: Trend["estado"] = !before ? "subiendo" : posicion < before.posicion ? "subiendo" : posicion > before.posicion + 2 ? "bajando" : before.dias_en_lista >= 3 ? "pico" : "subiendo";
+    const staged: Trend["estado"] | null = /break|rising|new|surg|subiendo/.test(stage) ? "subiendo" : /peak|hot|pico/.test(stage) ? "pico" : /fad|declin|fall|bajando/.test(stage) ? "bajando" : null;
+    const estado: Trend["estado"] = staged ? staged : !before ? "subiendo" : posicion < before.posicion ? "subiendo" : posicion > before.posicion + 2 ? "bajando" : before.dias_en_lista >= 3 ? "pico" : "subiendo";
     out.push({
       id,
       tipo,
-      nombre: name.slice(0, 120),
+      nombre: (tipo === "hashtag" && !name.startsWith("#") ? "#" + name : name).slice(0, 120),
       descripcion: (pick(o, ["description", "desc", "descripcion"]) ?? "").slice(0, 300),
       red: "tiktok",
       pais: "MX",
@@ -75,7 +78,7 @@ export function normalizeItems(raw: unknown[], previous: Trend[]): Trend[] {
       estado,
       dias_en_lista: (before?.dias_en_lista ?? 0) + 1,
       publicaciones: num(o, ["videoCount", "postCount", "publishCnt", "publicaciones", "posts"]),
-      link_ejemplo: link(pick(o, ["videoUrl", "exampleUrl", "link", "url"])),
+      link_ejemplo: link(pick(o, ["videoUrl", "exampleUrl", "link", "url", "tiktokUrl"])),
       audio: { nombre: tipo === "cancion" ? name : pick(o, ["musicTitle", "songName"]), link: link(pick(o, ["musicUrl", "audioUrl"])) },
     });
   });

@@ -104,3 +104,25 @@ describe("uso de tendencias (sin IA: ideas de ejemplo)", () => {
     expect((await svc.chooseTrend(userId, use.id, options[0]!.id)).ok).toBe(true);
   }, 30_000);
 });
+
+describe("actor de hashtags por país (webdata_labs/tiktok-hashtag-trends-scraper)", () => {
+  it("lee su salida real: hashtag, trendStage, posts y tiktokUrl; los que van de salida no se ofrecen", async () => {
+    const { normalizeItems } = await import("@/lib/trends/list");
+    const { usable } = await import("@/lib/trends/schemas");
+    const items = normalizeItems(
+      [
+        { hashtag: "livecanbeeasy", country: "MX", periodDays: 7, rank: 2, views: 29390269, posts: 14613, momentum: 99.99, trendStage: "breakout", tiktokUrl: "https://www.tiktok.com/tag/livecanbeeasy" },
+        { hashtag: "croquis", country: "MX", periodDays: 7, rank: 1, views: 80120931, posts: 3462, momentum: -33.38, trendStage: "fading", tiktokUrl: "https://www.tiktok.com/tag/croquis" },
+        { hashtag: "study", country: "MX", periodDays: 7, rank: 1, posts: 2315, trendStage: "fading" },
+      ],
+      [],
+    );
+    expect(items.map((t) => [t.nombre, t.tipo, t.estado, t.posicion, t.publicaciones])).toEqual([
+      ["#livecanbeeasy", "hashtag", "subiendo", 1, 14613],
+      ["#croquis", "hashtag", "bajando", 2, 3462],
+      ["#study", "hashtag", "bajando", 3, 2315],
+    ]);
+    expect(items[0]!.link_ejemplo).toBe("https://www.tiktok.com/tag/livecanbeeasy");
+    expect(usable(items, new Set()).map((t) => t.nombre)).toEqual(["#livecanbeeasy"]);
+  });
+});
