@@ -13,7 +13,7 @@ Documento vivo: todo lo que hace la app, para el creador y para el administrador
 | B1 | App de Meta (Instagram) en modo desarrollo: `META_APP_ID`, `META_APP_SECRET`, URL de retorno configurada y una cuenta de prueba (p. ej. Blombito) | Tú / Mishell | Conexión de Instagram, auditoría, métricas, publicar |
 | B2 | Verificación del negocio en Meta, política de privacidad y URL para borrar datos (para usuarios reales) | Erick / Tú | Abrir Instagram a usuarios externos |
 | B3 | **Código del analizador de competencia** (de Moy) y `APIFY_TOKEN` | Moy / Tú | Fase 5 y "lo probado" de la parrilla |
-| B4 | Skills que no se han entregado: guiones, métricas (9), reglas de aprendizaje (10), coach de video (11), tendencias (12), edición automática (13), frases motivacionales | Mishell | Esas funciones con IA real (mientras tanto, borrador mío marcado como tal) |
+| B4 | ~~Skills sin entregar~~ **Resuelto el 26 oct 2026:** por decisión del equipo las escribió Claude Code. Quedan en `skills/` como v2 (parrilla y guiones, métricas explicadas, lectura de capturas, analizador de video y de conceptos) con los mismos campos de salida; las **frases motivacionales** son un banco escrito a mano (`src/lib/motivation.ts`, se muestra en Hoy). **Pendiente de conectar:** `reglas-aprendizaje/v1` (skill 10): el texto está listo, falta armar su entrada y guardar su salida (ver el apartado 8 de esa skill) | Claude Code / Moy | Aprendizaje automático de la voz y de la mezcla |
 | B5 | Plantillas de carruseles y de Remotion; enlaces de Discord, WhatsApp y sesión en vivo | Equipo MKT | Carruseles finales, edición Pro, comunidad |
 | B6 | Textos legales definitivos (términos y privacidad) | Abogado | Lanzamiento |
 | B7 | Empresa constituida para Stripe real | Erick | Cobros reales |

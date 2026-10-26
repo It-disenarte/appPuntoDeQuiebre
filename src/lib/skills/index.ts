@@ -27,7 +27,7 @@ export const SKILLS = {
   brujula: { dir: "brujula/v2", version: "brujula-v2" },
   perfilVoz: { dir: "perfil-voz/v1", version: "perfil-voz-v1" },
   kitVisual: { dir: "kit-visual/v1", version: "kit-visual-v1" },
-  parrilla: { dir: "parrilla-guiones/v1", version: "parrilla-guiones-v1" },
+  parrilla: { dir: "parrilla-guiones/v2", version: "parrilla-guiones-v2" },
   textos: { dir: "textos-publicacion/v2", version: "textos-publicacion-v2" },
   historias: { dir: "ideas-historias/v3", version: "ideas-historias-v3" },
   carruseles: { dir: "carruseles/v3", version: "carruseles-v3" },

@@ -99,7 +99,7 @@ export function mockParrilla(i: ParrillaInput): ParrillaV1 {
       tarjeta_prueba: isVariant ? (s.prueba === "gancho" ? "Probamos dos ganchos distintos en el mismo video para ver cuál engancha más." : "Probamos el mismo guion en otro lugar o encuadre para ver cuál funciona mejor.") : null,
     };
   });
-  return { skill_version: "parrilla-guiones-v1", resumen_semana: "Esta semana trabajamos tus pilares con un video de prueba al final (versión de prueba).", piezas } as ParrillaV1;
+  return { skill_version: "parrilla-guiones-v2", resumen_semana: "Esta semana trabajamos tus pilares con un video de prueba al final (versión de prueba).", piezas } as ParrillaV1;
 }
 
 /* ───────────── Textos de publicación ───────────── */

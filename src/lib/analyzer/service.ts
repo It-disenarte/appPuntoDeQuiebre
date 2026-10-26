@@ -138,7 +138,7 @@ export async function thumbnailKey(userId: string, videoId: string): Promise<str
 
 /* ───────────── Ejecución (corre en el worker) ───────────── */
 
-const skillText = (dir: string) => readFile(path.join(process.cwd(), "skills", dir, "v1", "skill.md"), "utf8");
+const skillText = (dir: string) => readFile(path.join(process.cwd(), "skills", dir, "v2", "skill.md"), "utf8");
 
 async function logCall(userId: string, skill: string, mock: boolean, status: "ok" | "error", tokens?: { i?: number; o?: number }) {
   await db()
@@ -158,7 +158,7 @@ export function sampleReels(username: string): ScrapedReel[] {
 }
 export function sampleAnalysis(): VideoAnalysis {
   return {
-    skill_version: "analizador-video-v1",
+    skill_version: "analizador-video-v2",
     concepto: "Ejemplo: un error común del nicho explicado en 30 segundos con una solución concreta.",
     gancho: { visual: "Primer plano hablando a cámara", texto: "“Deja de hacer esto”", audio: "Frase directa y una pregunta", por_que_funciona: "Señala un error que la gente reconoce en sí misma." },
     retencion: ["0:03 — promete una solución al final", "0:10 — cambio de plano para renovar la atención", "0:20 — ejemplo concreto antes del cierre"],
@@ -170,7 +170,7 @@ export function sampleAnalysis(): VideoAnalysis {
 export function sampleConcepts(nicho: string): Concepts {
   const n = nicho || "tu tema";
   return {
-    skill_version: "analizador-conceptos-v1",
+    skill_version: "analizador-conceptos-v2",
     conceptos: [
       { titulo: "El error que todos cometen", gancho: `Si haces esto en ${n}, estás frenando tu avance.`, idea: "Nombra un error frecuente de tu nicho y da la solución en un paso.", guion_corto: "1) Error. 2) Por qué cuesta. 3) Solución. 4) Guarda este video.", por_que_encaja: "Usa la misma estructura que funcionó, con tu tema." },
       { titulo: "Antes y después", gancho: "Así se veía hace un mes y así se ve hoy.", idea: "Muestra un cambio real con una enseñanza.", guion_corto: "1) Antes. 2) Qué cambió. 3) Después. 4) Qué aprendí.", por_que_encaja: "Mezcla inspiración con una lección práctica." },

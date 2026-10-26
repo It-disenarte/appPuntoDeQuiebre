@@ -134,7 +134,7 @@ export function sampleExtraction(seed: string, period: string): Extracted {
   const r = (min: number, max: number, k: number) => min + ((h >> k) % (max - min));
   const vistas = r(3000, 40000, 3);
   return extractedSchema.parse({
-    skill_version: "metricas-capturas-v1",
+    skill_version: "metricas-capturas-v2",
     periodo: { etiqueta: `Periodo ${period} (datos de ejemplo)` },
     cuenta: {
       vistas,

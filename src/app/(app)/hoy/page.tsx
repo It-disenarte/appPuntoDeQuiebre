@@ -10,6 +10,7 @@ import { addDays, CATEGORY_LABEL, DAY_CODES, DAY_SHORT, dowMon0, mondayOf, today
 import { currentStory, getCurrentPlan } from "@/lib/plan/service";
 import { hadActivityIn, listReports, periodOptions } from "@/lib/metrics/service";
 import { monthName } from "@/lib/notify/rules";
+import { momentFor, phraseFor } from "@/lib/motivation";
 
 export const metadata: Metadata = { title: "Hoy" };
 
@@ -44,6 +45,13 @@ export default async function HoyPage() {
     else if (iso !== today) break;
   }
 
+  // Frase del día: según lo que toca hoy (grabar, publicar), la racha o si se saltó algún día de esta semana.
+  const missedRecently = week.some((w) => w.state === "missed") && streak === 0;
+  const phrase = phraseFor(
+    momentFor({ dow: dowMon0(today), streak, missedRecently, recordsToday: todays.some((p) => p.status === "pendiente"), publishesToday: todays.some((p) => p.status === "grabado" || p.status === "programado") }),
+    today,
+  );
+
   // Próxima sesión de grabación según su horario (bloques fijos).
   const blocks = (schedule?.result.bloques ?? []).filter((b) => b.tipo === "fijo" && b.dia && b.inicio);
   const nextBlock = blocks
@@ -66,6 +74,7 @@ export default async function HoyPage() {
           </span>
         }
       />
+      <p className="-mt-2 text-sm text-ink-600 italic">{phrase}</p>
       {metricsPending && !nextStep && (
         <Card data-tour="metricas-pendientes" className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-naranja">
           <div>

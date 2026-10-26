@@ -156,7 +156,7 @@ async function logCall(userId: string, skill: string, mock: boolean, status: "ok
     .catch(() => undefined);
 }
 
-const skillText = (dir: string) => readFile(path.join(process.cwd(), "skills", dir, "v1", "skill.md"), "utf8");
+const skillText = (dir: string) => readFile(path.join(process.cwd(), "skills", dir, "v2", "skill.md"), "utf8");
 
 /** Lee las capturas del mes, guarda las cifras para que el creador las confirme y borra las imágenes. */
 export async function runExtraction(userId: string, period: string): Promise<void> {

@@ -100,7 +100,7 @@ export const horarioV1Output = z
   .passthrough();
 export type HorarioV1 = z.infer<typeof horarioV1Output>;
 
-/* ───────────── parrilla-guiones-v1 (borrador) ───────────── */
+/* ───────────── parrilla-guiones-v2 ───────────── */
 
 export const videoGuionSchema = z
   .object({ gancho: str, cuerpo: strs.min(1).max(8), cierre: str, duracion_segundos: z.number().default(35), nota_grabacion: str.default("") })
