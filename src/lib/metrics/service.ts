@@ -253,6 +253,8 @@ export async function confirmReport(userId: string, period: string, edits: Parti
     }
   }
   await db().update(metricReports).set({ status: "lista", confirmed, explanation, mock }).where(eq(metricReports.id, report.id));
+  // Cada mes, al cerrar el informe, la app revisa también lo que aprendió del creador (sin gastar IA si todavía hay pocas piezas).
+  void import("@/lib/bg").then((m) => m.queueBg(userId, "aprendizaje", "aprendizaje")).catch(() => undefined);
   return { ok: true };
 }
 

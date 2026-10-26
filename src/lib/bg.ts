@@ -8,7 +8,7 @@ import { enqueue } from "@/lib/jobs";
  * Pasos con IA que corren en el worker (así siguen aunque la persona salga de la app y la pantalla muestra su avance al volver).
  * Cada paso tiene un `scope` (la pantalla o la pieza a la que pertenece): solo uno activo por scope a la vez.
  */
-export type BgOp = "textos" | "tendencias.pedir" | "tendencias.otras" | "tendencias.elegir" | "directos.respuestas" | "directos.semana" | "directos.apoyo" | "perfil.generar" | "perfil.parte" | "auditoria";
+export type BgOp = "textos" | "tendencias.pedir" | "tendencias.otras" | "tendencias.elegir" | "directos.respuestas" | "directos.semana" | "directos.apoyo" | "perfil.generar" | "perfil.parte" | "auditoria" | "aprendizaje";
 
 export const BG_LABEL: Record<BgOp, { title: string; text: string }> = {
   textos: { title: "Escribiendo tus textos…", text: "Ganchos, descripción y hashtags para cada red, con tu voz." },
@@ -20,6 +20,7 @@ export const BG_LABEL: Record<BgOp, { title: string; text: string }> = {
   "directos.apoyo": { title: "Preparando tu apoyo para el directo…", text: "Armando ideas y guía para ese tema." },
   "perfil.generar": { title: "Preparando tus propuestas…", text: "Revisando tu perfil y escribiendo mejoras para tu nombre y tu biografía." },
   "perfil.parte": { title: "Escribiendo otra propuesta…", text: "Armando nuevas opciones con tu nota." },
+  aprendizaje: { title: "Aprendiendo de tus piezas…", text: "Revisando lo que calificaste y cambiaste para que tus próximos guiones suenen más a ti." },
   auditoria: { title: "Revisando tu cuenta…", text: "Mirando tu perfil y tus publicaciones para decirte cómo te ven." },
 };
 
@@ -85,6 +86,9 @@ export async function runBgOp(userId: string, payload: { scope: string; op: BgOp
       break;
     case "perfil.parte":
       r = await (await import("@/lib/profile/service")).refreshPart(userId, s("parte") === "nombre" ? "nombre" : "biografia", s("nota"));
+      break;
+    case "aprendizaje":
+      r = await (await import("@/lib/learning/service")).runLearning(userId);
       break;
     case "auditoria":
       r = await (await import("@/lib/audit-account/service")).runAudit(userId);

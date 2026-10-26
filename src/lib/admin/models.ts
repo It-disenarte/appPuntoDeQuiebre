@@ -17,6 +17,7 @@ export const SKILL_ROUTES = [
   { key: "tendencias", label: "Tendencias" },
   { key: "auditoria", label: "Auditoría de la cuenta" },
   { key: "edicion", label: "Plan de edición de video (a cámara)" },
+  { key: "aprendizaje", label: "Aprendizaje de tu voz y de la mezcla" },
 ] as const;
 
 const modelId = z

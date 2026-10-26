@@ -1033,3 +1033,21 @@ export const capcutRecipes = pgTable(
   },
   (t) => [uniqueIndex("capcut_recipes_piece_idx").on(t.pieceId)],
 );
+
+/** Lo que la app aprendió del creador (skill 10): una fila por corrida; la última vigente guía las próximas semanas. */
+export const learningRuns = pgTable(
+  "learning_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Piezas con señales que se miraron en esta corrida. */
+    signals: integer("signals").notNull().default(0),
+    result: jsonb("result").$type<unknown>().notNull(),
+    mock: boolean("mock").notNull().default(false),
+    skillVersion: text("skill_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("learning_runs_user_idx").on(t.userId, t.createdAt)],
+);

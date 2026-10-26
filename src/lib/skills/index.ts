@@ -15,7 +15,7 @@ import { mockKitFinal, mockKitRound, type KitInput } from "@/lib/kit/mock";
 import { mockHistorias, mockParrilla, mockTextos, type HistoriasInput, type ParrillaInput, type TextosInput } from "@/lib/plan/mock";
 import { finalKitSchema, fontRoundSchema, paletteRoundSchema, titleRoundSchema, type FinalKit, type FontOption, type PaletteOption, type TitleOption } from "@/lib/kit/schemas";
 import { transcribeWithGemini } from "./transcribe";
-import { brujulaV2Output, historiasV2Output, parrillaV1Output, perfilVozV1Output, textosV2Output, type BrujulaV2, type HistoriasV2, type ParrillaV1, type PerfilVozV1, type TextosV2 } from "./schemas";
+import { aprendizajeV1Output, brujulaV2Output, historiasV2Output, parrillaV1Output, perfilVozV1Output, textosV2Output, type BrujulaV2, type HistoriasV2, type AprendizajeV1, type ParrillaV1, type PerfilVozV1, type TextosV2 } from "./schemas";
 
 /**
  * Ejecutor de skills. Cada skill es un archivo versionado (skills/<nombre>/v<N>/skill.md) que se manda a Claude como
@@ -36,6 +36,7 @@ export const SKILLS = {
   tendencias: { dir: "tendencias/v2", version: "tendencias-v2" },
   auditoria: { dir: "auditoria/v1", version: "auditoria-v1" },
   edicion: { dir: "edicion/v1", version: "edicion-v1" },
+  aprendizaje: { dir: "reglas-aprendizaje/v1", version: "reglas-aprendizaje-v1" },
 } as const;
 type SkillKey = keyof typeof SKILLS;
 
@@ -193,6 +194,10 @@ export const runPerfilVoz = (userId: string, input: PerfilVozInput, durationSeco
 
 /** Parrilla semanal: tema y guion de cada espacio (el reparto lo decide el código). */
 export const runParrilla = (userId: string, input: ParrillaInput) => run<ParrillaV1>(userId, "parrilla", input, parrillaV1Output as ZodType<ParrillaV1>, () => mockParrilla(input));
+
+/** Reglas de aprendizaje (skill 10): lo que se aprende de las piezas y correcciones del creador. Sin IA, no concluye nada. */
+export const runAprendizaje = (userId: string, input: unknown) =>
+  run<AprendizajeV1>(userId, "aprendizaje", input, aprendizajeV1Output as ZodType<AprendizajeV1>, () => ({ skill_version: "reglas-aprendizaje-v1", suficiente_evidencia: false, para_el_creador: "Todavía no hay una IA conectada para aprender de tus piezas." }));
 
 /** Textos de publicación por red para una pieza. */
 export const runTextos = (userId: string, input: TextosInput) => run<TextosV2>(userId, "textos", input, textosV2Output as ZodType<TextosV2>, () => mockTextos(input));

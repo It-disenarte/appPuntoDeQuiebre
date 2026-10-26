@@ -1,5 +1,5 @@
 # Skill 10: Reglas de aprendizaje
-**Versión:** v1 (escrita por Claude Code a partir de la guía de Luis y de las skills de perfil de voz, parrilla y textos. **Todavía no está conectada a la app**: ver el apartado 8.)
+**Versión:** v1 (escrita por Claude Code a partir de la guía de Luis y de las skills de perfil de voz, parrilla y textos. **Conectada a la app**: ver el apartado 8.)
 **Responsable:** Claude Code (por decisión del equipo) · **Conecta:** Moy · **IA:** Claude
 **Cuándo corre:** una vez al mes (después de las métricas) o cada 8 a 10 piezas nuevas calificadas, lo que ocurra primero. Nunca corre con menos de **6 piezas** con señales.
 
@@ -112,8 +112,12 @@ Responde **solo** con este JSON.
 ```
 
 ## 8. Estado de la conexión (para Moy)
-- **Pendiente de conectar:** la app aún no arma esta entrada (calificaciones, ediciones de texto y métricas por pieza viven en tablas distintas) ni guarda la salida. `preferencias_aprendidas` (perfil de voz) y `reglas_aprendidas` (carruseles) ya existen y hoy van vacías. Cuando se conecte: trabajo `aprendizaje.correr` en el worker, mínimo de 6 piezas, y mostrar `para_el_creador` en "Mi progreso".
-- Los límites del apartado 5 (regla 9) deben aplicarse también en código.
+**Conectada el 26 oct 2026** (`src/lib/learning/service.ts`).
+- **Cuándo corre:** al cerrar el informe mensual de métricas y cuando el creador pulsa "Actualizar lo que aprendí" en **Progreso**. Corre en el worker (paso `aprendizaje` de `ia.paso`). Con menos de 6 piezas con señales **no llama a la IA**: guarda un mensaje amable.
+- **Qué entrega la app como entrada:** piezas de los últimos 90 días con señales (votó 👍/👎, descartó, publicó o programó), `calificacion` deducida de los votos por red, `edito_guion` si marcó "editado", `tipo_gancho` deducido del texto del gancho, los cambios que hizo a los textos (`antes` y `despues`), la mezcla de la última semana y las cifras confirmadas de los dos últimos meses.
+- **Limitaciones de la entrada hoy:** `metricas` por pieza va en `null` (solo existirán con la API de Instagram) y `motivos` va vacío.
+- **Qué hace con la salida:** guarda la corrida en `learning_runs`; mezcla `preferencias_nuevas` en el perfil de voz (marcadas con `origen: "aprendizaje"`, máximo 12); suma `reglas_para_guiones` a las del perfil al armar la semana (máximo 5) y aplica `ajuste_mezcla` con los límites del código (±10 puntos, conversión ≤ 35 %).
+- **Reversible:** el botón "Olvidar lo aprendido" borra las corridas y quita solo las preferencias marcadas como aprendidas.
 
 ---
 

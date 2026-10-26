@@ -1,10 +1,13 @@
 import { BarChart3 } from "lucide-react";
 import type { Metadata } from "next";
-import { ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
+import { BgStatus } from "@/components/BgStatus";
+import { Button, ButtonLink, Card, Chip, PageHeader } from "@/components/ui";
 import { Spark } from "@/components/metrics/Charts";
 import { ReportView } from "@/components/metrics/ReportView";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { hadActivityIn, listReports, parseConfirmed, parseExplanation, periodOptions } from "@/lib/metrics/service";
+import { forgetLearningAction, LEARNING_SCOPE, runLearningAction } from "@/lib/learning/actions";
+import { latestLearning, MIN_SIGNALS } from "@/lib/learning/service";
 import { monthName } from "@/lib/notify/rules";
 
 export const metadata: Metadata = { title: "Progreso" };
@@ -15,6 +18,7 @@ export default async function ProgresoPage() {
   const latest = reports.at(-1) ?? null;
   const explanation = latest ? parseExplanation(latest.explanation) : null;
   const confirmed = latest ? parseConfirmed(latest.confirmed) : null;
+  const learning = await latestLearning(user.id);
   const pending = periodOptions()[0]!;
   // Solo se pide el informe del mes pasado si ya grabó o publicó algo en ese mes.
   const doneThisMonth = reports.some((r) => r.period === pending.period) || !(await hadActivityIn(user.id, pending.period));
@@ -67,6 +71,47 @@ export default async function ProgresoPage() {
           </ButtonLink>
         </Card>
       )}
+
+      <BgStatus userId={user.id} scope={LEARNING_SCOPE} />
+      <Card className="flex flex-col gap-3">
+        <div>
+          <p className="font-extrabold">Lo que he aprendido de ti</p>
+          <p className="text-sm text-ink-600">Reviso lo que calificas, corriges y publicas para que tus próximos guiones suenen cada vez más a ti. Necesito al menos {MIN_SIGNALS} piezas con las que aprender.</p>
+        </div>
+        {learning ? (
+          <div className="flex flex-col gap-2">
+            {learning.result.para_el_creador && <p className="text-sm">{learning.result.para_el_creador}</p>}
+            {learning.result.suficiente_evidencia && learning.result.resumen && <p className="text-sm text-ink-700">{learning.result.resumen}</p>}
+            {learning.result.suficiente_evidencia && learning.result.preferencias_nuevas.length > 0 && (
+              <ul className="list-disc pl-5 text-sm text-ink-700">
+                {learning.result.preferencias_nuevas.map((p, i) => (
+                  <li key={i}>
+                    {p.por}. <span className="text-ink-500">{p.motivo}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {learning.result.suficiente_evidencia && learning.result.pruebas_sugeridas.length > 0 && <p className="text-sm text-ink-700">Para probar esta semana: {learning.result.pruebas_sugeridas[0]}</p>}
+            <p className="text-xs text-ink-500">Última revisión: {new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeZone: "America/Mexico_City" }).format(learning.createdAt)}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-ink-600">Todavía no he revisado nada. Cuando tengas piezas calificadas o publicadas, pulsa el botón.</p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <form action={runLearningAction}>
+            <Button type="submit" size="sm" variant="outline">
+              Actualizar lo que aprendí
+            </Button>
+          </form>
+          {learning && (
+            <form action={forgetLearningAction}>
+              <Button type="submit" size="sm" variant="ghost">
+                Olvidar lo aprendido
+              </Button>
+            </form>
+          )}
+        </div>
+      </Card>
 
       <Card className="flex flex-wrap items-center justify-between gap-3">
         <div>

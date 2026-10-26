@@ -31,5 +31,5 @@ Por decisión del equipo, estas las escribió Claude Code (antes eran borradores
 | `metricas-explicacion` (9) | v2 | Conectada (Claude; la app solo toma el texto de cada indicador). |
 | `analizador-video` | v2 | Conectada (Gemini con video). |
 | `analizador-conceptos` | v2 | Conectada (Claude, con respaldo de Gemini). |
-| `reglas-aprendizaje` (10) | v1 | **Escrita pero sin conectar**: ver su apartado 8. |
+| `reglas-aprendizaje` (10) | v1 | Conectada (Claude o Gemini; corre en el worker). Ver su apartado 8. |
 | Frases motivacionales | — | Banco fijo en `src/lib/motivation.ts`; no usa IA. |

@@ -177,3 +177,21 @@ export const historiasV2Output = z
   })
   .passthrough();
 export type HistoriasV2 = z.infer<typeof historiasV2Output>;
+
+/* ───────────── reglas-aprendizaje-v1 ───────────── */
+
+const delta = z.coerce.number().min(-0.2).max(0.2).catch(0);
+export const aprendizajeV1Output = z
+  .object({
+    skill_version: str.optional(),
+    suficiente_evidencia: z.boolean().default(false),
+    resumen: str.default(""),
+    preferencias_nuevas: z.array(z.object({ cambia: str, por: str, motivo: str }).passthrough()).default([]),
+    reglas_para_guiones: strs.default([]),
+    ganchos: z.object({ funcionan: strs.default([]), evitar: strs.default([]) }).passthrough().default({ funcionan: [], evitar: [] }),
+    ajuste_mezcla: z.object({ viral: delta, nicho: delta, conversion: delta, motivo: str.default("") }).passthrough().default({ viral: 0, nicho: 0, conversion: 0, motivo: "" }),
+    pruebas_sugeridas: strs.default([]),
+    para_el_creador: str.default(""),
+  })
+  .passthrough();
+export type AprendizajeV1 = z.infer<typeof aprendizajeV1Output>;

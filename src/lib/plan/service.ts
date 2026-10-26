@@ -85,7 +85,7 @@ export async function singleVideoScript(userId: string, idea: { title: string; h
   const input: ParrillaInput = {
     creador_id: userId,
     brujula: { nicho: m.nicho, publico: m.publico, pilares: m.pilares, tono: m.tono, palabras_si: m.palabras_si, palabras_no: m.palabras_no, postura: m.postura, estilo_grabacion: m.estilo_grabacion, lives: m.lives },
-    perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: v.reglas_para_guiones, preferencias_aprendidas: v.preferencias_aprendidas },
+    perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: [...v.reglas_para_guiones, ...(await learned(userId)).rules], preferencias_aprendidas: v.preferencias_aprendidas },
     semana: [{ n: 1, dia: DAY_CODES[0]!, formato: "video", categoria: "nicho", tipo: "probado", variante_de: null, prueba: null }],
     temas_recientes: recent.map((x) => x.topic),
     enfoque: "Escribe el guion completo de UN video basado en esta idea guardada por el creador: «" + idea.title + "». Gancho de referencia: «" + idea.hook + "». " + idea.idea,
@@ -96,6 +96,12 @@ export async function singleVideoScript(userId: string, idea: { title: string; h
   const parsed = piece ? videoGuionSchema.safeParse(piece.guion) : null;
   if (!piece || !parsed?.success) return { ok: false, error: "La IA no devolvió un guion de video. Inténtalo de nuevo." };
   return { ok: true, pillar: String(piece.pilar ?? ""), script: parsed.data, mock: out.mock };
+}
+
+/** Lo aprendido del creador (skill 10), cargado aparte para no crear un ciclo de importaciones. */
+async function learned(userId: string) {
+  const l = await import("@/lib/learning/service");
+  return { rules: await l.learnedRules(userId), mix: (base: Mix) => l.learnedMix(userId, base) };
 }
 
 export type GenerateResult = { ok: true; weekStart: string } | { ok: false; error: string };
@@ -116,7 +122,7 @@ export async function generatePlan(userId: string, opts: { weekStart?: string; f
   const ig = await db().select({ profile: igConnections.profile }).from(igConnections).where(eq(igConnections.userId, userId)).limit(1);
   const followers = Number((ig[0]?.profile as { followers?: number } | undefined)?.followers ?? 0) || null;
   const stage: Stage = stageFor({ followers, accountAgeDays: ageDays });
-  const mix: Mix = mixFor(stage, hasOffer);
+  const mix: Mix = await (await learned(userId)).mix(mixFor(stage, hasOffer));
   const publishTime = r.schedule?.result.publicar.hora ?? "18:00";
   const slots = planSlots({ plan: tier, weekStart, mix });
   // Ideas guardadas en el banco: la parrilla las toma como base de algún guion (hasta 3 por semana).
@@ -134,7 +140,7 @@ export async function generatePlan(userId: string, opts: { weekStart?: string; f
   const parrillaInput: ParrillaInput = {
     creador_id: userId,
     brujula: { nicho: m.nicho, publico: m.publico, pilares: m.pilares, tono: m.tono, palabras_si: m.palabras_si, palabras_no: m.palabras_no, postura: m.postura, estilo_grabacion: m.estilo_grabacion, lives: m.lives },
-    perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: v.reglas_para_guiones, preferencias_aprendidas: v.preferencias_aprendidas },
+    perfil_voz: { formalidad: v.formalidad, ritmo: v.ritmo, palabras_frecuentes: v.palabras_frecuentes, muletillas: v.muletillas, frases_firma: v.frases_firma, como_aconseja: v.como_aconseja, evitar: v.evitar, reglas_para_guiones: [...v.reglas_para_guiones, ...(await learned(userId)).rules], preferencias_aprendidas: v.preferencias_aprendidas },
     semana: slots.map((s) => ({ n: s.n, dia: s.day, formato: s.kind, categoria: s.category, tipo: s.type, variante_de: s.variantOf, prueba: s.testKind })),
     temas_recientes: recent.map((x) => x.topic),
     enfoque: [opts.focus?.temas.join(", ") || null, bankNote(bank)].filter(Boolean).join(". ") || null,
