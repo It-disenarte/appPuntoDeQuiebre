@@ -6,8 +6,8 @@ import { Spark } from "@/components/metrics/Charts";
 import { ReportView } from "@/components/metrics/ReportView";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { hadActivityIn, listReports, parseConfirmed, parseExplanation, periodOptions } from "@/lib/metrics/service";
-import { forgetLearningAction, LEARNING_SCOPE, runLearningAction } from "@/lib/learning/actions";
-import { latestLearning, MIN_SIGNALS } from "@/lib/learning/service";
+import { forgetLearningAction, runLearningAction } from "@/lib/learning/actions";
+import { latestLearning, LEARNING_SCOPE, MIN_SIGNALS } from "@/lib/learning/service";
 import { monthName } from "@/lib/notify/rules";
 
 export const metadata: Metadata = { title: "Progreso" };

@@ -9,6 +9,9 @@ import { parseReview, parseScript } from "@/lib/plan/service";
 import { runAprendizaje } from "@/lib/skills";
 import { aprendizajeV1Output, textosV2Output, type AprendizajeV1, type VideoGuion } from "@/lib/skills/schemas";
 
+/** Pantalla a la que pertenece el paso de aprendizaje en segundo plano. */
+export const LEARNING_SCOPE = "aprendizaje";
+
 /** Mínimo de piezas con señales para que la IA saque conclusiones (regla 1 de la skill). */
 export const MIN_SIGNALS = 6;
 const LOOKBACK_DAYS = 90;

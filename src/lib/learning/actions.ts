@@ -4,9 +4,7 @@ import { revalidatePath } from "next/cache";
 import { queueBg } from "@/lib/bg";
 import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
-import { forgetLearning } from "./service";
-
-export const LEARNING_SCOPE = "aprendizaje";
+import { forgetLearning, LEARNING_SCOPE } from "./service";
 
 /** “Actualizar lo que aprendí”: lo corre el worker; sin suficientes piezas no gasta IA. */
 export async function runLearningAction(): Promise<void> {
