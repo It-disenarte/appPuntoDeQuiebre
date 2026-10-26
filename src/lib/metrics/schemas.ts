@@ -30,7 +30,7 @@ export const extractedSchema = z
     periodo: z.object({ etiqueta: z.string().default(""), desde: z.string().nullable().optional(), hasta: z.string().nullable().optional() }).passthrough().default({ etiqueta: "" }),
     cuenta: cuentaSchema.default({}),
     audiencia: z
-      .object({ edades: z.record(z.string(), z.number()).optional(), genero: z.object({ mujeres: num, hombres: num }).partial().optional(), ciudades: z.array(z.string()).optional(), horas_mas_activas: z.array(z.number()).optional() })
+      .object({ edades: z.record(z.string(), z.number()).nullable().optional(), genero: z.object({ mujeres: num, hombres: num }).partial().nullable().optional(), ciudades: z.array(z.string()).nullable().optional(), horas_mas_activas: z.array(z.number()).nullable().optional() })
       .passthrough()
       .nullable()
       .optional(),
