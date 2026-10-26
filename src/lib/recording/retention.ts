@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { looseClips, recordings, videoEdits, videoExports, voiceovers } from "@/lib/db/schema";
+import { carouselVideos, looseClips, recordings, videoEdits, videoExports, voiceovers } from "@/lib/db/schema";
 import { deleteObject, storageConfigured } from "@/lib/storage";
 
 /** Los videos (partes, video completo y videos editados) se conservan 30 días: luego se borran para no llenar el disco. */
@@ -43,6 +43,12 @@ export async function purgeOldVideos(now = new Date()): Promise<{ parts: number;
     await deleteObject(v.objectKey).catch(() => undefined);
     await d.delete(voiceovers).where(eq(voiceovers.id, v.id));
     parts += 1;
+  }
+  // Videos animados de carrusel: también a los 30 días (el carrusel y sus imágenes se quedan).
+  for (const c of await d.select().from(carouselVideos).where(and(inArray(carouselVideos.status, ["lista"]), lt(carouselVideos.updatedAt, cutoff)))) {
+    if (c.outputKey) await deleteObject(c.outputKey).catch(() => undefined);
+    await d.update(carouselVideos).set({ outputKey: null, status: "error", error: PURGED_MESSAGE }).where(eq(carouselVideos.id, c.id));
+    edits += 1;
   }
   return { parts, exports: exps, edits };
 }

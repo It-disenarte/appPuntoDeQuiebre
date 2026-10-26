@@ -1051,3 +1051,28 @@ export const learningRuns = pgTable(
   },
   (t) => [index("learning_runs_user_idx").on(t.userId, t.createdAt)],
 );
+
+/** Video animado (reel vertical) de un carrusel: lo arma el worker con ffmpeg a partir de los PNG que manda el navegador. Uno por carrusel. */
+export const carouselVideos = pgTable(
+  "carousel_videos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    carouselId: uuid("carousel_id")
+      .notNull()
+      .references(() => carousels.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["pendiente", "renderizando", "lista", "error"] })
+      .notNull()
+      .default("pendiente"),
+    /** ZIP con los PNG de los slides (se borra al terminar). */
+    framesKey: text("frames_key"),
+    outputKey: text("output_key"),
+    seconds: integer("seconds"),
+    bytes: integer("bytes"),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("carousel_videos_carousel_idx").on(t.carouselId), index("carousel_videos_user_idx").on(t.userId, t.createdAt)],
+);

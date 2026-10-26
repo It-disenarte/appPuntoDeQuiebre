@@ -401,6 +401,7 @@ export async function deleteCarousel(userId: string, id: string): Promise<void> 
   const row = await getCarousel(userId, id);
   if (!row) return;
   for (const img of Object.values(parseImages(row.images))) await deleteObject(img.key).catch(() => undefined);
+  await (await import("./animate-service")).deleteAnimationFiles(userId, id);
   await db().delete(carousels).where(eq(carousels.id, id));
 }
 

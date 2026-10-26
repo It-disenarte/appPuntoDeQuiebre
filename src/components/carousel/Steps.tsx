@@ -67,10 +67,10 @@ export function BriefForm({ tema = "", pieza, plan = "basico" }: { tema?: string
         </div>
         {invite && plan !== "pro" && (
           <p role="status" className="rounded-lg bg-naranja-100 p-3 text-sm text-ink-900">
-            Los carruseles animados son del <strong>plan Pro</strong>. Puedes subir de plan desde <a href="/mi-marca" className="font-semibold underline underline-offset-4">Mi marca</a>; mientras tanto armamos tu carrusel estático y lo dejamos listo para animarse.
+            Los carruseles animados son del <strong>plan Pro</strong>. Puedes subir de plan desde <a href="/mi-marca" className="font-semibold underline underline-offset-4">Mi marca</a>; mientras tanto armamos tu carrusel estático y, con el Pro, después podrás convertirlo en video.
           </p>
         )}
-        {animado && plan === "pro" && <p className="text-xs text-ink-600">La animación en video se activa pronto. Hoy guardamos tu preferencia y descargas las imágenes estáticas.</p>}
+        {animado && plan === "pro" && <p className="text-xs text-ink-600">Cuando tu carrusel esté listo, en «Descargar» podrás crear su video animado (con movimiento y transiciones) para subirlo como reel.</p>}
       </fieldset>
       <Button type="submit" size="lg" disabled={pending || !tipo || !objetivo || !estilo} className="self-start">
         {pending && <LoadingOverlay title="Pensando ideas…" />}{pending ? "Pensando ideas…" : "Proponme ideas"}

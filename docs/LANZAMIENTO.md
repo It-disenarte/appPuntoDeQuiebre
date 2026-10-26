@@ -65,7 +65,7 @@ Hazla con el correo de alguien que no conozca la app, si es posible.
 - [ ] Registro → plan → pago → bienvenida → brújula, voz, kit visual y horario → primera semana.
 - [ ] **Grabar un video** con teleprompter flotante y cámara nativa → subir → **edición automática** → descargar.
 - [ ] **Voz en off** con una grabadora externa → subir → edición.
-- [ ] **Carrusel** con imágenes creadas por IA → exportar PNG.
+- [ ] **Carrusel** con imágenes creadas por IA → exportar PNG → (Pro) crear el **video animado** y descargarlo.
 - [ ] Textos de publicación, Directos, Optimiza tu perfil, Tendencias.
 - [ ] **Métricas** por capturas → informe → Progreso → «Lo que he aprendido de ti».
 - [ ] **Avisos** de grabar y publicar llegan al celular (con la app cerrada).
@@ -85,5 +85,5 @@ Hazla con el correo de alguien que no conozca la app, si es posible.
 
 ## 10. No es necesario para abrir (se puede después)
 - Conexión con Instagram (Meta, verificación del negocio) y la auditoría «Así te vemos».
-- Carrusel animado en video (Pro), TikTok y Facebook como redes completas, Nano Banana Pro.
+- TikTok y Facebook como redes completas, Nano Banana Pro.
 - App nativa de Android para micrófonos USB.

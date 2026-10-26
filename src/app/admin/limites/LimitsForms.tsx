@@ -23,6 +23,7 @@ export function LimitsForm({ v }: { v: Limits }) {
         <Field label="Tendencias por semana · Pro" name="trendsWeeklyPro" type="number" min={0} max={50} defaultValue={v.trendsWeeklyPro} />
         <Field label="Imágenes con IA al mes · Básico" name="aiImagesMonthlyBasico" type="number" min={0} max={500} defaultValue={v.aiImagesMonthlyBasico} hint="Se aplica ya (0 = no incluidas)." />
         <Field label="Imágenes con IA al mes · Pro" name="aiImagesMonthlyPro" type="number" min={0} max={500} defaultValue={v.aiImagesMonthlyPro} />
+        <Field label="Videos animados de carrusel al mes · Pro" name="carouselVideosMonthlyPro" type="number" min={0} max={200} defaultValue={v.carouselVideosMonthlyPro} />
       </div>
       <Button type="submit" disabled={pending} className="self-start">
         {pending ? "Guardando…" : "Guardar límites"}

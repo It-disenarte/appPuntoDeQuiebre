@@ -219,7 +219,7 @@ const num = (fd: FormData, k: string) => {
 export async function saveLimitsAction(_prev: AdminState, fd: FormData): Promise<AdminState> {
   const admin = await requireAdmin();
   const r = await saveLimits(
-    { analyzerIntervalDays: num(fd, "analyzerIntervalDays"), analyzerTopK: num(fd, "analyzerTopK"), coachMonthlyBasico: num(fd, "coachMonthlyBasico"), coachMonthlyPro: num(fd, "coachMonthlyPro"), editsMonthlyPro: num(fd, "editsMonthlyPro"), trendsWeeklyBasico: num(fd, "trendsWeeklyBasico"), trendsWeeklyPro: num(fd, "trendsWeeklyPro"), aiImagesMonthlyBasico: num(fd, "aiImagesMonthlyBasico"), aiImagesMonthlyPro: num(fd, "aiImagesMonthlyPro") },
+    { analyzerIntervalDays: num(fd, "analyzerIntervalDays"), analyzerTopK: num(fd, "analyzerTopK"), coachMonthlyBasico: num(fd, "coachMonthlyBasico"), coachMonthlyPro: num(fd, "coachMonthlyPro"), editsMonthlyPro: num(fd, "editsMonthlyPro"), trendsWeeklyBasico: num(fd, "trendsWeeklyBasico"), trendsWeeklyPro: num(fd, "trendsWeeklyPro"), aiImagesMonthlyBasico: num(fd, "aiImagesMonthlyBasico"), aiImagesMonthlyPro: num(fd, "aiImagesMonthlyPro"), carouselVideosMonthlyPro: num(fd, "carouselVideosMonthlyPro") },
     admin.id,
   );
   if (!r.ok) return { error: r.error };

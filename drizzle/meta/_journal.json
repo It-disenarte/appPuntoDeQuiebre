@@ -197,6 +197,13 @@
       "when": 1793040509671,
       "tag": "0027_aprendizaje",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793050369094,
+      "tag": "0028_carrusel_animado",
+      "breakpoints": true
     }
   ]
 }

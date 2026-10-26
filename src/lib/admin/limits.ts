@@ -16,9 +16,10 @@ export const limitsSchema = z.object({
   trendsWeeklyPro: z.number().int().min(0).max(50),
   aiImagesMonthlyBasico: z.number().int().min(0).max(500),
   aiImagesMonthlyPro: z.number().int().min(0).max(500),
+  carouselVideosMonthlyPro: z.number().int().min(0).max(200),
 });
 export type Limits = z.infer<typeof limitsSchema>;
-export const DEFAULT_LIMITS: Limits = { analyzerIntervalDays: 7, analyzerTopK: 2, coachMonthlyBasico: 2, coachMonthlyPro: 8, editsMonthlyPro: 20, trendsWeeklyBasico: 3, trendsWeeklyPro: 5, aiImagesMonthlyBasico: 15, aiImagesMonthlyPro: 60 };
+export const DEFAULT_LIMITS: Limits = { analyzerIntervalDays: 7, analyzerTopK: 2, coachMonthlyBasico: 2, coachMonthlyPro: 8, editsMonthlyPro: 20, trendsWeeklyBasico: 3, trendsWeeklyPro: 5, aiImagesMonthlyBasico: 15, aiImagesMonthlyPro: 60, carouselVideosMonthlyPro: 30 };
 
 /** Precios para ESTIMAR el costo de IA (en dólares por millón de tokens o por llamada). Ajústalos con tu factura real. */
 export const pricesSchema = z.object({

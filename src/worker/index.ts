@@ -92,6 +92,11 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
     if (!job.userId || !p.scope || !p.op) throw new Error("Trabajo sin usuario o paso");
     await runBgOp(job.userId, { scope: p.scope, op: p.op, args: p.args });
   },
+  "carrusel.animar": async (job) => {
+    const p = job.payload as { carouselId?: string };
+    if (!job.userId || !p.carouselId) throw new Error("Trabajo sin usuario o carrusel");
+    await (await import("@/lib/carousel/animate-service")).runAnimation(job.userId, p.carouselId);
+  },
   "idea.video": async (job) => {
     const p = job.payload as { ideaId?: string };
     if (!job.userId || !p.ideaId) throw new Error("Trabajo sin usuario o idea");
@@ -118,7 +123,7 @@ const JOB_HANDLERS: Record<string, (job: ClaimedJob) => Promise<void>> = {
 };
 
 /** Trabajos de video (unir, planear y renderizar ediciones): comparten UN solo ciclo para que corra uno a la vez y no saturen el servidor. */
-const HEAVY: JobKind[] = ["video.unir", "edicion.planear", "edicion.renderizar", "edicion.receta"];
+const HEAVY: JobKind[] = ["video.unir", "edicion.planear", "edicion.renderizar", "edicion.receta", "carrusel.animar"];
 
 async function jobLoop(kinds: JobKind[], everyMs: number, stop: { value: boolean }) {
   while (!stop.value) {
