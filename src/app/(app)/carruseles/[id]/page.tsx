@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ExportButtons, type AnimationInfo } from "@/components/carousel/ExportButtons";
 import { GenerateAllImages } from "@/components/carousel/GenerateImages";
 import { imageQuota } from "@/lib/carousel/ai-images";
-import { animationQuota, getAnimation, isAnimating, parseClips } from "@/lib/carousel/animate-service";
+import { animationQuota, getAnimation, isAnimating, parseClips, parsePlan } from "@/lib/carousel/animate-service";
 import { SlideEditor } from "@/components/carousel/SlideEditor";
 import { IdeasStep, InterviewStep } from "@/components/carousel/Steps";
 import { RegenerateForm } from "@/components/carousel/RegenerateForm";
@@ -103,7 +103,7 @@ async function CarouselEditor({ userId, id, row, content }: { userId: string; id
   const kitData = await getKit(userId);
   const quota = await imageQuota(userId);
   const [aq, av] = await Promise.all([animationQuota(userId), getAnimation(userId, id)]);
-  const animation: AnimationInfo = { allowed: aq.allowed, left: aq.left, limit: aq.limit, status: av?.status ?? null, active: isAnimating(av), since: av?.updatedAt.getTime() ?? 0, error: av?.status === "error" ? await shownError(userId, av.error, "algo falló") : "", clips: av?.status === "lista" ? parseClips(av.clips).map((c) => ({ n: c.n, seconds: c.seconds })) : [] };
+  const animation: AnimationInfo = { allowed: aq.allowed, left: aq.left, limit: aq.limit, status: av?.status ?? null, active: isAnimating(av), since: av?.updatedAt.getTime() ?? 0, error: av?.status === "error" ? await shownError(userId, av.error, "algo falló") : "", clips: av?.status === "lista" ? parseClips(av.clips).map((c) => ({ n: c.n, seconds: c.seconds, porque: parsePlan(av.plan)?.slides.find((x) => x.n === c.n)?.porque ?? "" })) : [], hiloComun: parsePlan(av?.plan)?.hilo_comun ?? "", ai: parsePlan(av?.plan)?.ai ?? false };
   const kit = canvasKitOf(kitData.final);
   const bg = canvasBgOf(content, row.background, kit);
   const images = parseImages(row.images);

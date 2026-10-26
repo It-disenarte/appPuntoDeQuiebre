@@ -1071,6 +1071,8 @@ export const carouselVideos = pgTable(
     outputKey: text("output_key"),
     /** Un clip animado por slide: [{ n, key, seconds, bytes }]. */
     clips: jsonb("clips").$type<unknown>(),
+    /** Qué decidió animar la IA en cada slide: { hilo_comun, ai, slides: [{ n, porque }] }. */
+    plan: jsonb("plan").$type<unknown>(),
     seconds: integer("seconds"),
     bytes: integer("bytes"),
     error: text("error"),

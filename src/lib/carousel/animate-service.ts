@@ -16,8 +16,9 @@ import { enqueue } from "@/lib/jobs";
 import { sendToUser } from "@/lib/push";
 import { runFfmpeg } from "@/lib/recording/ffmpeg";
 import { deleteObject, getObject, putObjectStream, storageConfigured } from "@/lib/storage";
-import { clipArgs, groupLayers, isPng, MAX_FRAME_BYTES, MAX_SLIDES, MIN_SLIDES, slideSeconds, slideTexts, type Layer } from "./animate";
-import { getCarousel, parseContent } from "./service";
+import { BOXES_FILE, clipArgs, groupLayers, isPng, MAX_FRAME_BYTES, MAX_SLIDES, MIN_SLIDES, parseBoxes, PIECE_LAYERS, type Boxes, type Layer } from "./animate";
+import { planAnimations, previewOf, type SlideInfo } from "./animate-plan";
+import { getCarousel, parseContent, parseImages } from "./service";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -41,6 +42,14 @@ export type Clip = z.infer<typeof clipsSchema>[number];
 export const parseClips = (raw: unknown): Clip[] => {
   const r = clipsSchema.safeParse(raw);
   return r.success ? r.data : [];
+};
+
+/** Lo que decidió animar la IA, para mostrárselo a la creadora: { hilo_comun, ai, slides: [{ n, porque }] }. */
+const planSchema = z.object({ hilo_comun: z.string().default(""), ai: z.boolean().default(false), slides: z.array(z.object({ n: z.number().int(), porque: z.string().default("") })).default([]) });
+export type StoredPlan = z.infer<typeof planSchema>;
+export const parsePlan = (raw: unknown): StoredPlan | null => {
+  const r = planSchema.safeParse(raw);
+  return r.success ? r.data : null;
 };
 
 export async function getAnimation(userId: string, carouselId: string): Promise<CarouselVideo | null> {
@@ -70,7 +79,7 @@ export async function requestAnimation(userId: string, carouselId: string, frame
   if (!current && q.left <= 0) return { ok: false, error: `Ya usaste tus ${q.limit} videos animados de este mes.` };
 
   for (const k of filesOf(current)) await deleteObject(k).catch(() => undefined);
-  const values = { status: "pendiente" as const, framesKey, outputKey: null, clips: null, seconds: null, bytes: null, error: null };
+  const values = { status: "pendiente" as const, framesKey, outputKey: null, clips: null, plan: null, seconds: null, bytes: null, error: null };
   if (current) await db().update(carouselVideos).set(values).where(eq(carouselVideos.id, current.id));
   else await db().insert(carouselVideos).values({ userId, carouselId, ...values });
   await enqueue("carrusel.animar", userId, { carouselId }, { maxAttempts: 1 });
@@ -92,31 +101,56 @@ export async function runAnimation(userId: string, carouselId: string): Promise<
     const obj = await getObject(v.framesKey);
     if (!obj) throw new Error("No se encontraron las imágenes del carrusel");
     const zip = Buffer.from(await new Response(obj.body).arrayBuffer());
-    const groups = groupLayers(unzipSync(new Uint8Array(zip)));
+    const unzipped = unzipSync(new Uint8Array(zip));
+    const groups = groupLayers(unzipped);
     const slides = [...groups.entries()].sort((a, b) => a[0] - b[0]);
     if (slides.length < MIN_SLIDES || slides.length > MAX_SLIDES) throw new Error(`Se esperaban de ${MIN_SLIDES} a ${MAX_SLIDES} slides y llegaron ${slides.length}`);
+    for (const [n, layers] of slides) {
+      if (!layers.fondo) throw new Error(`Al slide ${n} le falta su fondo`);
+      for (const bytes of Object.values(layers)) if (bytes.length > MAX_FRAME_BYTES || !isPng(bytes)) throw new Error("Una de las imágenes no es válida");
+      if (n < 1 || n > content.slides.length) throw new Error(`El slide ${n} no existe en este carrusel`);
+    }
+
+    // Dónde está cada pieza (lo manda el navegador; si no llega, las piezas se animan sin zoom ni pulso).
+    let boxes = new Map<number, Boxes>();
+    try {
+      const raw = unzipped[BOXES_FILE];
+      if (raw && raw.length < 200_000) boxes = parseBoxes(JSON.parse(Buffer.from(raw).toString("utf8")));
+    } catch {
+      /* sin cajas */
+    }
+    const images = parseImages(row.images);
+    const infos: SlideInfo[] = slides.map(([n, layers]) => ({
+      n,
+      present: Object.fromEntries(PIECE_LAYERS.map((l) => [l, Boolean(layers[l])])),
+      boxes: boxes.get(n) ?? {},
+      hasPhoto: Boolean(images[String(n)]),
+    }));
+
+    // La IA mira los slides y decide qué animar y cómo (si no puede, se usa el plan de siempre).
+    const previews = await Promise.all(slides.map(([, layers]) => previewOf(layers)));
+    const planned = await planAnimations(userId, content, infos, previews);
 
     const clips: Clip[] = [];
     let total = 0;
     for (const [n, layers] of slides) {
-      if (!layers.fondo) throw new Error(`Al slide ${n} le falta su fondo`);
       const files: Partial<Record<Layer, string>> = {};
       for (const [layer, bytes] of Object.entries(layers) as [Layer, Uint8Array][]) {
-        if (bytes.length > MAX_FRAME_BYTES || !isPng(bytes)) throw new Error("Una de las imágenes no es válida");
         files[layer] = path.join(dir, `${String(n).padStart(2, "0")}-${layer}.png`);
         await writeFile(files[layer]!, bytes);
       }
-      const seconds = slideSeconds(slideTexts(content.slides[n - 1] ?? {}));
+      const plan = planned.plans.get(n)!;
       const out = path.join(dir, `clip-${String(n).padStart(2, "0")}.mp4`);
-      await runFfmpeg(clipArgs({ layers: files, seconds, output: out }), 5 * 60 * 1000);
+      await runFfmpeg(clipArgs({ layers: files, boxes: boxes.get(n), plan, output: out }), 5 * 60 * 1000);
       const key = `carruseles/${userId}/${carouselId}/clip-${String(n).padStart(2, "0")}-${randomUUID()}.mp4`;
       await putObjectStream(key, createReadStream(out), "video/mp4");
       uploaded.push(key);
       const { size } = await stat(out);
-      clips.push({ n, key, seconds, bytes: size });
-      total += seconds;
+      clips.push({ n, key, seconds: plan.duracion_s, bytes: size });
+      total += plan.duracion_s;
     }
-    await db().update(carouselVideos).set({ status: "lista", clips, framesKey: null, seconds: Math.round(total), bytes: clips.reduce((s, c) => s + c.bytes, 0), error: null }).where(eq(carouselVideos.id, v.id));
+    const stored: StoredPlan = { hilo_comun: planned.hiloComun, ai: planned.ai, slides: slides.map(([n]) => ({ n, porque: planned.plans.get(n)?.porque ?? "" })) };
+    await db().update(carouselVideos).set({ status: "lista", clips, plan: stored, framesKey: null, seconds: Math.round(total), bytes: clips.reduce((s, c) => s + c.bytes, 0), error: null }).where(eq(carouselVideos.id, v.id));
     await deleteObject(v.framesKey).catch(() => undefined);
     void sendToUser(userId, { title: "Tu carrusel animado está listo", body: "Ya puedes verlo y descargarlo.", url: `/carruseles/${carouselId}`, tag: `carrusel-animado-${carouselId}` }).catch(() => undefined);
   } catch (err) {

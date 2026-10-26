@@ -103,9 +103,9 @@ export type HorarioV1 = z.infer<typeof horarioV1Output>;
 /* ───────────── parrilla-guiones-v2 ───────────── */
 
 export const videoGuionSchema = z
-  .object({ gancho: str, cuerpo: strs.min(1).max(8), cierre: str, duracion_segundos: z.number().default(35), nota_grabacion: str.default("") })
+  .object({ gancho: str, cuerpo: strs.min(1).transform((a) => a.slice(0, 8)), cierre: str, duracion_segundos: z.coerce.number().catch(35).default(35), nota_grabacion: str.default("") })
   .passthrough();
-export const carruselGuionSchema = z.object({ titulo: str, idea_central: str.default(""), puntos: strs.min(1).max(10), cierre: str.default("") }).passthrough();
+export const carruselGuionSchema = z.object({ titulo: str, idea_central: str.default(""), puntos: strs.min(1).transform((a) => a.slice(0, 10)), cierre: str.default("") }).passthrough();
 export type VideoGuion = z.infer<typeof videoGuionSchema>;
 export type CarruselGuion = z.infer<typeof carruselGuionSchema>;
 
@@ -117,7 +117,7 @@ export const parrillaV1Output = z
       .array(
         z
           .object({
-            n: z.number().int(),
+            n: z.coerce.number().int(),
             pilar: str,
             tema: str,
             idea: str.default(""),
