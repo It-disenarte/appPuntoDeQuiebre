@@ -36,7 +36,7 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   const [elapsed, setElapsed] = useState(0);
   const [take, setTake] = useState<{ url: string; blob: Blob; seconds: number } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [reading, setReading] = useState(false);
+  const [floatOpen, setFloatOpen] = useState(false);
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [micId, setMicId] = useState("");
   const [rawAudio, setRawAudio] = useState(false);
@@ -236,23 +236,36 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
     <div className="flex flex-col gap-3">
       {uploading && <LoadingOverlay title="Subiendo tu voz…" hint="Un momento." />}
 
-      {phase === "apagada" && reading && <ScriptReader text={text} onClose={() => setReading(false)} />}
-
-      {phase === "apagada" && !reading && (
-        <div className="flex flex-col gap-2">
+      {phase === "apagada" && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 rounded-xl bg-ink-700 p-3">
+            <p className="text-sm font-extrabold">Grabar con tu grabadora y leer el guion flotando</p>
+            <p className="text-xs text-ink-300">Ideal con un micrófono externo (DJI, etc.): el guion se queda en una ventanita encima de la grabadora de tu teléfono.</p>
+            <ScriptReader
+              floatingOnly
+              openLabel="1. Abrir el guion flotante"
+              openedNote="Listo. Ahora abre la grabadora de tu teléfono (o la de tu micrófono), empieza a grabar y toca ▶ en la ventana flotante."
+              text={text}
+              onClose={() => undefined}
+              onOpened={() => setFloatOpen(true)}
+              onClosed={() => setFloatOpen(false)}
+            />
+            {floatOpen && (
+              <ol className="list-decimal pl-5 text-xs text-ink-300">
+                <li>Abre tu grabadora y empieza a grabar.</li>
+                <li>Toca ▶ en la ventana flotante y lee.</li>
+                <li>Al terminar, guarda el audio y vuelve aquí.</li>
+              </ol>
+            )}
+            <label className={cn("tap inline-flex cursor-pointer items-center justify-center self-start rounded-full px-5 text-sm font-semibold", floatOpen ? "bg-naranja text-negro" : "border border-ink-600")}>
+              <input type="file" accept="audio/*,.m4a,.mp3,.aac,.ogg,.webm" className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
+              {floatOpen ? "3. Ya grabé: subir mi audio" : "Subir un audio que ya tengo"}
+            </label>
+          </div>
           <button type="button" onClick={() => void openMic()} className="tap self-start rounded-full bg-blanco px-5 text-sm font-semibold text-negro">
-            {hasVoice ? "Grabar la voz otra vez" : "Grabar mi voz"}
+            {hasVoice ? "Grabar la voz otra vez aquí en la app" : "O grabar aquí en la app con el micrófono del navegador"}
           </button>
-          <label className="tap inline-flex cursor-pointer items-center self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
-            <input type="file" accept="audio/*,.m4a,.mp3,.aac,.ogg,.webm" className="sr-only" onChange={(e) => (void pickFile(e.target.files?.[0]), (e.target.value = ""))} />
-            Subir un audio que ya tengo
-          </label>
-          <button type="button" onClick={() => setReading(true)} className="tap self-start rounded-full border border-ink-600 px-5 text-sm font-semibold">
-            Solo leer el guion (grabo con otro aparato)
-          </button>
-          <p className="text-xs text-ink-300">
-            Hasta {VO_MAX_SECONDS / 60} minutos. «Grabar mi voz» usa el micrófono del navegador. Si usas un micrófono USB o inalámbrico que el navegador no ve: graba con tu grabadora (o con la de tu micrófono), léete el guion con «Solo leer el guion» y luego súbelo con «Subir un audio que ya tengo».
-          </p>
+          <p className="text-xs text-ink-300">Hasta {VO_MAX_SECONDS / 60} minutos. Con micrófono USB o inalámbrico, usa la grabadora de arriba: el navegador del teléfono a veces no lo ve.</p>
         </div>
       )}
 

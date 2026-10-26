@@ -81,7 +81,7 @@ function draw(ctx: CanvasRenderingContext2D, lines: string[], progress: number, 
  * ventana flotante (Picture-in-Picture) que se queda encima de otras apps; mantiene la pantalla encendida y avanza a tu ritmo.
  * El estado vive en refs (no en el ciclo de React) para que la ventana flotante siga respondiendo con la app en segundo plano.
  */
-export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = "1. Abrir el teleprompter flotante", onOpened }: { text: string; onClose: () => void; floatingOnly?: boolean; openLabel?: string; onOpened?: () => void }) {
+export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = "1. Abrir el teleprompter flotante", openedNote = "Listo. En la cámara empieza a grabar y toca ▶ en la ventana flotante.", onOpened, onClosed }: { text: string; onClose: () => void; floatingOnly?: boolean; openLabel?: string; openedNote?: string; onOpened?: () => void; onClosed?: () => void }) {
   const [speed, setSpeed] = useState(3);
   const [running, setRunningState] = useState(false);
   const [started, setStarted] = useState(false);
@@ -100,6 +100,10 @@ export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const linesRef = useRef<string[]>([]);
   const textRef = useRef(text);
+  const onClosedRef = useRef(onClosed);
+  useEffect(() => {
+    onClosedRef.current = onClosed;
+  });
   const supportsPip = typeof document !== "undefined" && Boolean(document.pictureInPictureEnabled) && typeof HTMLCanvasElement !== "undefined" && "captureStream" in HTMLCanvasElement.prototype;
 
   useEffect(() => {
@@ -216,6 +220,7 @@ export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = 
     videoRef.current = null;
     if (document.pictureInPictureElement) void document.exitPictureInPicture().catch(() => undefined);
     setPip(false);
+    onClosedRef.current?.();
   }, []);
   useEffect(() => closePip, [closePip]);
 
@@ -258,7 +263,7 @@ export function ScriptReader({ text, onClose, floatingOnly = false, openLabel = 
         /* sin controles de medios */
       }
       readyRef.current = true;
-      setNote("Listo. En la cámara empieza a grabar y toca ▶ en la ventana flotante.");
+      setNote(openedNote);
       onOpened?.();
     } catch {
       closePip();
