@@ -46,8 +46,9 @@ export async function purgeOldVideos(now = new Date()): Promise<{ parts: number;
   }
   // Videos animados de carrusel: también a los 30 días (el carrusel y sus imágenes se quedan).
   for (const c of await d.select().from(carouselVideos).where(and(inArray(carouselVideos.status, ["lista"]), lt(carouselVideos.updatedAt, cutoff)))) {
-    if (c.outputKey) await deleteObject(c.outputKey).catch(() => undefined);
-    await d.update(carouselVideos).set({ outputKey: null, status: "error", error: PURGED_MESSAGE }).where(eq(carouselVideos.id, c.id));
+    const clips = Array.isArray(c.clips) ? (c.clips as { key?: string }[]) : [];
+    for (const k of [c.outputKey, ...clips.map((x) => x.key)]) if (k) await deleteObject(k).catch(() => undefined);
+    await d.update(carouselVideos).set({ outputKey: null, clips: null, status: "error", error: PURGED_MESSAGE }).where(eq(carouselVideos.id, c.id));
     edits += 1;
   }
   return { parts, exports: exps, edits };

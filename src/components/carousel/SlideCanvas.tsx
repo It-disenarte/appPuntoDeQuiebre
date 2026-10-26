@@ -78,7 +78,7 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   );
   const deco = kit.elementos[0];
   const decoNode = deco ? (
-    <div style={{ position: "absolute", right: 70, top: 70, opacity: 0.9 }}>
+    <div data-capa="extra" style={{ position: "absolute", right: 70, top: 70, opacity: 0.9 }}>
       <ElementGlyph id={deco.id} color={deco.color} size={90} />
     </div>
   ) : null;
@@ -93,15 +93,15 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
         {hasImg && !light && <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, ${kit.fondoPortada} 0%, ${kit.fondoPortada}E6 30%, ${kit.fondoPortada}00 65%)` }} />}
         <div style={{ position: "relative", padding: "90px 80px 0", display: "flex", flexDirection: "column", gap: 34, ...(light ? { marginTop: "auto", background: base, padding: "70px 80px 150px", borderRadius: "48px 48px 0 0" } : {}) }}>
           {slide.etiqueta && (
-            <span style={{ alignSelf: "flex-start", background: kit.acento, color: inkOn(kit.acento), borderRadius: 999, padding: "10px 30px", fontSize: 34, fontWeight: 700 }}>{slide.etiqueta}</span>
+            <span data-capa="extra" style={{ alignSelf: "flex-start", background: kit.acento, color: inkOn(kit.acento), borderRadius: 999, padding: "10px 30px", fontSize: 34, fontWeight: 700 }}>{slide.etiqueta}</span>
           )}
-          <h1 style={{ ...h1, fontSize: titleSize(slide.titulo, 118), color: light ? inkOn(base) : kit.tituloPortada }}>
+          <h1 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 118), color: light ? inkOn(base) : kit.tituloPortada }}>
             <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={kit.tituloPortada} />
           </h1>
-          {slide.cuerpo && <p style={{ margin: 0, fontSize: 40, lineHeight: 1.3, color: light ? inkOn(base) : kit.tituloPortada, opacity: 0.92 }}>{slide.cuerpo}</p>}
+          {slide.cuerpo && <p data-capa="cuerpo" style={{ margin: 0, fontSize: 40, lineHeight: 1.3, color: light ? inkOn(base) : kit.tituloPortada, opacity: 0.92 }}>{slide.cuerpo}</p>}
         </div>
         {!light && (
-          <div style={{ position: "absolute", left: 80, bottom: 150, display: "flex", alignItems: "center", gap: 14, color: kit.tituloPortada, fontSize: 38, fontWeight: 700 }}>
+          <div data-capa="extra" style={{ position: "absolute", left: 80, bottom: 150, display: "flex", alignItems: "center", gap: 14, color: kit.tituloPortada, fontSize: 38, fontWeight: 700 }}>
             Desliza <ArrowRight size={42} />
           </div>
         )}
@@ -112,12 +112,12 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   if (T === "portada_texto") {
     return (
       <div style={{ ...root, background: kit.fondoPortada, justifyContent: "center", padding: "0 80px" }}>
-        {slide.etiqueta && <span style={{ alignSelf: "flex-start", background: kit.acento, color: inkOn(kit.acento), borderRadius: 999, padding: "10px 30px", fontSize: 34, fontWeight: 700, marginBottom: 40 }}>{slide.etiqueta}</span>}
-        <h1 style={{ ...h1, fontSize: titleSize(slide.titulo, 130), color: kit.tituloPortada }}>
+        {slide.etiqueta && <span data-capa="extra" style={{ alignSelf: "flex-start", background: kit.acento, color: inkOn(kit.acento), borderRadius: 999, padding: "10px 30px", fontSize: 34, fontWeight: 700, marginBottom: 40 }}>{slide.etiqueta}</span>}
+        <h1 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 130), color: kit.tituloPortada }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={kit.tituloPortada} />
         </h1>
-        {slide.cuerpo && <p style={{ fontSize: 42, lineHeight: 1.3, color: kit.tituloPortada, opacity: 0.92, marginTop: 40 }}>{slide.cuerpo}</p>}
-        <div style={{ position: "absolute", left: 80, bottom: 150, display: "flex", alignItems: "center", gap: 14, color: kit.tituloPortada, fontSize: 38, fontWeight: 700 }}>
+        {slide.cuerpo && <p data-capa="cuerpo" style={{ fontSize: 42, lineHeight: 1.3, color: kit.tituloPortada, opacity: 0.92, marginTop: 40 }}>{slide.cuerpo}</p>}
+        <div data-capa="extra" style={{ position: "absolute", left: 80, bottom: 150, display: "flex", alignItems: "center", gap: 14, color: kit.tituloPortada, fontSize: 38, fontWeight: 700 }}>
           Desliza <ArrowRight size={42} />
         </div>
         {decoNode}
@@ -132,10 +132,10 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
         {photo}
         <div style={{ position: "absolute", inset: 0, background: T === "foto_texto_libre" ? "linear-gradient(180deg, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.65) 100%)" : "linear-gradient(180deg, rgba(0,0,0,0) 70%, rgba(0,0,0,0.45) 100%)" }} />
         <div style={{ position: "absolute", left: 80, right: 80, bottom: 190, color: "#fff", textShadow: "0 3px 18px rgba(0,0,0,0.55)" }}>
-          <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, T === "foto_completa" ? 70 : 92), color: "#fff" }}>
+          <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, T === "foto_completa" ? 70 : 92), color: "#fff" }}>
             <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color="#fff" />
           </h2>
-          {slide.cuerpo && T === "foto_texto_libre" && <p style={{ fontSize: 40, lineHeight: 1.3, margin: "28px 0 0" }}>{slide.cuerpo}</p>}
+          {slide.cuerpo && T === "foto_texto_libre" && <p data-capa="cuerpo" style={{ fontSize: 40, lineHeight: 1.3, margin: "28px 0 0" }}>{slide.cuerpo}</p>}
         </div>
         {footer("#fff")}
       </div>
@@ -147,10 +147,10 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
       <div style={{ ...root, background: textBgBase }}>
         <div style={{ position: "relative", height: "52%", background: "#222" }}>{photo}</div>
         <div style={{ flex: 1, background: block, color: inkOn(block), padding: "56px 80px 150px", display: "flex", flexDirection: "column", gap: 24, borderTop: `10px solid ${kit.principal}` }}>
-          <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, 78) }}>
+          <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 78) }}>
             <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={inkOn(block)} />
           </h2>
-          {slide.cuerpo && <p style={{ margin: 0, fontSize: 38, lineHeight: 1.32 }}>{slide.cuerpo}</p>}
+          {slide.cuerpo && <p data-capa="cuerpo" style={{ margin: 0, fontSize: 38, lineHeight: 1.32 }}>{slide.cuerpo}</p>}
         </div>
         {footer(inkOn(block))}
       </div>
@@ -166,10 +166,10 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
       <div style={{ ...root, justifyContent: "center", alignItems: "center", textAlign: "center", padding: "0 90px" }}>
         {photo}
         {hasImg && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} />}
-        <h2 style={{ ...h1, position: "relative", fontSize: titleSize(slide.titulo, 124), color: hasImg ? "#fff" : ink }}>
+        <h2 data-capa="titulo" style={{ ...h1, position: "relative", fontSize: titleSize(slide.titulo, 124), color: hasImg ? "#fff" : ink }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={ink} />
         </h2>
-        {slide.cuerpo && <p style={{ position: "relative", fontSize: 40, marginTop: 40, color: hasImg ? "#fff" : ink }}>{slide.cuerpo}</p>}
+        {slide.cuerpo && <p data-capa="cuerpo" style={{ position: "relative", fontSize: 40, marginTop: 40, color: hasImg ? "#fff" : ink }}>{slide.cuerpo}</p>}
         {footer(hasImg ? "#fff" : ink)}
       </div>
     );
@@ -177,11 +177,11 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   if (T === "numero") {
     return (
       <div style={{ ...root, justifyContent: "center", padding: "0 80px" }}>
-        <div style={{ fontFamily: fontStack(kit.titulos), fontWeight: 800, fontSize: 420, lineHeight: 0.95, color: kit.principal }}>{slide.dato ?? slide.n}</div>
-        <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, 80), marginTop: 20 }}>
+        <div data-capa="icono" style={{ fontFamily: fontStack(kit.titulos), fontWeight: 800, fontSize: 420, lineHeight: 0.95, color: kit.principal }}>{slide.dato ?? slide.n}</div>
+        <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 80), marginTop: 20 }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={ink} />
         </h2>
-        {slide.cuerpo && <p style={{ fontSize: 40, lineHeight: 1.3, marginTop: 28 }}>{slide.cuerpo}</p>}
+        {slide.cuerpo && <p data-capa="cuerpo" style={{ fontSize: 40, lineHeight: 1.3, marginTop: 28 }}>{slide.cuerpo}</p>}
         {footer(ink)}
       </div>
     );
@@ -189,11 +189,11 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   if (T === "cita") {
     return (
       <div style={{ ...root, justifyContent: "center", padding: "0 90px" }}>
-        <div style={{ fontFamily: fontStack(kit.titulos), fontSize: 300, lineHeight: 0.6, color: kit.acento }}>“</div>
-        <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, 84), fontWeight: 600, marginTop: 10 }}>
+        <div data-capa="icono" style={{ fontFamily: fontStack(kit.titulos), fontSize: 300, lineHeight: 0.6, color: kit.acento }}>“</div>
+        <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 84), fontWeight: 600, marginTop: 10 }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={ink} />
         </h2>
-        {slide.cuerpo && <p style={{ fontSize: 38, marginTop: 36, opacity: 0.85 }}>— {slide.cuerpo}</p>}
+        {slide.cuerpo && <p data-capa="cuerpo" style={{ fontSize: 38, marginTop: 36, opacity: 0.85 }}>— {slide.cuerpo}</p>}
         {footer(ink)}
       </div>
     );
@@ -202,10 +202,10 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
     const lines = (slide.cuerpo ?? "").split(/\n|·|;|•/).map((l) => l.trim()).filter(Boolean).slice(0, 5);
     return (
       <div style={{ ...root, justifyContent: "center", padding: "0 80px", gap: 36 }}>
-        <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, 86) }}>
+        <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 86) }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={ink} />
         </h2>
-        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 26 }}>
+        <ul data-capa="cuerpo" style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 26 }}>
           {lines.map((l, i) => (
             <li key={i} style={{ display: "flex", gap: 24, alignItems: "flex-start", fontSize: 42, lineHeight: 1.25 }}>
               <span style={{ flex: "none", width: 64, height: 64, borderRadius: 32, background: kit.principal, color: inkOn(kit.principal), display: "grid", placeItems: "center", fontWeight: 800, fontSize: 34 }}>{i + 1}</span>
@@ -220,13 +220,13 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   if (T === "cta") {
     return (
       <div style={{ ...root, justifyContent: "center", alignItems: "center", textAlign: "center", padding: "0 90px", gap: 40, background: kit.fondoPortada, color: kit.tituloPortada }}>
-        <span style={{ width: 190, height: 190, borderRadius: 95, background: kit.acento, color: inkOn(kit.acento), display: "grid", placeItems: "center" }}>
+        <span data-capa="icono" style={{ width: 190, height: 190, borderRadius: 95, background: kit.acento, color: inkOn(kit.acento), display: "grid", placeItems: "center" }}>
           <Icon size={96} strokeWidth={1.8} />
         </span>
-        <h2 style={{ ...h1, fontSize: titleSize(slide.titulo, 110), color: kit.tituloPortada }}>
+        <h2 data-capa="titulo" style={{ ...h1, fontSize: titleSize(slide.titulo, 110), color: kit.tituloPortada }}>
           <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={kit.tituloPortada} />
         </h2>
-        {slide.cuerpo && <p style={{ fontSize: 42, lineHeight: 1.3, opacity: 0.92 }}>{slide.cuerpo}</p>}
+        {slide.cuerpo && <p data-capa="cuerpo" style={{ fontSize: 42, lineHeight: 1.3, opacity: 0.92 }}>{slide.cuerpo}</p>}
         {footer(kit.tituloPortada)}
       </div>
     );
@@ -235,13 +235,13 @@ export function SlideCanvas({ slide, kit, bg, imageUrl, focal, total, handle }: 
   return (
     <div style={{ ...root, justifyContent: "center", padding: "0 80px", gap: 34 }}>
       <div style={{ position: "absolute", right: 40, top: 40, fontFamily: fontStack(kit.titulos), fontWeight: 800, fontSize: 520, lineHeight: 1, color: soft }}>{slide.dato && slide.dato.length <= 3 ? slide.dato : slide.n - 1 || ""}</div>
-      <span style={{ position: "relative", width: 150, height: 150, borderRadius: 75, background: kit.acento, color: inkOn(kit.acento), display: "grid", placeItems: "center" }}>
+      <span data-capa="icono" style={{ position: "relative", width: 150, height: 150, borderRadius: 75, background: kit.acento, color: inkOn(kit.acento), display: "grid", placeItems: "center" }}>
         <Icon size={78} strokeWidth={1.8} />
       </span>
-      <h2 style={{ ...h1, position: "relative", fontSize: titleSize(slide.titulo, 92) }}>
+      <h2 data-capa="titulo" style={{ ...h1, position: "relative", fontSize: titleSize(slide.titulo, 92) }}>
         <Highlighted text={slide.titulo} word={slide.resaltar} kit={kit} color={ink} />
       </h2>
-      {slide.cuerpo && <p style={{ position: "relative", margin: 0, fontSize: 42, lineHeight: 1.32 }}>{slide.cuerpo}</p>}
+      {slide.cuerpo && <p data-capa="cuerpo" style={{ position: "relative", margin: 0, fontSize: 42, lineHeight: 1.32 }}>{slide.cuerpo}</p>}
       {footer(ink)}
     </div>
   );

@@ -22,7 +22,7 @@ export async function collectFileKeys(userId: string): Promise<string[]> {
     d.select({ k: analyzedVideos.thumbnailKey }).from(analyzedVideos).where(eq(analyzedVideos.userId, userId)),
     d.select({ o: videoEdits.outputKey, c: videoEdits.coverKey }).from(videoEdits).where(eq(videoEdits.userId, userId)),
     d.select({ k: looseClips.objectKey }).from(looseClips).where(eq(looseClips.userId, userId)),
-    d.select({ o: carouselVideos.outputKey, f: carouselVideos.framesKey }).from(carouselVideos).where(eq(carouselVideos.userId, userId)),
+    d.select({ o: carouselVideos.outputKey, f: carouselVideos.framesKey, c: carouselVideos.clips }).from(carouselVideos).where(eq(carouselVideos.userId, userId)),
   ]);
   const keys = new Set<string>();
   const add = (k: unknown) => typeof k === "string" && k && keys.add(k);
@@ -32,7 +32,7 @@ export async function collectFileKeys(userId: string): Promise<string[]> {
   thumbs.forEach((r) => add(r.k));
   edits.forEach((r) => (add(r.o), add(r.c)));
   clips.forEach((r) => add(r.k));
-  cvids.forEach((r) => (add(r.o), add(r.f)));
+  cvids.forEach((r) => (add(r.o), add(r.f), (Array.isArray(r.c) ? r.c : []).forEach((x) => add((x as { key?: string })?.key))));
   metrics.forEach((r) => (Array.isArray(r.keys) ? r.keys : []).forEach(add));
   cars.forEach((r) => Object.values((r.images && typeof r.images === "object" ? r.images : {}) as Record<string, { key?: string }>).forEach((i) => add(i?.key)));
   prof.forEach((r) => (Array.isArray(r.photos) ? r.photos : []).forEach((p) => add((p as { key?: string })?.key)));

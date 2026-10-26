@@ -1069,6 +1069,8 @@ export const carouselVideos = pgTable(
     /** ZIP con los PNG de los slides (se borra al terminar). */
     framesKey: text("frames_key"),
     outputKey: text("output_key"),
+    /** Un clip animado por slide: [{ n, key, seconds, bytes }]. */
+    clips: jsonb("clips").$type<unknown>(),
     seconds: integer("seconds"),
     bytes: integer("bytes"),
     error: text("error"),

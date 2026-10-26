@@ -57,7 +57,7 @@ describe("carrusel animado: plan y cupo", () => {
     expect((await animationQuota(userId)).left).toBe(0);
 
     // Mientras se arma, no se acepta otro pedido.
-    expect(await requestAnimation(userId, carouselId, "carruseles/x/frames-2.zip")).toMatchObject({ ok: false, error: expect.stringMatching(/Ya estamos armando/) });
+    expect(await requestAnimation(userId, carouselId, "carruseles/x/frames-2.zip")).toMatchObject({ ok: false, error: expect.stringMatching(/Ya estamos animando/) });
 
     // Ya terminó (con error): se puede rehacer el del mismo carrusel aunque el cupo del mes esté agotado, y se borran los archivos viejos.
     await pdb.update(schema.carouselVideos).set({ status: "error", framesKey: "carruseles/x/frames-1.zip", outputKey: "carruseles/x/viejo.mp4" }).where(eq(schema.carouselVideos.carouselId, carouselId));

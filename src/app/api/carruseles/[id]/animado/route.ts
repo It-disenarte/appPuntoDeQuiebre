@@ -5,26 +5,40 @@ import { audit } from "@/lib/audit";
 import { isSameOrigin } from "@/lib/auth/dal";
 import { getApiCreator } from "@/lib/auth/gates";
 import { MAX_ZIP_BYTES } from "@/lib/carousel/animate";
-import { animationQuota, openAnimation, requestAnimation, storeFrames } from "@/lib/carousel/animate-service";
+import { animationQuota, openClip, requestAnimation, storeFrames, zipClips } from "@/lib/carousel/animate-service";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
 import { deleteObject, storageConfigured } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-/** Video armado del carrusel (solo su dueña). `?descargar=1` lo baja como archivo; acepta rangos para verlo en el navegador. */
+/**
+ * Clips animados del carrusel (solo su dueña). `?n=3` es el clip del slide 3 (acepta rangos para verlo en el navegador);
+ * sin `n` y con `?descargar=1` baja todos en un ZIP. Con `n` y `descargar=1` baja ese clip como archivo.
+ */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getApiCreator();
   const id = z.string().uuid().safeParse((await params).id);
   if (!user || !id.success) return new Response(null, { status: 404 });
+  const q = new URL(request.url).searchParams;
+  const download = q.get("descargar") === "1";
+  const n = z.coerce.number().int().min(1).max(12).safeParse(q.get("n"));
+
+  if (!n.success) {
+    if (!download) return new Response(null, { status: 404 });
+    const zip = await zipClips(user.id, id.data);
+    if (!zip) return new Response(null, { status: 404 });
+    return new Response(zip as BodyInit, { headers: { "Content-Type": "application/zip", "Content-Length": String(zip.length), "Content-Disposition": 'attachment; filename="mi-carrusel-animado.zip"', "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+  }
+
   const rangeHeader = request.headers.get("range");
   const range = rangeHeader && /^bytes=\d{1,12}-\d{0,12}$/.test(rangeHeader) ? rangeHeader : undefined;
-  const obj = await openAnimation(user.id, id.data, range);
+  const obj = await openClip(user.id, id.data, n.data, range);
   if (!obj) return new Response(null, { status: range ? 416 : 404 });
   const headers = new Headers({ "Content-Type": "video/mp4", "Accept-Ranges": "bytes", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
   if (obj.contentLength !== undefined) headers.set("Content-Length", String(obj.contentLength));
   if (obj.contentRange) headers.set("Content-Range", obj.contentRange);
-  if (new URL(request.url).searchParams.get("descargar") === "1") headers.set("Content-Disposition", 'attachment; filename="mi-carrusel-animado.mp4"');
+  if (download) headers.set("Content-Disposition", `attachment; filename="slide-${String(n.data).padStart(2, "0")}-animado.mp4"`);
   return new Response(obj.body, { status: obj.partial ? 206 : 200, headers });
 }
 

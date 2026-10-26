@@ -1,0 +1,1 @@
+ALTER TABLE "carousel_videos" ADD COLUMN "clips" jsonb;
