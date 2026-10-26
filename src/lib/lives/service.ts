@@ -63,12 +63,19 @@ async function context(userId: string, weekStart: string | null) {
 }
 
 /** Guarda las respuestas; si quiere empezar o no quiere, también guarda la recomendación de la skill. */
-export async function saveAnswers(userId: string, raw: unknown): Promise<Result> {
+export function checkAnswers(raw: unknown): { ok: true; data: Answers } | { ok: false; error: string } {
   const a = answersSchema.safeParse(raw);
   if (!a.success) return { ok: false, error: "Revisa tus respuestas." };
   const d = a.data;
   if (d.situacion === "hace" && (d.dias.length === 0 || d.plataformas.length === 0)) return { ok: false, error: "Cuéntanos en qué app y qué días haces tus directos." };
   if (d.situacion === "quiere_hacer" && !d.compromiso) return { ok: false, error: "Cuéntanos cuándo harías un directo sí o sí." };
+  return { ok: true, data: d };
+}
+
+export async function saveAnswers(userId: string, raw: unknown): Promise<Result> {
+  const c = checkAnswers(raw);
+  if (!c.ok) return c;
+  const d = c.data;
   const values = { situacion: d.situacion, plataformas: d.plataformas, dias: d.dias, hora: d.hora, frecuencia: d.frecuencia, compromiso: d.compromiso };
   await db().insert(liveProfile).values({ userId, ...values }).onConflictDoUpdate({ target: liveProfile.userId, set: values });
   if (d.situacion !== "hace") {

@@ -6,7 +6,7 @@ import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { addDays, mondayOf, targetWeek, todayIso } from "@/lib/plan/rules";
 import { queueBg } from "@/lib/bg";
-import { dismissNotice, markDone, resetNotice, resetSituation } from "./service";
+import { checkAnswers, dismissNotice, markDone, resetNotice, resetSituation } from "./service";
 
 export type LiveActionState = { error?: string; ok?: boolean } | undefined;
 const str = (fd: FormData, k: string) => {
@@ -19,16 +19,17 @@ const AI_LIMIT = "Ya usaste la IA varias veces seguidas. Intenta de nuevo en una
 export async function saveAnswersAction(_p: LiveActionState, fd: FormData): Promise<LiveActionState> {
   const { user } = await requireCreatorAccess();
   if (!(await rateLimit(`directos-ia:user:${user.id}`, 20, HOUR))) return { error: AI_LIMIT };
-  const q = await queueBg(user.id, "directos", "directos.respuestas", {
-    answers: {
-      situacion: str(fd, "situacion"),
-      plataformas: fd.getAll("plataformas").filter((v): v is string => typeof v === "string"),
-      dias: fd.getAll("dias").filter((v): v is string => typeof v === "string"),
-      hora: str(fd, "hora") || null,
-      frecuencia: str(fd, "frecuencia").trim() || null,
-      compromiso: str(fd, "compromiso").trim() || null,
-    },
-  });
+  const answers = {
+    situacion: str(fd, "situacion"),
+    plataformas: fd.getAll("plataformas").filter((v): v is string => typeof v === "string"),
+    dias: fd.getAll("dias").filter((v): v is string => typeof v === "string"),
+    hora: str(fd, "hora") || null,
+    frecuencia: str(fd, "frecuencia").trim() || null,
+    compromiso: str(fd, "compromiso").trim() || null,
+  };
+  const check = checkAnswers(answers);
+  if (!check.ok) return { error: check.error };
+  const q = await queueBg(user.id, "directos", "directos.respuestas", { answers });
   if (!q.ok) return { error: q.error };
   revalidatePath(PAGE);
   return { ok: true };
