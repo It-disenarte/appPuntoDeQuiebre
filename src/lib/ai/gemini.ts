@@ -66,6 +66,8 @@ export async function geminiGenerate(parts: GeminiPart[], opts: { json?: boolean
     }
     if (attempt < max - 1) await new Promise((r) => setTimeout(r, backoffMs(attempt)));
   }
+  // El modelo configurado ya no existe (Google los retira): se reintenta una vez con el de fábrica. “Probar” (opts.model) no lo hace.
+  if (last?.status === 404 && !opts.model && model !== e.GEMINI_MODEL) return geminiGenerate(parts, { ...opts, model: e.GEMINI_MODEL });
   throw last ?? new GeminiError("Gemini falló", 0);
 }
 
