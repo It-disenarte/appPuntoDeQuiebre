@@ -10,6 +10,7 @@ import { TEMPLATE_LABEL, TEMPLATES, usesImage, type Slide } from "@/lib/carousel
 import { submitKeepingState } from "@/lib/form-submit";
 import { ScaledSlide } from "./ScaledSlide";
 import type { CanvasBg, CanvasKit } from "./SlideCanvas";
+import { errorText } from "@/lib/net-error";
 
 type Props = {
   carouselId: string;
@@ -48,7 +49,7 @@ export function SlideEditor({ carouselId, slide, total, kit, bg, handle, image, 
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "No se pudo subir la imagen.");
     } catch (e) {
-      setUpError(e instanceof Error ? e.message : "No se pudo subir la imagen.");
+      setUpError(errorText(e, "No se pudo subir la imagen."));
     }
     if (input.current) input.current.value = "";
     setBusy(false);

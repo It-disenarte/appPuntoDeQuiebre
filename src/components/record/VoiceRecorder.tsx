@@ -7,6 +7,7 @@ import { cn } from "@/components/ui";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { VO_MAX_AUDIO_BYTES, VO_MAX_SECONDS, VOICE_FILE_TYPES } from "@/lib/edit/vo-rules";
 import { clampSpeed, estimateSeconds, megabytes, SPEED_LABEL, SPEEDS } from "@/lib/recording/rules";
+import { errorText } from "@/lib/net-error";
 
 type Phase = "apagada" | "lista" | "cuenta" | "grabando" | "revision";
 
@@ -215,7 +216,7 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
       setPhase("apagada");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Sin conexión. Intenta de nuevo con WiFi.");
+      setError(errorText(e, "Sin conexión. Intenta de nuevo con WiFi."));
     } finally {
       setUploading(false);
     }

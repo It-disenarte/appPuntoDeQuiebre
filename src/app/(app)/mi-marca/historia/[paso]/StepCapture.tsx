@@ -7,6 +7,7 @@ import { Button, cn, FormError } from "@/components/ui";
 import { saveStepTextAction, skipStepAction, type BrujulaState } from "@/lib/brujula/actions";
 import { MAX_STEP_SECONDS, STORY_CHOICES, wordCount } from "@/lib/brujula/content";
 import { submitKeepingState } from "@/lib/form-submit";
+import { errorText } from "@/lib/net-error";
 
 type Step = { id: string; minSeconds: number; minWords: number; followUp: string };
 type Phase = "idle" | "recording" | "recorded" | "uploading";
@@ -122,7 +123,7 @@ function Recorder({ step, choice }: { step: Step; choice: string }) {
       router.push(data.next ?? "/mi-marca/historia");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo enviar tu audio.");
+      setError(errorText(err, "No se pudo enviar tu audio."));
       setPhase("recorded");
     }
   }

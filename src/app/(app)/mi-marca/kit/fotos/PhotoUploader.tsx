@@ -7,6 +7,7 @@ import { Button, FormError } from "@/components/ui";
 import { deletePhotoAction, startRevealAction, type KitActionState } from "@/lib/kit/actions";
 import { submitKeepingState } from "@/lib/form-submit";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { errorText } from "@/lib/net-error";
 
 type Photo = { id: string };
 const MAX = 4;
@@ -31,7 +32,7 @@ export function PhotoUploader({ photos }: { photos: Photo[] }) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new Error(data.error ?? "No se pudo subir la foto.");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudo subir la foto.");
+        setError(errorText(err, "No se pudo subir la foto."));
         break;
       }
     }

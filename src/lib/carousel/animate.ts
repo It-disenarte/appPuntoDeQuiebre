@@ -33,6 +33,25 @@ ${PIECE_LAYERS.map((l) => `.cap-pass[data-pass="${l}"] [data-capa="${l}"], .cap-
 /** Nombre de cada capa dentro del ZIP: 01_fondo.png, 01_titulo.png, 02_fondo.png… Además va `cajas.json` con dónde está cada pieza. */
 export const LAYER_FILE = /^(\d{2})_(fondo|icono|titulo|cuerpo|extra)\.png$/i;
 export const BOXES_FILE = "cajas.json";
+const MAX_BOXES_BYTES = 200_000;
+/** 12 slides × 5 capas + cajas.json; con margen. Más archivos que esto no es un ZIP nuestro. */
+const MAX_ZIP_ENTRIES = 80;
+
+/**
+ * Filtro para `unzipSync`: decide con el tamaño DECLARADO, antes de descomprimir, qué archivos se abren.
+ * El tope de MAX_ZIP_BYTES es del ZIP comprimido; sin esto, uno de unos cuantos KB podría expandirse a gigas y tumbar el worker.
+ * Si la cabecera miente (declara menos), fflate corta la salida a lo declarado.
+ */
+export function zipEntryFilter(): (file: { name: string; originalSize: number }) => boolean {
+  let entries = 0;
+  return (file) => {
+    if (++entries > MAX_ZIP_ENTRIES) throw new Error("El ZIP trae demasiados archivos");
+    if (file.name === BOXES_FILE) return file.originalSize <= MAX_BOXES_BYTES;
+    if (!LAYER_FILE.test(file.name)) return false;
+    if (file.originalSize > MAX_FRAME_BYTES) throw new Error("Una de las imágenes pesa demasiado");
+    return true;
+  };
+}
 
 /* ───────────── Catálogo de movimientos (lo único que la IA puede elegir) ───────────── */
 

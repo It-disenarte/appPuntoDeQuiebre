@@ -8,6 +8,7 @@ import { submitKeepingState } from "@/lib/form-submit";
 import { choosePartAction, refreshPartAction, saveAndGenerateAction, type ProfileActionState } from "@/lib/profile/actions";
 import type { Current } from "@/lib/profile/schemas";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { errorText } from "@/lib/net-error";
 
 /* ───────────── Perfil de hoy ───────────── */
 
@@ -129,7 +130,7 @@ export function PhotoUploader({ count, max }: { count: number; max: number }) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "No se pudo calificar la foto.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo calificar la foto.");
+      setError(errorText(e, "No se pudo calificar la foto."));
     }
     if (input.current) input.current.value = "";
     setBusy(false);

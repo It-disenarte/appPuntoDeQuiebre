@@ -16,7 +16,7 @@ import { enqueue } from "@/lib/jobs";
 import { sendToUser } from "@/lib/push";
 import { runFfmpeg } from "@/lib/recording/ffmpeg";
 import { deleteObject, getObject, putObjectStream, storageConfigured } from "@/lib/storage";
-import { BOXES_FILE, clipArgs, groupLayers, isPng, MAX_FRAME_BYTES, MAX_SLIDES, MIN_SLIDES, parseBoxes, PIECE_LAYERS, type Boxes, type Layer } from "./animate";
+import { BOXES_FILE, clipArgs, groupLayers, isPng, MAX_FRAME_BYTES, MAX_SLIDES, MIN_SLIDES, parseBoxes, PIECE_LAYERS, zipEntryFilter, type Boxes, type Layer } from "./animate";
 import { planAnimations, previewOf, type SlideInfo } from "./animate-plan";
 import { getCarousel, parseContent, parseImages } from "./service";
 
@@ -81,7 +81,15 @@ export async function requestAnimation(userId: string, carouselId: string, frame
   for (const k of filesOf(current)) await deleteObject(k).catch(() => undefined);
   const values = { status: "pendiente" as const, framesKey, outputKey: null, clips: null, plan: null, seconds: null, bytes: null, error: null };
   if (current) await db().update(carouselVideos).set(values).where(eq(carouselVideos.id, current.id));
-  else await db().insert(carouselVideos).values({ userId, carouselId, ...values });
+  else {
+    try {
+      await db().insert(carouselVideos).values({ userId, carouselId, ...values });
+    } catch (e) {
+      // Doble toque: la otra petición ganó la carrera (hay un índice único por carrusel).
+      if ((e as { code?: string }).code === "23505" || /duplicate key|unique/i.test(e instanceof Error ? e.message : "")) return { ok: false, error: "Ya estamos animando este carrusel. Espera a que termine." };
+      throw e;
+    }
+  }
   await enqueue("carrusel.animar", userId, { carouselId }, { maxAttempts: 1 });
   return { ok: true };
 }
@@ -101,7 +109,7 @@ export async function runAnimation(userId: string, carouselId: string): Promise<
     const obj = await getObject(v.framesKey);
     if (!obj) throw new Error("No se encontraron las imágenes del carrusel");
     const zip = Buffer.from(await new Response(obj.body).arrayBuffer());
-    const unzipped = unzipSync(new Uint8Array(zip));
+    const unzipped = unzipSync(new Uint8Array(zip), { filter: zipEntryFilter() });
     const groups = groupLayers(unzipped);
     const slides = [...groups.entries()].sort((a, b) => a[0] - b[0]);
     if (slides.length < MIN_SLIDES || slides.length > MAX_SLIDES) throw new Error(`Se esperaban de ${MIN_SLIDES} a ${MAX_SLIDES} slides y llegaron ${slides.length}`);

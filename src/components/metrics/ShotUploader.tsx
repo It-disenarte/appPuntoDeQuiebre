@@ -6,6 +6,7 @@ import { useActionState, useRef, useState } from "react";
 import { Button, FormError } from "@/components/ui";
 import { removeShotAction, submitReportAction, type MetricsActionState } from "@/lib/metrics/actions";
 import { submitKeepingState } from "@/lib/form-submit";
+import { errorText } from "@/lib/net-error";
 
 const MAX = 8;
 
@@ -26,7 +27,7 @@ export function ShotUploader({ period, count }: { period: string; count: number 
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new Error(data.error ?? "No se pudo subir la captura.");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudo subir la captura.");
+        setError(errorText(err, "No se pudo subir la captura."));
         break;
       }
     }

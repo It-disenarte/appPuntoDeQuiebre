@@ -55,6 +55,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!id.success) return Response.json({ error: "Carrusel no válido." }, { status: 400 });
   if (!(await rateLimit(`carrusel-animado:user:${user.id}`, 20, HOUR))) return Response.json({ error: "Demasiados intentos seguidos. Intenta en un rato." }, { status: 429 });
   if (!(await animationQuota(user.id)).allowed) return Response.json({ error: "El carrusel animado es del plan Pro." }, { status: 403 });
+  // Rehacer un carrusel que ya se animó no gasta cupo del mes; este tope evita que se repita todo el día (cada vez cuesta IA y varios minutos de ffmpeg).
+  if (!(await rateLimit(`carrusel-animado:carrusel:${id.data}`, 6, 24 * HOUR))) return Response.json({ error: "Ya animaste este carrusel varias veces hoy. Intenta mañana." }, { status: 429 });
 
   const declared = Number(request.headers.get("content-length"));
   if (!Number.isFinite(declared) || declared <= 0) return Response.json({ error: "Falta el tamaño del archivo." }, { status: 411 });

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui";
 import { BOXES_FILE, LAYER_CSS, LAYERS, PIECE_LAYERS, type Layer } from "@/lib/carousel/animate";
 import { buildPptx } from "./build-pptx";
 import { H, SlideCanvas, W } from "./SlideCanvas";
+import { errorText } from "@/lib/net-error";
 
 type Item = Parameters<typeof SlideCanvas>[0];
 
@@ -133,7 +134,7 @@ export function ExportButtons({ items, name, carouselId, animation }: { items: I
       }
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Sin conexión. Intenta de nuevo con WiFi.");
+      setError(errorText(e, "Sin conexión. Intenta de nuevo con WiFi."));
     }
     setProgress("");
     setBusy(false);

@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Las tipografías del kit llevan un hash del contenido en el nombre: si cambian, cambia el nombre. Sin esto el teléfono las revalida en cada visita.
+        source: "/fonts/kit/:file(.*\\.woff2)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
         source: "/sw.js",
         headers: [
           { key: "Content-Type", value: "application/javascript; charset=utf-8" },
