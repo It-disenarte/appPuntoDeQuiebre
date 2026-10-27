@@ -12,7 +12,17 @@ export function AddCompetitorForm() {
       <FormError message={state?.error} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-48 flex-1">
-          <Field label="Agregar una cuenta" name="usuario" placeholder="@usuario" maxLength={80} />
+          <Field
+            label="Agregar una cuenta"
+            name="usuario"
+            placeholder="https://www.instagram.com/cuenta"
+            hint="Abre su perfil en Instagram, toca ⋯ → Copiar enlace del perfil y pégalo aquí. También sirve escribir su @usuario."
+            maxLength={120}
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
         </div>
         <Button type="submit" variant="outline" disabled={pending}>
           {pending ? "Agregando…" : "Agregar"}

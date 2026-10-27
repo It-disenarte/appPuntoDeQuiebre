@@ -16,7 +16,7 @@ import { sendToUser } from "@/lib/push";
 import { deleteObject, putObjectStream, storageConfigured } from "@/lib/storage";
 import { apifyConfigured, scrapeReels, type ScrapedReel } from "./apify";
 import { downloadLimited, MAX_THUMB_BYTES, MAX_VIDEO_BYTES } from "./media";
-import { conceptsSchema, DEFAULT_PARAMS, MAX_COMPETITORS, normalizeUsername, paramsSchema, progressSchema, videoAnalysisSchema, type Concepts, type Progress, type RunParams, type VideoAnalysis } from "./schemas";
+import { conceptsSchema, DEFAULT_PARAMS, MAX_COMPETITORS, normalizeUsername, notAProfileMessage, paramsSchema, progressSchema, videoAnalysisSchema, type Concepts, type Progress, type RunParams, type VideoAnalysis } from "./schemas";
 
 export type Competitor = typeof competitors.$inferSelect;
 export type Run = typeof analyzerRuns.$inferSelect;
@@ -44,7 +44,7 @@ export async function listCompetitors(userId: string): Promise<Competitor[]> {
 
 export async function addCompetitor(userId: string, input: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const username = normalizeUsername(input);
-  if (!username) return { ok: false, error: "Escribe un usuario de Instagram válido (por ejemplo @cuenta)." };
+  if (!username) return { ok: false, error: notAProfileMessage(input) ?? "Pega el enlace del perfil de Instagram (o escribe su @usuario). Ejemplo: instagram.com/cuenta" };
   const current = await listCompetitors(userId);
   if (current.some((c) => c.username === username)) return { ok: false, error: "Esa cuenta ya está en tu lista." };
   if (current.length >= MAX_COMPETITORS) return { ok: false, error: `Máximo ${MAX_COMPETITORS} cuentas.` };

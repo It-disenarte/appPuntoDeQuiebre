@@ -34,6 +34,25 @@ describe("cuentas y direcciones", () => {
     expect(normalizeUsername("a b")).toBeNull();
     expect(normalizeUsername("x".repeat(31))).toBeNull();
   });
+  it("entiende los enlaces de perfil que se copian desde el celular", async () => {
+    const { normalizeUsername } = await import("@/lib/analyzer/schemas");
+    expect(normalizeUsername("https://www.instagram.com/disenarte.mx?igsh=MXN4ZXFkbG5oMWhz")).toBe("disenarte.mx");
+    expect(normalizeUsername("https://instagram.com/_u/Disenarte.MX/")).toBe("disenarte.mx"); // enlace de la app al compartir
+    expect(normalizeUsername("https://m.instagram.com/mi_cuenta/reels/")).toBe("mi_cuenta");
+    expect(normalizeUsername("instagram.com/mi_cuenta")).toBe("mi_cuenta");
+    expect(normalizeUsername("  @Mi_Cuenta  ")).toBe("mi_cuenta");
+    expect(normalizeUsername("https://instagr.am/mi_cuenta")).toBe("mi_cuenta");
+  });
+  it("un enlace de video o publicación NO se lee como una cuenta llamada «reel»", async () => {
+    const { normalizeUsername, notAProfileMessage } = await import("@/lib/analyzer/schemas");
+    for (const link of ["https://www.instagram.com/reel/DAbC123xyz/", "https://www.instagram.com/p/DAbC123/", "https://www.instagram.com/stories/cuenta/123/", "https://www.instagram.com/share/BAbc", "https://www.instagram.com/"]) {
+      expect(normalizeUsername(link)).toBeNull();
+    }
+    expect(notAProfileMessage("https://www.instagram.com/reel/DAbC123xyz/")).toMatch(/video o una publicación/);
+    expect(notAProfileMessage("https://www.instagram.com/cuenta")).toBeNull();
+    expect(notAProfileMessage("@cuenta")).toBeNull();
+    expect(normalizeUsername("@reel")).toBe("reel"); // pero un usuario escrito a mano sí puede llamarse así
+  });
   it("solo descarga de servidores de contenido de Instagram", async () => {
     const { isMediaUrl } = await import("@/lib/analyzer/media");
     expect(isMediaUrl("https://scontent-dfw5-1.cdninstagram.com/v/t50/abc.mp4")).toBe(true);

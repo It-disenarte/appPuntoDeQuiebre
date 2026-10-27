@@ -8,7 +8,8 @@ import { requireCreatorAccess } from "@/lib/auth/gates";
 import { HOUR, rateLimit } from "@/lib/rate";
 import { getClientIp } from "@/lib/request";
 import { SECTION_IDS } from "@/lib/skills/schemas";
-import { getStep, MAX_STEP_CHARS, quickSchema, SELL_VALUES, STORY_CHOICE_VALUES, wordCount } from "./content";
+import { normalizeUsername, notAProfileMessage } from "@/lib/analyzer/schemas";
+import { getStep, MAX_STEP_CHARS, MIN_REFERENTS, quickSchema, SELL_VALUES, STORY_CHOICE_VALUES, wordCount } from "./content";
 import { acceptSchedule, getIntake, intakeProgress, queueManual, saveQuick, saveScheduleAnswers, saveSell, saveStep, skipSell, voteSection } from "./service";
 import { scheduleAnswersSchema, DAYS } from "./schedule";
 
@@ -83,7 +84,18 @@ export async function saveQuickAction(_prev: BrujulaState, fd: FormData): Promis
   };
   const parsed = quickSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Revisa tus elecciones.", fields: raw };
-  await saveQuick(user.id, parsed.data);
+  // Un enlace de video en vez de uno de perfil se avisa aquí (si no, se guardaría la cuenta equivocada). Lo que sí es de un perfil de
+  // Instagram se guarda como @usuario; lo demás (otra red) se guarda tal cual, porque las cuentas que inspiran no son solo de Instagram.
+  const referentes: string[] = [];
+  for (const r of parsed.data.referentes) {
+    const bad = notAProfileMessage(r);
+    if (bad) return { error: `«${r.slice(0, 50)}»: ${bad}`, fields: raw };
+    const u = normalizeUsername(r);
+    const value = u ? `@${u}` : r;
+    if (!referentes.some((x) => x.toLowerCase() === value.toLowerCase())) referentes.push(value);
+  }
+  if (referentes.length < MIN_REFERENTS) return { error: `Escribe al menos ${MIN_REFERENTS} cuentas distintas (hay repetidas).`, fields: raw };
+  await saveQuick(user.id, { ...parsed.data, referentes });
   // Con la historia completa, la brújula se empieza a armar sola (en segundo plano).
   if (intakeProgress((await getIntake(user.id))!).ready && (await rateLimit(`manual-ia2:user:${user.id}`, 6, HOUR))) {
     await queueManual(user.id);

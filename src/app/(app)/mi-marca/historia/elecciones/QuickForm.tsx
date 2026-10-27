@@ -55,10 +55,10 @@ export function QuickForm({ initial }: { initial: Quick | null }) {
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-semibold text-ink-800">Cuentas que te inspiran</legend>
         <p className="text-xs text-ink-500">
-          Escribe su usuario o enlace. Mínimo {MIN_REFERENTS}, hasta {MAX_REFERENTS}. Solo nos sirven de orientación: nunca copiamos su contenido.
+          Pega el enlace de su perfil (en Instagram: abre su perfil, toca ⋯ → Copiar enlace del perfil); copiarlo es más seguro que escribir el usuario. Mínimo {MIN_REFERENTS}, hasta {MAX_REFERENTS}. Solo nos sirven de orientación: nunca copiamos su contenido.
         </p>
         {Array.from({ length: MAX_REFERENTS }, (_, i) => (
-          <Field key={i} label={`Cuenta ${i + 1}${i < MIN_REFERENTS ? "" : " (opcional)"}`} name="referentes" defaultValue={refs[i] ?? ""} maxLength={120} placeholder="@usuario" />
+          <Field key={i} label={`Cuenta ${i + 1}${i < MIN_REFERENTS ? "" : " (opcional)"}`} name="referentes" defaultValue={refs[i] ?? ""} maxLength={120} placeholder="https://www.instagram.com/cuenta" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         ))}
       </fieldset>
       <Button type="submit" size="lg" disabled={pending} className="self-start">

@@ -8,13 +8,36 @@ const strs = z.array(z.string());
 /** Cuenta de Instagram válida (sin @, sin enlaces): evita meter nada raro en las URL que se piden a Apify. */
 export const USERNAME_RE = /^[a-z0-9._]{1,30}$/;
 
+/** Enlaces de Instagram (con o sin https y www; también m. e instagr.am). */
+const IG_HOST = /^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:instagram\.com|instagr\.am)\//;
+/** Primer tramo de los enlaces que NO son de un perfil: una publicación, un reel, una historia, etc. */
+const NOT_A_PROFILE = new Set(["p", "reel", "reels", "tv", "stories", "story", "explore", "accounts", "direct", "share", "s", "about", "legal", "web"]);
+
+/** El primer tramo de la ruta de un enlace de Instagram ("_u" es el prefijo de los enlaces de la app al compartir un perfil). */
+function igFirstSegment(s: string): string | null {
+  if (!IG_HOST.test(s)) return null;
+  const parts = s.replace(IG_HOST, "").replace(/[?#].*$/, "").split("/").filter(Boolean);
+  if (parts[0] === "_u") parts.shift();
+  return parts[0] ?? "";
+}
+
 /** Acepta "@usuario", "usuario" o un enlace de Instagram y devuelve el usuario en minúsculas (o null si no es válido). */
 export function normalizeUsername(input: string): string | null {
   let s = input.trim().toLowerCase();
-  const m = s.match(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-z0-9._]+)/);
-  if (m) s = m[1]!;
+  const first = igFirstSegment(s);
+  if (first !== null) {
+    if (NOT_A_PROFILE.has(first)) return null; // sin esto, instagram.com/reel/AbC se leería como la cuenta «reel»
+    s = first;
+  }
   s = s.replace(/^@/, "").replace(/[/?#].*$/, "");
   return USERNAME_RE.test(s) && !s.endsWith(".") ? s : null;
+}
+
+/** Si lo que se pegó es un enlace de Instagram que no es de un perfil (un video, una publicación…), explica qué hacer; si no, null. */
+export function notAProfileMessage(input: string): string | null {
+  const first = igFirstSegment(input.trim().toLowerCase());
+  if (first === null || !NOT_A_PROFILE.has(first)) return null;
+  return "Ese enlace es de un video o una publicación, no de un perfil. Abre el perfil de la cuenta y copia su enlace (menú ⋯ → Copiar enlace del perfil).";
 }
 
 export const MAX_COMPETITORS = 8;
