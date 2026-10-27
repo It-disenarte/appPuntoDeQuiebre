@@ -14,6 +14,9 @@ export function Steps({ overview, current }: { overview: BrujulaOverview; curren
     { id: "voz", label: "Voz", href: "/mi-marca/voz", done: overview.hasVoiceProfile },
     { id: "horario", label: "Horario", href: "/mi-marca/horario", done: overview.scheduleAccepted },
   ];
+  // El paso que toca hacer (el mismo que propone el resto de la app). El perfil de voz se genera solo, así que puede salir completo antes de tiempo.
+  const nextHref = overview.next?.href ?? "";
+  const isNext = (s: { id: StepId; href: string; done: boolean }) => !s.done && s.id !== current && nextHref.startsWith(s.href);
   return (
     <nav aria-label="Pasos de tu alta">
       <ol className="grid grid-cols-5 gap-1">
@@ -25,6 +28,7 @@ export function Steps({ overview, current }: { overview: BrujulaOverview; curren
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-center text-xs font-semibold",
                 s.id === current ? "bg-azul-50 text-azul" : "text-ink-600 hover:bg-ink-200/60",
+                isNext(s) && "ring-2 ring-naranja",
               )}
             >
               <span className={cn("grid size-7 place-items-center rounded-full text-xs font-extrabold", s.done ? "bg-exito text-blanco" : s.id === current ? "bg-azul text-blanco" : "bg-ink-200 text-ink-700")}>
@@ -32,6 +36,7 @@ export function Steps({ overview, current }: { overview: BrujulaOverview; curren
               </span>
               {s.label}
               {s.done && <span className="sr-only"> (completado)</span>}
+              {isNext(s) && <span className="-mt-1 rounded-full bg-naranja px-1.5 text-[0.625rem] font-extrabold text-negro">Sigue</span>}
             </Link>
           </li>
         ))}

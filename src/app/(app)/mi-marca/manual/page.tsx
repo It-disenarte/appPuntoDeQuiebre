@@ -174,6 +174,14 @@ export default async function ManualPage({ searchParams }: PageProps<"/mi-marca/
         }
       />
       <FormSuccess message={approved ? "¡Tu brújula está aprobada! Ya puedes descargarla en PDF." : undefined} />
+      {approved && overview.next && (
+        <div className="flex flex-col gap-2 rounded-card border-2 border-azul bg-azul-50 p-4">
+          <p className="text-sm font-extrabold">Siguiente paso de tu alta</p>
+          <ButtonLink href={overview.next.href} size="lg" className="self-start">
+            {overview.next.text} →
+          </ButtonLink>
+        </div>
+      )}
       {manual.mock && (
         <p className="rounded-xl bg-naranja-100 p-4 text-sm text-ink-900">
           <strong>Versión de prueba.</strong> Esta brújula la armó un generador de reglas, no la IA. Úsala para conocer cómo funciona el proceso; el contenido real llega cuando se conecte la IA.
