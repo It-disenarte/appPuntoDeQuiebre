@@ -31,8 +31,28 @@ export function buildCsp(nonce: string, isDev: boolean): string {
   ].join("; ");
 }
 
+/**
+ * Direcciones viejas de esta app (separadas por coma en LEGACY_HOSTS): mandan a la misma ruta en APP_URL con una redirección
+ * permanente. Sirve al cambiar de dominio sin dejar a nadie con el enlace roto. El webhook de Stripe NO sigue redirecciones:
+ * hay que cambiarlo a mano en Stripe.
+ */
+export function legacyRedirect(host: string | null, path: string, env: { LEGACY_HOSTS?: string; APP_URL?: string }): string | null {
+  const hosts = (env.LEGACY_HOSTS ?? "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+  if (!host || !env.APP_URL || !hosts.includes(host.split(":")[0]!.toLowerCase())) return null;
+  try {
+    // Por texto y no con new URL(path, base): una ruta que empiece con "//" se leería como otro sitio (redirección abierta).
+    const target = new URL(`${env.APP_URL.replace(/\/+$/, "")}/${path.replace(/^[/\\]+/, "")}`);
+    return target.host === new URL(env.APP_URL).host ? target.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // Detrás de Traefik el dominio que escribió la persona llega en x-forwarded-host.
+  const moved = legacyRedirect(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), `${pathname}${search}`, { LEGACY_HOSTS: process.env.LEGACY_HOSTS, APP_URL: process.env.APP_URL });
+  if (moved) return NextResponse.redirect(moved, 308);
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 

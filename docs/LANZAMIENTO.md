@@ -11,7 +11,8 @@ Qué revisar antes de abrir la app a clientes reales y qué vigilar las primeras
 - [ ] **Copia fuera del servidor** (Cloudflare R2 o Backblaze B2). Hoy el respaldo vive en el mismo VPS. *Pendiente.*
 - [ ] Snapshot o backup automático del VPS en el panel del proveedor.
 - [ ] Espacio en disco del VPS revisado (videos temporales, respaldos). Los videos se borran a los 30 días.
-- [ ] Dominio propio y HTTPS funcionando (hoy se usa el de Easypanel). `APP_URL` coincide con la dirección final, sin diagonal al final.
+- [ ] Dominio propio y HTTPS funcionando: `app.puntodequiebre.pro` (DNS apuntando al VPS, dominio agregado a **pdq-app** en Easypanel con HTTPS). `APP_URL` = `https://app.puntodequiebre.pro`, sin diagonal al final, **solo en pdq-app** (el worker no la usa). `LEGACY_HOSTS` con la dirección vieja de Easypanel para que redirija.
+- [ ] Al cambiar de dominio: actualizar en **Stripe** el endpoint del webhook (no sigue redirecciones), y avisar a los testers que vuelvan a iniciar sesión (la sesión, las notificaciones y lo guardado en el teléfono son por dominio).
 - [ ] `TRUSTED_PROXY_HOPS` correcto: 1 con Traefik de Easypanel; 2 si hay Cloudflare delante.
 
 ## 2. Variables de entorno (Easypanel → Environment, en **pdq-app y pdq-worker**)
