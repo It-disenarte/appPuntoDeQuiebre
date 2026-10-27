@@ -8,6 +8,7 @@ import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { VO_MAX_AUDIO_BYTES, VO_MAX_SECONDS, VOICE_FILE_TYPES } from "@/lib/edit/vo-rules";
 import { clampSpeed, estimateSeconds, megabytes, SPEED_LABEL, SPEEDS } from "@/lib/recording/rules";
 import { errorText } from "@/lib/net-error";
+import { drainVoice, queueAvailable, queueVoice, type QueueItem } from "./upload-queue";
 
 type Phase = "apagada" | "lista" | "cuenta" | "grabando" | "revision";
 
@@ -37,6 +38,8 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   const [elapsed, setElapsed] = useState(0);
   const [take, setTake] = useState<{ url: string; blob: Blob; seconds: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [waiting, setWaiting] = useState<{ seconds: number; msg: string } | null>(null);
+  const draining = useRef(false);
   const [floatOpen, setFloatOpen] = useState(false);
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [micId, setMicId] = useState("");
@@ -200,11 +203,56 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
     };
   }, [take]);
 
+  /** Sube lo que esté guardado en el teléfono para esta pieza. Si no hay internet queda guardado y se reintenta solo. */
+  const drain = useCallback(async () => {
+    if (draining.current || !queueAvailable()) return;
+    draining.current = true;
+    try {
+      await drainVoice(pieceId, (e) => {
+        if (e.type === "subiendo" || e.type === "esperando") setWaiting({ seconds: e.seconds, msg: e.msg });
+        else setWaiting(null);
+        if (e.type === "subida") router.refresh();
+        if (e.type === "rechazada") setError(e.msg);
+      });
+    } finally {
+      draining.current = false;
+    }
+  }, [pieceId, router]);
+
+  useEffect(() => {
+    const on = () => void drain();
+    const first = setTimeout(on, 0);
+    window.addEventListener("online", on);
+    const t = setInterval(on, 30_000);
+    return () => {
+      clearTimeout(first);
+      window.removeEventListener("online", on);
+      clearInterval(t);
+    };
+  }, [drain]);
+
   async function send(blob: Blob, seconds: number) {
     const type = baseOf(blob.type);
     if (blob.size > VO_MAX_AUDIO_BYTES) return setError("El audio pesa demasiado (máximo 40 MB).");
-    setUploading(true);
     setError("");
+    // Primero se guarda en el teléfono: si se va el internet o Android cierra la app, la voz no se pierde.
+    if (queueAvailable()) {
+      try {
+        const item: QueueItem = { id: crypto.randomUUID(), kind: "voz", pieceId, part: "voz", seconds, mime: type, blob, tries: 0, createdAt: Date.now() };
+        await queueVoice(item);
+        setTake(null);
+        stopMic();
+        setPhase("apagada");
+        setWaiting({ seconds, msg: "Guardada." });
+        setUploading(true);
+        await drain();
+        setUploading(false);
+        return;
+      } catch {
+        setUploading(false); // sin espacio en el teléfono: se sube directo, sin la cola
+      }
+    }
+    setUploading(true);
     try {
       const res = await fetch(`/api/grabaciones/voz?pieza=${encodeURIComponent(pieceId)}&segundos=${seconds}`, { method: "POST", headers: { "Content-Type": type }, body: blob });
       if (!res.ok) {
@@ -236,6 +284,13 @@ export function VoiceRecorder({ pieceId, text, hasVoice }: { pieceId: string; te
   return (
     <div className="flex flex-col gap-3">
       {uploading && <LoadingOverlay title="Subiendo tu voz…" hint="Un momento." />}
+
+      {waiting && (
+        <div role="status" aria-live="polite" className="flex flex-col gap-1 rounded-xl bg-ink-700 p-3 text-sm">
+          <p className="font-extrabold">Tu voz está guardada en el teléfono · {waiting.seconds} s</p>
+          <p className="text-xs text-ink-300">{waiting.msg} Se sube sola en cuanto haya internet; no hace falta grabarla otra vez.</p>
+        </div>
+      )}
 
       {phase === "apagada" && (
         <div className="flex flex-col gap-3">

@@ -285,7 +285,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
   const refreshQueue = useCallback(async () => {
     if (!queueAvailable()) return;
     const all = await queueAll().catch(() => [] as QueueItem[]);
-    setQueue((prev) => all.filter((i) => i.pieceId === pieceId).map((i) => ({ ...i, ...(prev.find((p) => p.id === i.id) ? { msg: prev.find((p) => p.id === i.id)!.msg } : {}) })));
+    setQueue((prev) => all.filter((i) => i.pieceId === pieceId && i.kind !== "voz").map((i) => ({ ...i, ...(prev.find((p) => p.id === i.id) ? { msg: prev.find((p) => p.id === i.id)!.msg } : {}) })));
   }, [pieceId]);
 
   const flush = useCallback(
@@ -295,7 +295,7 @@ export function RecordingStudio({ pieceId, texts, done }: { pieceId: string; tex
       try {
         const all = (await queueAll().catch(() => [])).sort((a, b) => a.createdAt - b.createdAt);
         for (const item of all) {
-          if (item.pieceId !== pieceId) continue;
+          if (item.pieceId !== pieceId || item.kind === "voz") continue; // la voz en off la sube su propia pantalla
           if (!allowMobile && onMobileData()) {
             setQueue((q) => q.map((x) => (x.id === item.id ? { ...x, waiting: true } : x)));
             continue;
