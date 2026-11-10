@@ -86,5 +86,8 @@ Hazla con el correo de alguien que no conozca la app, si es posible.
 
 ## 10. No es necesario para abrir (se puede después)
 - Conexión con Instagram (Meta, verificación del negocio) y la auditoría «Así te vemos».
+  - **Al retomar Meta, pide en UNA sola revisión los permisos de Instagram y los de Facebook (Páginas: publicar y leer métricas).** La verificación del negocio, la política de privacidad y la URL de borrado de datos sirven para las dos; revisarlas por separado duplica el trámite.
+  - Las direcciones que se registran en Meta usan el dominio nuevo: `https://app.puntodequiebre.pro/api/instagram/callback`, `/api/instagram/deauthorize`, `/api/instagram/delete` y `/privacidad`.
+  - Para que cada creador pueda conectar necesita una cuenta profesional de Instagram y, para Facebook, ser administradora de una Página: ver la sección 6 de `docs/FUNCIONES.md`.
 - TikTok y Facebook como redes completas, Nano Banana Pro.
 - App nativa de Android para micrófonos USB.

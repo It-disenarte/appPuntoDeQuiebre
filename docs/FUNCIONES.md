@@ -122,3 +122,33 @@ Un administrador puede abrir las funciones Pro a una cuenta sin cambiar lo que p
 - **Las funciones con IA dependen de saldo en Anthropic y Gemini.** Si se agota, esa función falla hasta recargar.
 - **Los cupos se renuevan el día 1 de cada mes** (hora de la Ciudad de México), excepto los semanales (Tendencias).
 - **Lo recién construido todavía no se ha medido con muchas personas:** carrusel animado, aprendizaje y voz en off con tomas necesitan pruebas en uso real.
+
+---
+
+## 6. Lo que necesitas para trabajar en Instagram y Facebook
+
+Hoy la app te ayuda a **crear** el contenido para las dos redes, pero **tú lo publicas**. La conexión directa con Instagram está pausada y la de Facebook todavía no existe (ver sección 4). Esto es lo que conviene tener listo.
+
+### En Instagram
+- **Una cuenta profesional** (de creador o de empresa). Es gratis y se cambia en Instagram → Configuración → Tipo de cuenta. Una cuenta personal no da estadísticas y la app la rechaza al conectar.
+- **Ser la dueña o el dueño de la cuenta**, con su usuario, su contraseña y la verificación en dos pasos a la mano. La app nunca te pide la contraseña de Instagram: la conexión usa el inicio de sesión oficial de Instagram.
+- **Para el Progreso, hoy:** subir cada mes capturas de las estadísticas de tu cuenta. Solo las cuentas profesionales las tienen.
+- **Cuando se active la conexión:**
+  - La app pide solo permiso de **lectura** (perfil y estadísticas). No publica ni cambia nada.
+  - Se actualiza una vez al día.
+  - El permiso caduca cada cierto tiempo. Si aparece "Revisar permiso", hay que volver a conectar. Se puede desconectar cuando quieras.
+  - Con pocas publicaciones (menos de 9), la auditoría de tu cuenta funciona con menos información.
+
+### En Facebook
+- **Publicar como marca se hace desde una Página de Facebook**, no desde tu perfil personal. Si todavía no tienes una, créala antes.
+- **Ser administradora o administrador de esa Página** (con acceso total). Quien solo tiene un rol parcial no podrá conectarla cuando exista la conexión.
+- **Vincular tu Instagram a la Página** facilita publicar el mismo contenido en las dos redes desde el teléfono.
+- **Para el contenido, hoy:** la app ya escribe un texto propio para Facebook en cada pieza. Lo copias y subes el video o las imágenes tú desde la Página.
+
+### En las dos redes
+- **Videos:** formato vertical 9:16, como Reels. La app entrega el MP4 ya unido o editado, listo para subir.
+- **Carruseles:** imágenes 4:5. En Instagram se suben como carrusel; en Facebook, como álbum.
+- **Textos distintos por red:** cada red tiene su propio texto y sus hashtags. No copies el de una en la otra.
+- **Descarga a tiempo:** los videos se borran a los 30 días.
+- **Protege tu cuenta:** activa la verificación en dos pasos con una app de autenticación, no solo por mensaje de texto. No compartas tus contraseñas con nadie, ni con la app.
+- **Nunca copies contenido de otros creadores.** El analizador de competencia sirve como orientación, no para reproducir su trabajo.
