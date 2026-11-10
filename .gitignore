@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Material de trabajo de Mishell (skills, pruebas y entregables); no va al repo ni a la imagen
 Punto-de-Quiebre-ClaudeCode*/
+
+# Prueba de carga: tokens de sesión y base temporal
+/.pglite-carga

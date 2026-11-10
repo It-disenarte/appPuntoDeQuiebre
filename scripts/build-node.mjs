@@ -5,6 +5,7 @@ await build({
   entryPoints: {
     migrate: "scripts/migrate.ts",
     cli: "scripts/cli.ts",
+    "seed-carga": "loadtest/seed.ts",
     worker: "src/worker/index.ts",
   },
   outdir: "dist",
